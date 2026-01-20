@@ -1,0 +1,374 @@
+
+import React, { useState, useRef, useEffect } from 'react';
+import { UserPlus, Shield, Key, Trash2, Edit2, Search, X, CheckCircle2, Building2, Save, Image as ImageIcon, Upload, Monitor, Lock, Unlock, MailCheck, AlertCircle } from 'lucide-react';
+import { User, UserRole } from '../types';
+
+interface UserManagementProps {
+  users: User[];
+  currentUser: User;
+  onAddUser: (user: User) => void;
+  onUpdateUser: (user: User) => void;
+  onDeleteUser: (id: string) => void;
+  hospitalName: string;
+  setHospitalName: (name: string) => void;
+  bgImage: string;
+  setBgImage: (img: string) => void;
+  loginBgImage: string;
+  setLoginBgImage: (img: string) => void;
+  reportEmail: string;
+  setReportEmail: (email: string) => void;
+  atbCosts: Record<string, number>;
+  setAtbCosts: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+}
+
+const UserManagement: React.FC<UserManagementProps> = ({ users, currentUser, onAddUser, onUpdateUser, onDeleteUser, hospitalName, setHospitalName, bgImage, setBgImage, loginBgImage, setLoginBgImage, reportEmail, setReportEmail, atbCosts, setAtbCosts }) => {
+  const [showForm, setShowForm] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
+  const [newResetPassword, setNewResetPassword] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [tempHospitalName, setTempHospitalName] = useState(hospitalName);
+  const [showEmailToast, setShowEmailToast] = useState<{ name: string, email: string } | null>(null);
+
+  const bgInputRef = useRef<HTMLInputElement>(null);
+  const loginBgInputRef = useRef<HTMLInputElement>(null);
+  const profilePicRef = useRef<HTMLInputElement>(null);
+
+  const [formData, setFormData] = useState<Partial<User>>(() => {
+    const saved = localStorage.getItem('sva_user_form_draft');
+    return saved ? JSON.parse(saved) : {
+      role: UserRole.VISUALIZADOR,
+      needsPasswordChange: true,
+      password: ''
+    };
+  });
+
+  // Salva rascunho do formulário
+  useEffect(() => {
+    localStorage.setItem('sva_user_form_draft', JSON.stringify(formData));
+  }, [formData]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingUser) {
+      onUpdateUser({ ...editingUser, ...formData } as User);
+      alert("Cadastro do colaborador atualizado com sucesso.");
+    } else {
+      const newUser: User = {
+        ...formData,
+        id: 'usr-' + Math.random().toString(36).substr(2, 9),
+        needsPasswordChange: formData.needsPasswordChange ?? true
+      } as User;
+      onAddUser(newUser);
+
+      setShowEmailToast({ name: newUser.name, email: newUser.email });
+      setTimeout(() => setShowEmailToast(null), 5000);
+    }
+    setShowForm(false);
+    setEditingUser(null);
+    setFormData({ role: UserRole.VISUALIZADOR, needsPasswordChange: true, password: '' });
+    localStorage.removeItem('sva_user_form_draft'); // Limpa rascunho
+  };
+
+  const handleResetPassword = () => {
+    if (!newResetPassword || !resetPasswordUser) return;
+    onUpdateUser({
+      ...resetPasswordUser,
+      password: newResetPassword,
+      needsPasswordChange: true
+    });
+    alert(`Senha de ${resetPasswordUser.name} resetada! O acesso será solicitado na próxima entrada.`);
+    setResetPasswordUser(null);
+    setNewResetPassword('');
+  };
+
+  const handleDelete = (e: React.MouseEvent, u: User) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (u.id === currentUser.id) {
+      alert("Ação Bloqueada: Você não pode excluir sua própria conta para não ser trancada fora do sistema.");
+      return;
+    }
+
+    if (window.confirm(`Deseja excluir permanentemente o colaborador ${u.name}? Ele perderá o acesso ao sistema imediatamente.`)) {
+      onDeleteUser(u.id);
+    }
+  };
+
+  const filteredUsers = (currentUser.role === UserRole.ADMINISTRADOR ? users : users.filter(u => u.id === currentUser.id)).filter(u =>
+    u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.cpf.includes(searchTerm)
+  );
+
+  return (
+    <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500 pb-10 text-left">
+      {showEmailToast && (
+        <div className="fixed top-10 right-10 bg-emerald-600 text-white p-6 rounded-[24px] shadow-2xl z-[9000] flex items-center gap-4 animate-in slide-in-from-right-10 border-2 border-emerald-400">
+          <div className="bg-white/20 p-3 rounded-xl"><MailCheck size={24} /></div>
+          <div>
+            <p className="text-[10px] font-black uppercase opacity-60">Novo Cadastro Realizado</p>
+            <p className="text-xs font-bold leading-tight">Instruções enviadas para:<br /><span className="underline font-black">{showEmailToast.email}</span></p>
+          </div>
+        </div>
+      )}
+
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-black text-slate-800 flex items-center gap-2">
+            <Shield className="text-emerald-600" size={26} /> {currentUser.role === UserRole.ADMINISTRADOR ? 'Controle de Colaboradores' : 'Meu Perfil'}
+          </h2>
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+            {currentUser.role === UserRole.ADMINISTRADOR ? 'Apenas você gerencia quem acessa este sistema' : 'Gerencie seus dados de acesso'}
+          </p>
+        </div>
+        {currentUser.role === UserRole.ADMINISTRADOR && (
+          <button
+            onClick={() => { setEditingUser(null); setFormData({ role: UserRole.VISUALIZADOR, needsPasswordChange: true, password: '' }); setShowForm(true); }}
+            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
+          >
+            <UserPlus size={16} /> Cadastrar Colaborador
+          </button>
+        )}
+      </div>
+
+      {currentUser.role === UserRole.ADMINISTRADOR && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+            <h3 className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-1.5 tracking-widest">
+              <Building2 size={14} className="text-emerald-500" /> Unidade Hospitalar
+            </h3>
+            <div className="space-y-3">
+              <input
+                type="text"
+                className="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-bold text-sm focus:border-emerald-500 outline-none"
+                value={hospitalName}
+                onChange={e => setHospitalName(e.target.value)}
+                placeholder="Nome da Unidade"
+              />
+              <p className="text-[8px] font-bold text-slate-400 leading-tight uppercase">Nome da unidade é gravado instantaneamente.</p>
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+            <h3 className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-1.5 tracking-widest">
+              <MailCheck size={14} className="text-blue-500" /> Relatórios (E-mail)
+            </h3>
+            <div className="space-y-3">
+              <input
+                type="email"
+                className="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-bold text-sm focus:border-emerald-500 outline-none"
+                value={reportEmail}
+                onChange={e => setReportEmail(e.target.value)}
+                placeholder="exemplo@email.com"
+              />
+              <p className="text-[8px] font-bold text-slate-400 leading-tight uppercase">Configurado para envio mensal automático.</p>
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+            <h3 className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-1.5 tracking-widest">
+              <ImageIcon size={14} className="text-purple-500" /> Personalização
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[8px] font-black text-slate-400 uppercase ml-1">Painel</label>
+                <button onClick={() => bgInputRef.current?.click()} className="w-full h-14 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center relative overflow-hidden group">
+                  {bgImage ? <img src={bgImage} className="absolute inset-0 w-full h-full object-cover opacity-20" /> : <Monitor size={18} className="text-slate-300" />}
+                  <span className="text-[7px] font-black uppercase text-slate-400 z-10">Fundo</span>
+                  <input type="file" ref={bgInputRef} className="hidden" accept="image/*" onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const r = new FileReader();
+                      r.onload = () => setBgImage(r.result as string);
+                      r.readAsDataURL(file);
+                    }
+                  }} />
+                </button>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[8px] font-black text-slate-400 uppercase ml-1">Login</label>
+                <button onClick={() => loginBgInputRef.current?.click()} className="w-full h-14 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center relative overflow-hidden group">
+                  {loginBgImage ? <img src={loginBgImage} className="absolute inset-0 w-full h-full object-cover opacity-20" /> : <Key size={18} className="text-slate-300" />}
+                  <span className="text-[7px] font-black uppercase text-slate-400 z-10">Fundo</span>
+                  <input type="file" ref={loginBgInputRef} className="hidden" accept="image/*" onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const r = new FileReader();
+                      r.onload = () => setLoginBgImage(r.result as string);
+                      r.readAsDataURL(file);
+                    }
+                  }} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showForm && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-xl rounded-[40px] shadow-2xl overflow-hidden border border-slate-100 animate-in zoom-in-95">
+            <div className="bg-slate-900 p-8 text-white flex justify-between items-center">
+              <h3 className="text-xl font-black uppercase tracking-tight">{editingUser ? 'Editar Registro' : 'Novo Registro'}</h3>
+              <button onClick={() => { setShowForm(false); localStorage.removeItem('sva_user_form_draft'); }} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={24} /></button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-8 space-y-6 text-left">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Foto de Perfil (Opcional)</label>
+                  <div className="flex items-center gap-3">
+                    <button type="button" onClick={() => profilePicRef.current?.click()} className="w-12 h-12 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden hover:border-emerald-500 transition-colors relative group">
+                      {formData.photoURL ? (
+                        <img src={formData.photoURL} className="w-full h-full object-cover" />
+                      ) : (
+                        <ImageIcon size={18} className="text-slate-300 group-hover:text-emerald-500" />
+                      )}
+                      <input type="file" ref={profilePicRef} className="hidden" accept="image/*" onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const r = new FileReader();
+                          r.onload = () => setFormData(prev => ({ ...prev, photoURL: r.result as string }));
+                          r.readAsDataURL(file);
+                        }
+                      }} />
+                    </button>
+                    {formData.photoURL && (
+                      <button type="button" onClick={() => setFormData(prev => ({ ...prev, photoURL: undefined }))} className="text-[9px] font-black text-red-500 uppercase hover:underline">Remover</button>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Nome Completo</label>
+                  <input required className="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-bold text-xs"
+                    value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value.toUpperCase() })} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Setor</label>
+                  <input required className="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-bold text-xs"
+                    value={formData.sector || ''} onChange={e => setFormData({ ...formData, sector: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase text-slate-400 ml-1">CPF (Login de Acesso)</label>
+                  <input required className="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-bold text-xs"
+                    value={formData.cpf || ''} onChange={e => setFormData({ ...formData, cpf: e.target.value })} placeholder="000.000.000-00" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase text-slate-400 ml-1">E-mail</label>
+                  <input required type="email" className="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-bold text-xs"
+                    value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Perfil de Acesso</label>
+                  <select required className="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-bold text-xs"
+                    value={formData.role || ''} onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}>
+                    {Object.values(UserRole).map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Telefone</label>
+                  <input required className="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-bold text-xs"
+                    value={formData.mobile || ''} onChange={e => setFormData({ ...formData, mobile: e.target.value })} />
+                </div>
+                {!editingUser && (
+                  <div className="md:col-span-2 space-y-1 pt-4 border-t border-slate-100">
+                    <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Definir Senha Inicial</label>
+                    <input required type="password" placeholder="Mínimo 4 caracteres" className="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-bold text-xs"
+                      value={formData.password || ''} onChange={e => setFormData({ ...formData, password: e.target.value })} />
+                  </div>
+                )}
+              </div>
+              <button type="submit" className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-xs shadow-xl hover:bg-emerald-700">
+                {editingUser ? 'Salvar Alterações' : 'Concluir Registro do Colaborador'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {resetPasswordUser && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-sm rounded-[32px] shadow-2xl p-8 text-center space-y-6 animate-in zoom-in-95">
+            <div className="mx-auto w-12 h-12 bg-yellow-100 text-yellow-600 rounded-2xl flex items-center justify-center"><Key size={24} /></div>
+            <div>
+              <h3 className="text-lg font-black uppercase text-slate-800">Alterar Senha</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">Colaborador: {resetPasswordUser.name}</p>
+            </div>
+            <input autoFocus type="password" placeholder="Nova Senha" className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-xl font-bold text-xs"
+              value={newResetPassword} onChange={e => setNewResetPassword(e.target.value)} />
+            <div className="flex gap-2">
+              <button onClick={() => setResetPasswordUser(null)} className="flex-1 py-3 bg-slate-100 rounded-xl text-[10px] font-black uppercase text-slate-500">Voltar</button>
+              <button onClick={handleResetPassword} className="flex-1 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase shadow-lg">Confirmar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="p-4 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
+          <div className="relative max-w-sm w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+            <input type="text" placeholder="Filtrar por nome ou CPF..." className="w-full pl-10 pr-4 py-2.5 bg-white rounded-xl border-2 border-slate-100 focus:border-emerald-500 outline-none font-bold text-xs shadow-sm" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          </div>
+          <div className="flex items-center gap-1.5 text-slate-400">
+            <AlertCircle size={14} />
+            <span className="text-[8px] font-black uppercase">Dica: Você não pode excluir a si mesma</span>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-[11px] font-bold">
+            <thead className="bg-slate-50 text-slate-400 uppercase">
+              <tr>
+                <th className="px-8 py-4">Nome / E-mail</th>
+                <th className="px-8 py-4">Setor</th>
+                <th className="px-8 py-4">Perfil</th>
+                <th className="px-8 py-4">CPF (Login)</th>
+                <th className="px-8 py-4 text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredUsers.map(u => (
+                <tr key={u.id} className={`hover:bg-slate-50/50 transition-colors ${u.id === currentUser.id ? 'bg-emerald-50/20' : ''}`}>
+                  <td className="px-8 py-5">
+                    <p className="text-slate-800 uppercase font-black">{u.name}</p>
+                    <p className="text-[9px] text-slate-400 lowercase">{u.email}</p>
+                    {u.id === currentUser.id && <span className="text-[8px] bg-emerald-600 text-white px-2 py-0.5 rounded-full uppercase">Sua Conta</span>}
+                  </td>
+                  <td className="px-8 py-5 uppercase text-slate-500">{u.sector}</td>
+                  <td className="px-8 py-5">
+                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${u.role === UserRole.ADMINISTRADOR ? 'bg-indigo-50 text-indigo-700' :
+                      u.role === UserRole.VISUALIZADOR ? 'bg-slate-50 text-slate-400' : 'bg-emerald-50 text-emerald-700'
+                      }`}>
+                      {u.role}
+                    </span>
+                  </td>
+                  <td className="px-8 py-5 text-slate-400 font-black">{u.cpf}</td>
+                  <td className="px-8 py-5 text-right space-x-2">
+                    <button onClick={() => { setEditingUser(u); setFormData(u); setShowForm(true); }} className="p-2.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-all border border-slate-200" title="Editar"><Edit2 size={16} /></button>
+                    <button onClick={() => setResetPasswordUser(u)} className="p-2.5 bg-yellow-50 text-yellow-600 rounded-xl hover:bg-yellow-100 transition-all border border-yellow-100" title="Alterar Senha"><Key size={16} /></button>
+                    <button
+                      type="button"
+                      onClick={(e) => handleDelete(e, u)}
+                      disabled={u.id === currentUser.id}
+                      className={`p-2.5 rounded-xl transition-all border ${u.id === currentUser.id ? 'bg-slate-50 text-slate-200 border-slate-100 cursor-not-allowed opacity-30' : 'bg-red-50 text-red-600 border-red-100 hover:bg-red-100 active:scale-95'}`}
+                      title={u.id === currentUser.id ? "Auto-exclusão bloqueada" : "Excluir Registro"}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {filteredUsers.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="py-20 text-center opacity-30 uppercase text-[10px] font-black tracking-widest">Nenhum registro encontrado.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default UserManagement;
