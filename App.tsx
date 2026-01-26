@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabaseClient';
 import Login from './components/Login';
@@ -9,6 +8,8 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+
+
 
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
@@ -60,12 +61,13 @@ const App: React.FC = () => {
     });
   }, []);
 
-  const [systemAlert, setSystemAlert] = useState<{ message: string, type: 'info' | 'warning' } | null>(null);
+  const [systemAlert, setSystemAlert] = useState<{ message: string, type: 'info' | 'warning' | 'success' } | null>(null);
 
   const [users, setUsers] = useState<User[]>(() => {
     const saved = localStorage.getItem('hesmb_users');
     let userList: User[] = saved ? JSON.parse(saved) : [];
-
+    // Only keeping local users backup/cache logic if needed, but ideally users should also be in DB. 
+    // For now, focusing on Patients migration as requested.
     const geovanaCPF = '060.044.891-66';
     const geovanaExists = userList.some(u => u.cpf.replace(/\D/g, '') === geovanaCPF.replace(/\D/g, ''));
 
@@ -83,16 +85,94 @@ const App: React.FC = () => {
         needsPasswordChange: false
       });
     }
-
     return userList;
   });
 
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [patients, setPatients] = useState<Patient[]>([]);
 
-  const [patients, setPatients] = useState<Patient[]>(() => {
-    const saved = localStorage.getItem('hesmb_patients');
-    return saved ? JSON.parse(saved) : INITIAL_PATIENTS;
+  // --- DATA TRANSFORMATION HELPERS ---
+  const mapDbToPatient = (row: any): Patient => ({
+    id: row.id,
+    name: row.name,
+    birthDate: row.birth_date ? format(new Date(row.birth_date), 'dd/MM/yyyy') : '',
+    bed: row.bed,
+    sector: row.sector,
+    diagnosis: row.diagnosis || '',
+    treatmentType: row.treatment_type,
+    infectoStatus: row.infecto_status,
+    infectoComment: row.infecto_comment,
+    pharmacyNote: row.pharmacy_note,
+    prescriberNotes: row.prescriber_notes,
+    incisionRelation: row.incision_relation,
+    procedureDate: row.procedure_date ? format(new Date(row.procedure_date), 'dd/MM/yyyy') : undefined,
+    operativeTime: row.operative_time,
+    antibiotics: row.antibiotics || [],
+    isEvaluated: row.is_evaluated,
+    lastEvaluationDate: row.last_evaluation_date,
+    history: row.history || []
   });
+
+  const mapPatientToDb = (p: Patient) => {
+    // Helper to parse DD/MM/YYYY to YYYY-MM-DD
+    const parseDate = (dateStr?: string) => {
+      if (!dateStr) return null;
+      const parts = dateStr.split('/');
+      if (parts.length !== 3) return null;
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    };
+
+    return {
+      name: p.name,
+      birth_date: parseDate(p.birthDate),
+      bed: p.bed,
+      sector: p.sector,
+      diagnosis: p.diagnosis,
+      treatment_type: p.treatmentType,
+      infecto_status: p.infectoStatus,
+      infecto_comment: p.infectoComment,
+      pharmacy_note: p.pharmacyNote,
+      prescriber_notes: p.prescriberNotes,
+      incision_relation: p.incisionRelation,
+      procedure_date: parseDate(p.procedureDate),
+      operative_time: p.operativeTime,
+      antibiotics: p.antibiotics,
+      is_evaluated: p.isEvaluated,
+      last_evaluation_date: p.lastEvaluationDate,
+      history: p.history
+    };
+  };
+
+  // --- SUPABASE FETCH & SUBSCRIPTION ---
+  const fetchPatients = useCallback(async () => {
+    const { data, error } = await supabase.from('pacientes').select('*');
+    if (error) {
+      console.error('Error fetching patients:', error);
+      setSystemAlert({ message: 'Erro ao carregar pacientes do servidor.', type: 'warning' });
+    } else {
+      setPatients(data.map(mapDbToPatient));
+      setLastSaved(new Date());
+    }
+  }, []);
+
+  useEffect(() => {
+    if (session) {
+      fetchPatients();
+
+      const channel = supabase
+        .channel('public:pacientes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'pacientes' }, (payload) => {
+          console.log('Realtime chage received:', payload);
+          fetchPatients(); // Simplest strategy: reload all on change to ensure consistency
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [session, fetchPatients]);
+
 
   // --- ROTINA DE TAREFAS AGENDADAS (07:30 E 22:00) ---
   // --- REPORT GENERATION ---
@@ -111,7 +191,7 @@ const App: React.FC = () => {
     // Stats
     const activePatients = patients.filter(p => p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)).length;
     doc.text(`Pacientes em Uso de ATB: ${activePatients}`, 14, 45);
-    doc.text(`Custo Total Estimado: R$ ${Object.values(atbCosts).reduce((a, b) => a + b, 0).toFixed(2)}`, 14, 51);
+    doc.text(`Custo Total Estimado: R$ ${(Object.values(atbCosts) as any[]).reduce((a: number, b: number) => a + (Number(b) || 0), 0).toFixed(2)}`, 14, 51);
 
     // Patients Table
     const tableData = patients.map(p => {
@@ -147,10 +227,18 @@ const App: React.FC = () => {
       const isPastResetTime = now.getHours() > 7 || (now.getHours() === 7 && now.getMinutes() >= 30);
       const lastResetDate = localStorage.getItem('sva_last_reset_evaluations');
       if (lastResetDate !== todayStr && isPastResetTime) {
-        setPatients(prev => prev.map(p => ({ ...p, isEvaluated: false })));
-        localStorage.setItem('sva_last_reset_evaluations', todayStr);
-        setSystemAlert({ message: 'Atenção: As avaliações diárias foram resetadas (Rotina 07:30)', type: 'info' });
-        setTimeout(() => setSystemAlert(null), 10000);
+        // Reset Logic: Update Supabase and Local State
+        supabase.from('pacientes').update({ is_evaluated: false }).neq('id', '00000000-0000-0000-0000-000000000000')
+          .then(({ error }) => {
+            if (!error) {
+              fetchPatients(); // Reload fresh data
+              localStorage.setItem('sva_last_reset_evaluations', todayStr);
+              setSystemAlert({ message: 'Atenção: As avaliações diárias foram resetadas (Rotina 07:30)', type: 'info' });
+              setTimeout(() => setSystemAlert(null), 10000);
+            } else {
+              console.error('Erro ao resetar avaliações:', error);
+            }
+          });
       }
 
       // Alerta 22:00 PM
@@ -165,13 +253,12 @@ const App: React.FC = () => {
         }
       }
 
-      // Relatório Mensal (Último dia do mês às 23h) - NOW GENERATES PDF
+      // Relatório Mensal
       const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
       const isLastDay = now.getDate() === lastDayOfMonth;
       const isReportTime = now.getHours() >= 23;
       const lastReportDate = localStorage.getItem('sva_last_monthly_report');
 
-      // FOR TESTING: You can remove "!lastReportDate" to force generation
       if (isLastDay && isReportTime && lastReportDate !== todayStr) {
         console.log(`[SVA] Gerando relatório PDF mensal...`);
         generateMonthlyReport();
@@ -187,7 +274,7 @@ const App: React.FC = () => {
   }, [patients, reportEmail, atbCosts, hospitalName]);
 
   useEffect(() => {
-    localStorage.setItem('hesmb_patients', JSON.stringify(patients));
+    // Only save settings to local storage, NOT patients
     localStorage.setItem('hesmb_users', JSON.stringify(users));
     localStorage.setItem('sva_hospital_name', hospitalName);
     localStorage.setItem('sva_bg_image', bgImage);
@@ -195,26 +282,57 @@ const App: React.FC = () => {
     localStorage.setItem('sva_report_email', reportEmail);
     localStorage.setItem('sva_patient_days', patientDays.toString());
     localStorage.setItem('sva_atb_costs', JSON.stringify(atbCosts));
-    setLastSaved(new Date());
-  }, [patients, users, hospitalName, bgImage, loginBgImage, reportEmail, patientDays, atbCosts]);
+  }, [users, hospitalName, bgImage, loginBgImage, reportEmail, patientDays, atbCosts]);
 
-  const handleLogin = () => { };
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
   };
 
-  const handleUpdatePatient = useCallback((p: Patient) => {
-    setPatients(prev => prev.map(old => old.id === p.id ? p : old));
-  }, []);
-
-  const handleAddPatient = useCallback((p: Patient) => {
+  const handleAddPatient = async (p: Patient) => {
+    // Optimistic update
     setPatients(prev => [p, ...prev]);
-  }, []);
 
-  const handleDeletePatient = useCallback((id: string) => {
+    const dbPayload = mapPatientToDb(p);
+    const { error } = await supabase.from('pacientes').insert([dbPayload]);
+
+    if (error) {
+      console.error('Error adding patient:', error);
+      alert(`Erro ao salvar paciente no servidor: ${error.message} - ${error.details || ''}`);
+      fetchPatients(); // Revert on error
+    }
+  };
+
+  const handleUpdatePatient = async (p: Patient) => {
+    // Optimistic
+    setPatients(prev => prev.map(old => old.id === p.id ? p : old));
+
+    const dbPayload = mapPatientToDb(p);
+    // Don't remove ID, used for matching
+
+    const { error } = await supabase.from('pacientes').update(dbPayload).eq('id', p.id);
+
+    if (error) {
+      console.error('Error updating patient:', error);
+      alert('Erro ao atualizar paciente!');
+      fetchPatients();
+    }
+  };
+
+  const handleDeletePatient = async (id: string) => {
+    if (!window.confirm("Confirmar exclusão deste paciente do banco de dados?")) return;
+
+    // Optimistic
     setPatients(prev => prev.filter(p => p.id !== id));
-  }, []);
+
+    const { error } = await supabase.from('pacientes').delete().eq('id', id);
+
+    if (error) {
+      console.error('Error deleting patient:', error);
+      alert('Erro ao excluir paciente!');
+      fetchPatients();
+    }
+  };
 
   const handleAddUser = useCallback((u: User) => {
     setUsers(prev => [...prev, u]);
