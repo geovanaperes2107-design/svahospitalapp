@@ -15,7 +15,8 @@ import {
   ThumbsUp,
   ThumbsDown,
   CheckCircle2,
-  XCircle
+  XCircle,
+  Trash2
 } from 'lucide-react';
 import { Patient, UserRole, AntibioticStatus, InfectoStatus, Antibiotic, HistoryEntry, TreatmentType, IncisionRelation, MedicationCategory } from '../types';
 import { SECTORS, ANTIBIOTICS_LIST, FREQUENCY_OPTIONS, MEDICATION_LISTS } from '../constants';
@@ -275,6 +276,20 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
           <button onClick={() => setShowMenu(!showMenu)} className="p-2 bg-white rounded-xl border border-slate-200 text-slate-400 hover:text-slate-800 transition-colors" title="Ver Detalhes">
             <MoreVertical size={18} />
           </button>
+
+          {!isInfectoPanel && (
+            <button
+              onClick={() => {
+                if (window.confirm(`Deseja realmente excluir o paciente ${patient.name}? Esta ação não pode ser desfeita.`)) {
+                  onDelete(patient.id);
+                }
+              }}
+              className="p-2 bg-red-50 text-red-500 rounded-xl border border-red-100 hover:bg-red-500 hover:text-white transition-all shadow-sm"
+              title="Excluir Paciente"
+            >
+              <Trash2 size={18} />
+            </button>
+          )}
         </div>
       </div>
 
