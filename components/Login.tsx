@@ -93,18 +93,28 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
           // Normalize the CPF for lookup
           const formattedCpf = formatCpf(cleanInput);
 
+          console.log('Iniciando busca por CPF:', { formattedCpf, cleanInput });
+
           // Lookup email by CPF (trying both formatted and unformatted to be safe)
+          // Usando aspas duplas para evitar problemas com pontos e traços no filtro .or
           const { data: profiles, error: profileError } = await supabase
             .from('profiles')
             .select('email')
-            .or(`cpf.eq.${formattedCpf},cpf.eq.${cleanInput}`)
+            .or(`cpf.eq."${formattedCpf}",cpf.eq."${cleanInput}"`)
             .maybeSingle();
 
-          if (profileError || !profiles) {
-            console.error('Profile lookup error:', profileError);
-            throw new Error('CPF não encontrado no sistema. Verifique os dados ou contate o administrador.');
+          if (profileError) {
+            console.error('Erro na busca de perfil:', profileError);
+            throw new Error(`Erro ao buscar usuário: ${profileError.message}`);
           }
+
+          if (!profiles) {
+            console.warn('Perfil não encontrado para o CPF:', formattedCpf);
+            throw new Error('Este CPF não está cadastrado. Por favor, crie uma conta primeiro.');
+          }
+
           emailToLogin = profiles.email;
+          console.log('E-mail encontrado para login:', emailToLogin);
         }
 
         const { error } = await supabase.auth.signInWithPassword({
@@ -112,10 +122,15 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
           password,
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erro de autenticação Supabase:', error);
+          throw error;
+        }
+
         onLoginSuccess();
       }
     } catch (err: any) {
+      console.error('Erro capturado no handleLogin:', err);
       setError(err.message || 'Erro de autenticação. Tente novamente.');
     } finally {
       setLoading(false);
