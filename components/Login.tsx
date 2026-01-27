@@ -93,29 +93,30 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
           // Normalize the CPF for lookup
           const formattedCpf = formatCpf(cleanInput);
 
-          console.log('Iniciando busca por CPF:', { formattedCpf, cleanInput });
+          console.log('Lookup debug:', { formattedCpf, cleanInput });
 
-          // Lookup email by CPF (trying both formatted and unformatted to be safe)
-          // Usando aspas duplas para evitar problemas com pontos e traços no filtro .or
+          // Lookup email by CPF (trying both formatted and unformatted)
+          // Removing quotes around values as they can be misinterpreted by PostgREST
           const { data: profiles, error: profileError } = await supabase
             .from('profiles')
             .select('email')
-            .or(`cpf.eq."${formattedCpf}",cpf.eq."${cleanInput}"`)
+            .or(`cpf.eq.${formattedCpf},cpf.eq.${cleanInput}`)
             .maybeSingle();
 
           if (profileError) {
-            console.error('Erro na busca de perfil:', profileError);
-            throw new Error(`Erro ao buscar usuário: ${profileError.message}`);
+            console.error('Database error during lookup:', profileError);
+            throw new Error(`Erro ao buscar CPF: ${profileError.message}`);
           }
 
           if (!profiles) {
-            console.warn('Perfil não encontrado para o CPF:', formattedCpf);
-            throw new Error('Este CPF não está cadastrado. Por favor, crie uma conta primeiro.');
+            console.warn('CPF not found in profiles table:', formattedCpf);
+            throw new Error('Este CPF não está cadastrado. Por favor, crie uma conta primeiro ou verifique se o CPF está correto.');
           }
 
           emailToLogin = profiles.email;
-          console.log('E-mail encontrado para login:', emailToLogin);
         }
+
+        console.log('Tentando login para:', emailToLogin);
 
         const { error } = await supabase.auth.signInWithPassword({
           email: emailToLogin,
