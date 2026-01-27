@@ -123,7 +123,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
   };
 
   return (
-    <div className="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-300">
+    <div className="max-w-3xl mx-auto bg-white dark:bg-[#1e293b] rounded-3xl shadow-xl overflow-hidden border border-slate-100 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-300">
       <div className="bg-[#1e293b] p-6 text-white flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-emerald-500 rounded-xl shadow-lg"><UserPlus size={20} /></div>
@@ -138,50 +138,50 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
       <form onSubmit={handleSubmit} className="p-6 space-y-5 text-left">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="col-span-2 space-y-1.5">
-            <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Nome Completo *</label>
-            <input required type="text" className="w-full bg-slate-50 border border-slate-200 px-3 py-2.5 rounded-xl font-bold text-xs focus:ring-4 focus:ring-emerald-50 focus:border-emerald-500 outline-none uppercase shadow-inner"
+            <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Nome Completo *</label>
+            <input required type="text" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs focus:ring-4 focus:ring-emerald-50 dark:focus:ring-emerald-900/20 focus:border-emerald-500 outline-none uppercase shadow-inner text-slate-900 dark:text-white"
               value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Nome do paciente" />
           </div>
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Nascimento *</label>
-            <input required type="date" className="w-full bg-slate-50 border border-slate-200 px-3 py-2.5 rounded-xl font-bold text-xs focus:ring-4 focus:ring-emerald-50 focus:border-emerald-500 outline-none shadow-inner"
+            <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Nascimento *</label>
+            <input required type="date" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs focus:ring-4 focus:ring-emerald-50 dark:focus:ring-emerald-900/20 focus:border-emerald-500 outline-none shadow-inner text-slate-900 dark:text-white"
               value={formData.birthDate} onChange={e => setFormData({ ...formData, birthDate: e.target.value })} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Leito</label>
-            <input type="text" className="w-full bg-slate-50 border border-slate-200 px-3 py-2.5 rounded-xl font-bold text-xs focus:ring-4 focus:ring-emerald-50 focus:border-emerald-500 outline-none shadow-inner uppercase"
+            <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Leito</label>
+            <input type="text" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs focus:ring-4 focus:ring-emerald-50 dark:focus:ring-emerald-900/20 focus:border-emerald-500 outline-none shadow-inner uppercase text-slate-900 dark:text-white"
               value={formData.bed} onChange={e => setFormData({ ...formData, bed: e.target.value })} placeholder="L-01" />
           </div>
           <div className="col-span-2 space-y-1.5">
-            <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Setor / Unidade</label>
-            <select className="w-full bg-slate-50 border border-slate-200 px-3 py-2.5 rounded-xl font-bold text-xs focus:ring-4 focus:ring-emerald-50 focus:border-emerald-500 outline-none shadow-inner appearance-none"
+            <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Setor / Unidade</label>
+            <select className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs focus:ring-4 focus:ring-emerald-50 dark:focus:ring-emerald-900/20 focus:border-emerald-500 outline-none shadow-inner appearance-none text-slate-900 dark:text-white"
               value={formData.sector} onChange={e => setFormData({ ...formData, sector: e.target.value })}>
-              {SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
+              {SECTORS.map(s => <option key={s} value={s} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{s}</option>)}
             </select>
           </div>
           <div className="col-span-1 space-y-1.5">
-            <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Tipo Internação</label>
+            <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Tipo Internação</label>
             <div className="flex gap-1.5">
               <button type="button" disabled={formData.sector === 'Centro Cirúrgico'} onClick={() => setFormData({ ...formData, treatmentType: TreatmentType.TERAPEUTICO })}
-                className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase border transition-all ${formData.treatmentType === TreatmentType.TERAPEUTICO ? 'bg-slate-900 text-white border-slate-900 shadow-lg' : 'bg-white border-slate-200 text-slate-400'}`}>
+                className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase border transition-all ${formData.treatmentType === TreatmentType.TERAPEUTICO ? 'bg-slate-900 dark:bg-white dark:text-slate-900 text-white border-slate-900 shadow-lg' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500'}`}>
                 Terap.
               </button>
               <button type="button" onClick={() => setFormData({ ...formData, treatmentType: TreatmentType.PROFILATICO })}
-                className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase border transition-all ${formData.treatmentType === TreatmentType.PROFILATICO ? 'bg-slate-900 text-white border-slate-900 shadow-lg' : 'bg-white border-slate-200 text-slate-400'}`}>
+                className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase border transition-all ${formData.treatmentType === TreatmentType.PROFILATICO ? 'bg-slate-900 dark:bg-white dark:text-slate-900 text-white border-slate-900 shadow-lg' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500'}`}>
                 Prof.
               </button>
             </div>
           </div>
           <div className="col-span-1 space-y-1.5">
-            <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Qtd. Medicamentos</label>
-            <select className="w-full bg-slate-50 border border-slate-200 px-3 py-2.5 rounded-xl font-bold text-xs focus:ring-4 focus:ring-emerald-50 focus:border-emerald-500 outline-none shadow-inner appearance-none"
+            <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Qtd. Medicamentos</label>
+            <select className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs focus:ring-4 focus:ring-emerald-50 dark:focus:ring-emerald-900/20 focus:border-emerald-500 outline-none shadow-inner appearance-none text-slate-900 dark:text-white"
               value={formData.numAtb} onChange={e => handleNumAtbChange(parseInt(e.target.value))}>
-              {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} Med{n !== 1 ? 's' : ''}</option>)}
+              {[1, 2, 3, 4, 5].map(n => <option key={n} value={n} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{n} Med{n !== 1 ? 's' : ''}</option>)}
             </select>
           </div>
           <div className="col-span-4 space-y-1.5">
-            <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Diagnóstico Principal</label>
-            <textarea className="w-full bg-slate-50 border border-slate-200 px-3 py-2.5 rounded-xl font-bold text-xs focus:ring-4 focus:ring-emerald-50 focus:border-emerald-500 outline-none h-20 resize-none leading-relaxed shadow-inner"
+            <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Diagnóstico Principal</label>
+            <textarea className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs focus:ring-4 focus:ring-emerald-50 dark:focus:ring-emerald-900/20 focus:border-emerald-500 outline-none h-20 resize-none leading-relaxed shadow-inner text-slate-900 dark:text-white"
               value={formData.diagnosis} onChange={e => setFormData({ ...formData, diagnosis: e.target.value })} placeholder="Descreva o quadro clínico e diagnóstico..." />
           </div>
         </div>
@@ -193,55 +193,55 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
 
           <div className="space-y-4">
             {atbs.map((atb, idx) => (
-              <div key={atb.id} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-4 relative shadow-sm">
+              <div key={atb.id} className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-4 relative shadow-sm">
                 <div className="absolute -top-3 left-4 bg-emerald-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase shadow-md">Medicamento {idx + 1}</div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
                   <div className="col-span-2 space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-slate-400">Nome do ATB</label>
-                    <select required className="w-full bg-white border border-slate-200 px-3 py-2.5 rounded-xl font-bold text-xs outline-none focus:border-emerald-500 shadow-sm"
+                    <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500">Nome do ATB</label>
+                    <select required className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs outline-none focus:border-emerald-500 shadow-sm text-slate-900 dark:text-white"
                       value={atb.name} onChange={e => updateAtb(idx, { name: e.target.value })}>
-                      <option value="">Selecione o medicamento...</option>
-                      {atb.category && MEDICATION_LISTS[atb.category].map(a => <option key={a} value={a}>{a}</option>)}
+                      <option value="" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Selecione o medicamento...</option>
+                      {atb.category && MEDICATION_LISTS[atb.category].map(a => <option key={a} value={a} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{a}</option>)}
                     </select>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-slate-400">Dose</label>
-                    <input required type="text" className="w-full bg-white border border-slate-200 px-3 py-2.5 rounded-xl font-bold text-xs outline-none focus:border-emerald-500 shadow-sm"
+                    <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500">Dose</label>
+                    <input required type="text" className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs outline-none focus:border-emerald-500 shadow-sm text-slate-900 dark:text-white"
                       value={atb.dose} onChange={e => updateAtb(idx, { dose: e.target.value })} placeholder="Ex: 1g, 500mg" />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-slate-400">Freqüência</label>
-                    <select disabled={formData.sector === 'Centro Cirúrgico'} className="w-full bg-white border border-slate-200 px-3 py-2.5 rounded-xl font-bold text-xs outline-none disabled:bg-slate-50 shadow-sm"
+                    <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500">Freqüência</label>
+                    <select disabled={formData.sector === 'Centro Cirúrgico'} className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs outline-none disabled:bg-slate-50 dark:disabled:bg-slate-900/50 shadow-sm text-slate-900 dark:text-white"
                       value={atb.frequency} onChange={e => updateAtb(idx, { frequency: e.target.value })}>
-                      {FREQUENCY_OPTIONS.map(f => <option key={f} value={f}>{f}</option>)}
+                      {FREQUENCY_OPTIONS.map(f => <option key={f} value={f} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{f}</option>)}
                     </select>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-slate-400">Duração (Dias)</label>
-                    <select disabled={formData.sector === 'Centro Cirúrgico'} className="w-full bg-white border border-slate-200 px-3 py-2.5 rounded-xl font-bold text-xs outline-none disabled:bg-slate-50 shadow-sm"
+                    <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500">Duração (Dias)</label>
+                    <select disabled={formData.sector === 'Centro Cirúrgico'} className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs outline-none disabled:bg-slate-50 dark:disabled:bg-slate-900/50 shadow-sm text-slate-900 dark:text-white"
                       value={atb.durationDays} onChange={e => updateAtb(idx, { durationDays: e.target.value as any })}>
-                      {DURATION_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                      {DURATION_OPTIONS.map(d => <option key={d} value={d} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{d}</option>)}
                     </select>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-slate-400">Via</label>
-                    <select required className="w-full bg-white border border-slate-200 px-3 py-2.5 rounded-xl font-bold text-xs outline-none focus:border-emerald-500 shadow-sm"
+                    <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500">Via</label>
+                    <select required className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs outline-none focus:border-emerald-500 shadow-sm text-slate-900 dark:text-white"
                       value={atb.route} onChange={e => updateAtb(idx, { route: e.target.value })}>
-                      <option value="EV">EV (Intravenosa)</option>
-                      <option value="ORAL">Oral</option>
-                      <option value="IM">IM (Intramuscular)</option>
-                      <option value="SC">SC (Subcutânea)</option>
+                      <option value="EV" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">EV (Intravenosa)</option>
+                      <option value="ORAL" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Oral</option>
+                      <option value="IM" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">IM (Intramuscular)</option>
+                      <option value="SC" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">SC (Subcutânea)</option>
                     </select>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-slate-400">Data de Início</label>
-                    <input type="date" className="w-full bg-white border border-slate-200 px-3 py-2.5 rounded-xl font-bold text-xs outline-none shadow-sm"
+                    <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500">Data de Início</label>
+                    <input type="date" className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs outline-none shadow-sm text-slate-900 dark:text-white"
                       value={atb.startDate} onChange={e => updateAtb(idx, { startDate: e.target.value })} />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-slate-400">Horários</label>
-                    <input type="text" className="w-full bg-white border border-slate-200 px-3 py-2.5 rounded-xl font-bold text-xs outline-none shadow-sm"
+                    <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500">Horários</label>
+                    <input type="text" className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs outline-none shadow-sm text-slate-900 dark:text-white"
                       value={atb.times?.join(', ')} onChange={e => updateAtb(idx, { times: e.target.value.split(',').map(t => t.trim()).filter(t => t !== '') })} placeholder="Ex: 08:00, 16:00" />
                   </div>
                 </div>

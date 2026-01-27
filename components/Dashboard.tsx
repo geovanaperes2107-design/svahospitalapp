@@ -195,7 +195,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
   };
 
   return (
-    <div className={`flex h-screen w-full transition-colors duration-300 ${isDarkMode ? 'bg-[#0f172a] text-slate-100' : 'bg-slate-50 text-slate-900'} overflow-hidden`}>
+    <div className={`flex h-screen w-full transition-colors duration-300 ${isDarkMode ? 'dark bg-[#0f172a] text-slate-100' : 'bg-slate-50 text-slate-900'} overflow-hidden`}>
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} role={user.role} patients={patients} onLogout={onLogout} canManageUsers={user.role === UserRole.ADMINISTRADOR} />
 
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabaseClient';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
+import PasswordReset from './components/PasswordReset';
 import { UserRole, Patient, User, AntibioticStatus } from './types';
 import { INITIAL_PATIENTS } from './data/mockData';
 import { format } from 'date-fns';
@@ -14,6 +15,7 @@ import autoTable from 'jspdf-autotable';
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [recoverySession, setRecoverySession] = useState(false);
 
   const [hospitalName, setHospitalName] = useState(() => {
     return localStorage.getItem('sva_hospital_name') || 'Hospital Estadual de São Luis de Montes Belos - HSLMB';
@@ -26,8 +28,11 @@ const App: React.FC = () => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
+      if (event === 'PASSWORD_RECOVERY') {
+        setRecoverySession(true);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -314,7 +319,7 @@ const App: React.FC = () => {
 
     if (error) {
       console.error('Error updating patient:', error);
-      alert('Erro ao atualizar paciente!');
+      alert(`Erro ao atualizar paciente: ${error.message} - ${error.details || ''}`);
       fetchPatients();
     }
   };
@@ -329,7 +334,7 @@ const App: React.FC = () => {
 
     if (error) {
       console.error('Error deleting patient:', error);
-      alert('Erro ao excluir paciente!');
+      alert(`Erro ao excluir paciente: ${error.message} - ${error.details || ''}`);
       fetchPatients();
     }
   };
@@ -353,7 +358,13 @@ const App: React.FC = () => {
     });
   }, []);
 
-  if (!session) return <Login onLoginSuccess={() => { }} bgImage={loginBgImage} />;
+  if (recoverySession) {
+    return <PasswordReset onSuccess={() => setRecoverySession(false)} />;
+  }
+
+  if (!session) {
+    return <Login onLoginSuccess={fetchPatients} bgImage={loginBgImage} />;
+  }
 
   // Mock user for now if session exists but user object is not fully hydrated from DB
   const currentUser = user || users.find(u => u.email === session?.user?.email) || {

@@ -7,7 +7,7 @@ import {
   TrendingDown, BarChart3, PieChart, Users, Syringe, Hospital, BadgeCheck, AlertCircle
 } from 'lucide-react';
 import { Patient, AntibioticStatus, IncisionRelation, TreatmentType, InfectoStatus, MedicationCategory } from '../types';
-import { DDD_MAP, SECTORS } from '../constants';
+import { DDD_MAP, SECTORS, ANTIBIOTICS_LIST } from '../constants';
 import { calculateEndDate, getDaysRemaining, getATBDay } from '../utils';
 
 interface ReportsProps {
@@ -106,12 +106,10 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
 
   const categoryFilter = MedicationCategory.ANTIMICROBIANO;
 
-  // Lista única de ATBs para filtro
+  // Lista única de ATBs para filtro (usando a lista global do sistema)
   const allAtbs = useMemo(() => {
-    const set = new Set<string>();
-    patients.forEach(p => p.antibiotics.forEach(a => set.add(a.name)));
-    return Array.from(set).sort();
-  }, [patients]);
+    return [...ANTIBIOTICS_LIST].sort();
+  }, []);
 
   const filteredPatients = useMemo(() => {
     return patients.filter(p => {
@@ -299,11 +297,22 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
         p.name, p.bed, p.sector, a.name, a.dose, a.frequency, a.startDate, getATBDay(a.startDate), a.status, p.infectoStatus
       ])
     );
-    let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+
+    // Configura o separador para ponto e vírgula (padrão Excel Brasil)
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(";"))
+      .join("\n");
+
+    // Adiciona o BOM (Byte Order Mark) para UTF-8 para o Excel abrir com acentos corretos
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
     const link = document.createElement("a");
-    link.setAttribute("href", encodeURI(csvContent));
+    link.setAttribute("href", url);
     link.setAttribute("download", `relatorio_atb_${filterMonth}.csv`);
-    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   // CARD COMPONENT
@@ -334,18 +343,18 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full md:w-auto">
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Período (Mês)</label>
+              <label className="text-xs font-black text-slate-600 uppercase tracking-widest">Período (Mês)</label>
               <input type="month" className="w-full bg-slate-800 text-white px-5 py-3 rounded-2xl text-sm font-bold outline-none border border-slate-700 focus:border-blue-500 transition-all" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Setor</label>
+              <label className="text-xs font-black text-slate-600 uppercase tracking-widest">Setor</label>
               <select className="w-full bg-slate-800 text-white px-5 py-3 rounded-2xl text-sm font-bold outline-none border border-slate-700 focus:border-blue-500 transition-all appearance-none" value={sectorFilter} onChange={e => setSectorFilter(e.target.value)}>
                 <option>Todos os Setores</option>
                 {SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Antibiótico</label>
+              <label className="text-xs font-black text-slate-600 uppercase tracking-widest">Antibiótico</label>
               <select className="w-full bg-slate-800 text-white px-5 py-3 rounded-2xl text-sm font-bold outline-none border border-slate-700 focus:border-blue-500 transition-all appearance-none" value={atbFilter} onChange={e => setAtbFilter(e.target.value)}>
                 <option>Todos os ATBs</option>
                 {allAtbs.map(a => <option key={a} value={a}>{a}</option>)}
@@ -383,28 +392,28 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
             <h3 className="text-xs font-black uppercase text-slate-500 flex items-center gap-1.5"><Eye size={14} /> Todos os pacientes em uso ativo de ATB</h3>
             <div className="bg-white rounded-[2rem] border border-slate-100 shadow-md overflow-hidden">
               <table className="w-full text-left">
-                <thead className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b">
-                  <tr><th className="px-6 py-3">Paciente</th><th className="px-6 py-3">Nasc.</th><th className="px-6 py-3">Setor</th><th className="px-6 py-3">ATB</th><th className="px-6 py-3">Dose</th><th className="px-6 py-3">Freq/Hor</th><th className="px-6 py-3 text-center">Dias</th><th className="px-6 py-3 text-center">Ciclo</th><th className="px-6 py-3 text-center">Venc.</th></tr>
+                <thead className="bg-slate-100 text-slate-700 text-[11px] font-black uppercase tracking-widest border-b-2 border-slate-200">
+                  <tr><th className="px-6 py-4">Paciente</th><th className="px-6 py-4">Nasc.</th><th className="px-6 py-4">Setor</th><th className="px-6 py-4">ATB</th><th className="px-6 py-4">Dose</th><th className="px-6 py-4">Freq/Hor</th><th className="px-6 py-4 text-center">Dias</th><th className="px-6 py-4 text-center">Ciclo</th><th className="px-6 py-4 text-center">Venc.</th></tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-[10px]">
                   {filteredPatients.filter(p => p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)).map(p =>
                     p.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO).map(a => {
                       const remaining = getDaysRemaining(calculateEndDate(a.startDate, a.durationDays));
                       return (
-                        <tr key={`${p.id}-${a.id}`} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="px-6 py-3 font-bold text-slate-800 leading-tight">
-                            <span className="text-[10px] font-black block">{p.name}</span>
-                            <span className="text-slate-400 text-[8px] uppercase font-black">Leito: {p.bed}</span>
+                        <tr key={`${p.id}-${a.id}`} className="hover:bg-slate-100/80 transition-colors border-b border-slate-100">
+                          <td className="px-6 py-4 font-bold text-slate-900 leading-tight">
+                            <span className="text-[11px] font-black block">{p.name}</span>
+                            <span className="text-slate-600 text-[9px] uppercase font-black">Leito: {p.bed}</span>
                           </td>
-                          <td className="px-6 py-3 text-slate-500">{p.birthDate}</td>
-                          <td className="px-6 py-3 text-slate-600 uppercase font-black text-[10px]">{p.sector}</td>
-                          <td className="px-6 py-3 font-black text-blue-600 text-[10px] leading-tight">{a.name}</td>
-                          <td className="px-6 py-3 font-black">{a.dose}</td>
-                          <td className="px-6 py-3 leading-tight font-bold">
+                          <td className="px-6 py-4 text-slate-700 font-bold">{p.birthDate}</td>
+                          <td className="px-6 py-4 text-slate-800 uppercase font-black text-[11px]">{p.sector}</td>
+                          <td className="px-6 py-4 font-black text-blue-700 text-[11px] leading-tight">{a.name}</td>
+                          <td className="px-6 py-4 font-black text-slate-900">{a.dose}</td>
+                          <td className="px-6 py-4 leading-tight font-black text-slate-800">
                             <span className="block">{a.frequency}</span>
-                            <span className="text-slate-400 text-[8px] font-black">{a.times?.join('/')}</span>
+                            <span className="text-slate-600 text-[9px] font-black">{a.times?.join('/')}</span>
                           </td>
-                          <td className="px-6 py-3 font-black text-xs text-center">{a.durationDays}d</td>
+                          <td className="px-6 py-4 font-black text-sm text-center text-slate-900">{a.durationDays}d</td>
                           <td className="px-6 py-3 text-center"><span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-xl font-black text-[9px]">{getATBDay(a.startDate)}º</span></td>
                           <td className="px-6 py-3 text-center"><span className={`px-3 py-1 rounded-xl font-black text-[9px] ${remaining <= 0 ? 'bg-red-100 text-red-700' : remaining <= 2 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{remaining <= 0 ? 'VENC' : `${remaining}d`}</span></td>
                         </tr>
@@ -431,43 +440,43 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
-                <h4 className="text-xs font-black uppercase text-slate-400 mb-4 tracking-widest leading-none">Perfil de Tratamento</h4>
+                <h4 className="text-sm font-black uppercase text-slate-600 mb-4 tracking-widest leading-none">Perfil de Tratamento</h4>
                 <div className="flex gap-3">
-                  <div className="flex-1 bg-blue-50 p-4 rounded-2xl text-center">
-                    <p className="text-3xl font-black text-blue-600 leading-none">{stats.therapeutic}</p>
-                    <p className="text-[10px] font-bold text-blue-400 uppercase leading-none mt-2">Terapêutico</p>
+                  <div className="flex-1 bg-blue-50 p-4 rounded-2xl text-center border border-blue-100">
+                    <p className="text-4xl font-black text-blue-700 leading-none">{stats.therapeutic}</p>
+                    <p className="text-[10px] font-black text-blue-500 uppercase leading-none mt-2">Terapêutico</p>
                   </div>
-                  <div className="flex-1 bg-amber-50 p-4 rounded-2xl text-center">
-                    <p className="text-3xl font-black text-amber-600 leading-none">{stats.prophylactic}</p>
-                    <p className="text-[10px] font-bold text-amber-400 uppercase leading-none mt-2">Profilático</p>
+                  <div className="flex-1 bg-amber-50 p-4 rounded-2xl text-center border border-amber-100">
+                    <p className="text-4xl font-black text-amber-700 leading-none">{stats.prophylactic}</p>
+                    <p className="text-[10px] font-black text-amber-500 uppercase leading-none mt-2">Profilático</p>
                   </div>
                 </div>
               </div>
 
               <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
-                <h4 className="text-xs font-black uppercase text-slate-400 mb-4 tracking-widest leading-none">Via de Administração</h4>
+                <h4 className="text-sm font-black uppercase text-slate-600 mb-4 tracking-widest leading-none">Via de Administração</h4>
                 <div className="flex gap-3">
-                  <div className="flex-1 bg-emerald-50 p-4 rounded-2xl text-center">
-                    <p className="text-3xl font-black text-emerald-600 leading-none">{stats.oral}</p>
-                    <p className="text-[10px] font-bold text-emerald-400 uppercase leading-none mt-2">Oral</p>
+                  <div className="flex-1 bg-emerald-50 p-4 rounded-2xl text-center border border-emerald-100">
+                    <p className="text-4xl font-black text-emerald-700 leading-none">{stats.oral}</p>
+                    <p className="text-[10px] font-black text-emerald-500 uppercase leading-none mt-2">Oral</p>
                   </div>
-                  <div className="flex-1 bg-purple-50 p-4 rounded-2xl text-center">
-                    <p className="text-3xl font-black text-purple-600 leading-none">{stats.iv}</p>
-                    <p className="text-[10px] font-bold text-purple-400 uppercase leading-none mt-2">EV</p>
+                  <div className="flex-1 bg-purple-50 p-4 rounded-2xl text-center border border-purple-100">
+                    <p className="text-4xl font-black text-purple-700 leading-none">{stats.iv}</p>
+                    <p className="text-[10px] font-black text-purple-500 uppercase leading-none mt-2">EV</p>
                   </div>
                 </div>
               </div>
 
               <div className="bg-red-50 p-5 rounded-3xl border border-red-100 shadow-sm">
-                <h4 className="text-xs font-black uppercase text-red-500 mb-4 flex items-center gap-2 tracking-widest leading-none"><AlertTriangle size={14} /> Alertas Críticos</h4>
+                <h4 className="text-sm font-black uppercase text-red-600 mb-4 flex items-center gap-2 tracking-widest leading-none"><AlertTriangle size={14} /> Alertas Críticos</h4>
                 <div className="space-y-3">
                   <div className="flex justify-between text-[11px] leading-none uppercase">
-                    <span className="font-black text-slate-600 mb-1">ATB Vencidos</span>
-                    <span className="font-black text-white bg-red-600 px-2 py-1 rounded-lg text-sm">{stats.vencidos}</span>
+                    <span className="font-black text-slate-700 mb-1">ATB Vencidos</span>
+                    <span className="font-black text-white bg-red-600 px-3 py-1 rounded-lg text-sm shadow-md">{stats.vencidos}</span>
                   </div>
                   <div className="flex justify-between text-[11px] leading-none uppercase">
-                    <span className="font-black text-slate-600 mb-1">Uso Prolongado</span>
-                    <span className="font-black text-white bg-amber-500 px-2 py-1 rounded-lg text-sm">{stats.prolonged}</span>
+                    <span className="font-black text-slate-700 mb-1">Uso Prolongado</span>
+                    <span className="font-black text-white bg-amber-500 px-3 py-1 rounded-lg text-sm shadow-md">{stats.prolonged}</span>
                   </div>
                 </div>
               </div>
@@ -487,7 +496,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
             </div>
 
             <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
-              <h4 className="text-sm font-black uppercase text-slate-400 mb-4 tracking-widest leading-none">ATB Iniciados Sem Avaliação</h4>
+              <h4 className="text-sm font-black uppercase text-slate-600 mb-4 tracking-widest leading-none">ATB Iniciados Sem Avaliação</h4>
               <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                 {censoStats.semAvaliacao.map(p => (
                   <div key={p.id} className="flex justify-between items-center bg-amber-50 px-4 py-3 rounded-xl text-sm border border-amber-100/50">
@@ -501,10 +510,10 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
             </div>
 
             <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm no-print-break">
-              <h4 className="text-sm font-black uppercase text-slate-400 mb-4 tracking-widest leading-none">Panorama Geral: Pacientes em Terapia Antimicrobiana ({censoStats.todosIniciados.length})</h4>
+              <h4 className="text-sm font-black uppercase text-slate-600 mb-4 tracking-widest leading-none">Panorama Geral: Pacientes em Terapia Antimicrobiana ({censoStats.todosIniciados.length})</h4>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
-                  <thead className="bg-slate-50 text-slate-400 text-[9px] font-black uppercase tracking-widest border-b">
+                  <thead className="bg-slate-100 text-slate-700 text-[10px] font-black uppercase tracking-widest border-b-2">
                     <tr>
                       <th className="px-4 py-2">Paciente / Leito</th>
                       <th className="px-4 py-2">Setor</th>
@@ -515,22 +524,22 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-[10px]">
                     {censoStats.todosIniciados.map(p => (
-                      <tr key={p.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-2 leading-tight">
-                          <span className="font-bold text-slate-800 block text-xs">{p.name}</span>
-                          <span className="text-[9px] text-slate-400 uppercase">Leito: {p.bed}</span>
+                      <tr key={p.id} className="hover:bg-slate-100/50 transition-colors border-b border-slate-100">
+                        <td className="px-4 py-3 leading-tight">
+                          <span className="font-black text-slate-900 block text-sm">{p.name}</span>
+                          <span className="text-[10px] text-slate-600 uppercase font-bold">Leito: {p.bed}</span>
                         </td>
-                        <td className="px-4 py-2 uppercase font-black text-slate-500 text-[9px]">{p.sector}</td>
-                        <td className="px-4 py-2 font-black text-blue-600 leading-tight">
+                        <td className="px-4 py-3 uppercase font-black text-slate-700 text-[10px]">{p.sector}</td>
+                        <td className="px-4 py-3 font-black text-blue-700 leading-tight text-[11px]">
                           {p.antibiotics.filter(a => a.category === MedicationCategory.ANTIMICROBIANO).map(a => a.name).join(', ')}
                         </td>
-                        <td className="px-4 py-2 text-center text-slate-600 font-bold">
+                        <td className="px-4 py-3 text-center text-slate-800 font-black text-[11px]">
                           {p.antibiotics[0]?.startDate ? new Date(p.antibiotics[0].startDate).toLocaleDateString('pt-BR') : '-'}
                         </td>
                         <td className="px-4 py-2 text-center">
                           <span className={`px-2 py-1 rounded-lg font-black uppercase text-[8px] ${p.infectoStatus === InfectoStatus.AUTORIZADO ? 'bg-emerald-100 text-emerald-700' :
-                              p.infectoStatus === InfectoStatus.NAO_AUTORIZADO ? 'bg-red-100 text-red-700' :
-                                'bg-amber-100 text-amber-700'
+                            p.infectoStatus === InfectoStatus.NAO_AUTORIZADO ? 'bg-red-100 text-red-700' :
+                              'bg-amber-100 text-amber-700'
                             }`}>
                             {p.infectoStatus}
                           </span>
@@ -580,18 +589,18 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
 
             {/* PLANILHA DE DIAGNÓSTICOS REGISTRADOS */}
             <div className="bg-white rounded-3xl border border-slate-100 shadow-md overflow-hidden">
-              <h4 className="text-sm font-black uppercase text-slate-400 p-6 border-b flex items-center gap-3 leading-none tracking-widest bg-slate-50/50"><Stethoscope size={18} /> Detalhamento de Diagnósticos e Terapias ({epidemiologyStats.allDiagnoses.length})</h4>
+              <h4 className="text-sm font-black uppercase text-slate-600 p-6 border-b flex items-center gap-3 leading-none tracking-widest bg-slate-100/50"><Stethoscope size={18} /> Detalhamento de Diagnósticos e Terapias ({epidemiologyStats.allDiagnoses.length})</h4>
               <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
                 <table className="w-full text-left">
-                  <thead className="bg-slate-50 text-slate-400 text-xs font-black uppercase tracking-widest border-b sticky top-0 z-10">
+                  <thead className="bg-slate-100 text-slate-700 text-xs font-black uppercase tracking-widest border-b-2 sticky top-0 z-10">
                     <tr><th className="px-6 py-4">Paciente</th><th className="px-6 py-4 text-center">Setor</th><th className="px-6 py-4">Diagnóstico Principal</th><th className="px-6 py-4">Esquema ATB</th></tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-[13px]">
                     {epidemiologyStats.allDiagnoses.map((d, i) => (
-                      <tr key={i} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-6 py-4 font-black text-slate-800 uppercase text-sm leading-tight">{d.patient}</td>
-                        <td className="px-6 py-4 text-slate-500 uppercase font-black text-center"><span className="bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 text-[11px]">{d.sector}</span></td>
-                        <td className="px-6 py-4 text-slate-700 font-bold max-w-sm leading-relaxed" title={d.diagnosis}>{d.diagnosis}</td>
+                      <tr key={i} className="hover:bg-slate-100/50 transition-colors border-b border-slate-50">
+                        <td className="px-6 py-4 font-black text-slate-900 uppercase text-sm leading-tight">{d.patient}</td>
+                        <td className="px-6 py-4 text-slate-700 uppercase font-black text-center"><span className="bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 text-[11px]">{d.sector}</span></td>
+                        <td className="px-6 py-4 text-slate-800 font-black max-w-sm leading-relaxed" title={d.diagnosis}>{d.diagnosis}</td>
                         <td className="px-6 py-4">
                           <div className="flex flex-wrap gap-2">
                             {d.atbs.map((atb, j) => (<span key={j} className="bg-blue-600 text-white px-3 py-1.5 rounded-xl text-[10px] font-black uppercase shadow-sm tracking-tight">{atb}</span>))}
@@ -612,7 +621,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
             <div className="grid grid-cols-3 gap-4">
               <Card label="DDD Geral" value={dddStats.totalDDD} icon={<Scale size={16} />} color="blue" />
               <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none block mb-3">Pacientes-Dia</label>
+                <label className="text-[11px] font-black text-slate-600 uppercase tracking-widest leading-none block mb-3">Pacientes-Dia</label>
                 <input type="number" className="w-full bg-slate-50 border border-slate-200 p-3 rounded-2xl font-black text-xl outline-none focus:border-blue-500 transition-all text-center"
                   value={patientDays} onChange={e => setPatientDays(parseInt(e.target.value) || 1)} />
               </div>
@@ -620,24 +629,24 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
             </div>
 
             <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
-              <h4 className="text-sm font-black uppercase text-slate-400 mb-4 tracking-widest leading-none">Pareto de Consumo (Top 80%)</h4>
+              <h4 className="text-sm font-black uppercase text-slate-600 mb-4 tracking-widest leading-none">Pareto de Consumo (Top 80%)</h4>
               <div className="space-y-1.5 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                 {dddStats.pareto.map((item, i) => (
-                  <div key={item.name} className={`flex justify-between items-center px-4 py-3 rounded-xl text-sm transition-all ${item.isPareto ? 'bg-blue-50 font-black' : 'bg-slate-50 text-slate-500'}`}>
+                  <div key={item.name} className={`flex justify-between items-center px-4 py-3 rounded-xl text-sm transition-all border ${item.isPareto ? 'bg-blue-50 border-blue-100 font-black text-blue-900' : 'bg-slate-50 border-slate-100 text-slate-700'}`}>
                     <span className="truncate mr-4">{i + 1}. {item.name}</span>
-                    <span className={`shrink-0 ${item.isPareto ? 'text-blue-600' : 'text-slate-400'}`}>{item.ddd.toFixed(2)} DDD</span>
+                    <span className={`shrink-0 ${item.isPareto ? 'text-blue-700' : 'text-slate-500'}`}>{item.ddd.toFixed(2)} DDD</span>
                   </div>
                 ))}
               </div>
             </div>
 
             <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
-              <h4 className="text-sm font-black uppercase text-slate-400 mb-4 tracking-widest leading-none">Referência: DDD Definida pela OMS (g/dia)</h4>
+              <h4 className="text-sm font-black uppercase text-slate-600 mb-4 tracking-widest leading-none">Referência: DDD Definida pela OMS (g/dia)</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-[11px]">
                 {Object.entries(DDD_OMS_VALUES).map(([name, value]) => (
                   <div key={name} className="bg-slate-50 p-3 rounded-xl flex justify-between items-center border border-slate-100 leading-none">
-                    <span className="font-black text-slate-600 truncate pr-2 uppercase text-[10px]">{name}</span>
-                    <span className="font-black text-white bg-blue-500 px-2 py-1 rounded-lg shadow-sm">{value}g</span>
+                    <span className="font-black text-slate-800 truncate pr-2 uppercase text-[10px]">{name}</span>
+                    <span className="font-black text-white bg-blue-600 px-2 py-1 rounded-lg shadow-sm border border-blue-700">{value}g</span>
                   </div>
                 ))}
               </div>
@@ -654,15 +663,15 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                 <p className="text-4xl font-black leading-none tracking-tighter">R$ {financeStats.totalCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
               </div>
               <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col">
-                <p className="text-xs font-black uppercase text-slate-400 mb-4 tracking-[0.2em] leading-none">Top 4 - Consumo por Setor</p>
+                <p className="text-xs font-black uppercase text-slate-600 mb-4 tracking-[0.2em] leading-none">Top 4 - Consumo por Setor</p>
                 <div className="space-y-3 flex-1 justify-center flex flex-col">
                   {(Object.entries(financeStats.costBySector) as [string, number][])
                     .sort((a, b) => b[1] - a[1])
                     .slice(0, 4)
                     .map(([sector, cost]) => (
                       <div key={sector} className="flex justify-between text-sm items-center">
-                        <span className="font-black text-slate-600 truncate mr-4 uppercase tracking-tight">{sector}</span>
-                        <span className="font-black text-white bg-emerald-500 px-3 py-1 rounded-xl shadow-lg border-b-2 border-emerald-700">R$ {cost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                        <span className="font-black text-slate-800 truncate mr-4 uppercase tracking-tight">{sector}</span>
+                        <span className="font-black text-white bg-emerald-600 px-3 py-1 rounded-xl shadow-lg border-b-2 border-emerald-800">R$ {cost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                       </div>
                     ))}
                 </div>
@@ -671,16 +680,16 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
 
             {/* EDITAR VALORES DE ATB */}
             <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
-              <h4 className="text-sm font-black uppercase text-slate-400 mb-6 flex items-center gap-2 leading-none whitespace-nowrap"><DollarSign size={16} /> Personalizar Valor Unitário do ATB</h4>
+              <h4 className="text-sm font-black uppercase text-slate-600 mb-6 flex items-center gap-2 leading-none whitespace-nowrap"><DollarSign size={16} /> Personalizar Valor Unitário do ATB</h4>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 max-h-80 overflow-y-auto pr-3 custom-scrollbar">
                 {allAtbs.map(atb => (
-                  <div key={atb} className="flex items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 transition-all focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:bg-white">
-                    <span className="text-[11px] font-black text-slate-700 flex-1 truncate leading-tight uppercase" title={atb}>{atb}</span>
+                  <div key={atb} className="flex items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 transition-all focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:bg-white focus-within:border-emerald-500">
+                    <span className="text-[11px] font-black text-slate-900 flex-1 truncate leading-tight uppercase" title={atb}>{atb}</span>
                     <div className="flex items-center shrink-0">
-                      <span className="text-xs font-black text-slate-400 mr-1.5">R$</span>
+                      <span className="text-xs font-black text-slate-600 mr-1.5">R$</span>
                       <input
                         type="number"
-                        className="w-20 bg-white border border-slate-200 px-3 py-2 rounded-xl text-xs font-black text-right shadow-inner outline-none focus:border-emerald-500"
+                        className="w-20 bg-white border-2 border-slate-200 px-3 py-2 rounded-xl text-xs font-black text-right shadow-inner outline-none focus:border-emerald-600 text-slate-900"
                         value={atbCosts[atb.toUpperCase()] || ''}
                         onChange={e => updateAtbCost(atb.toUpperCase(), parseFloat(e.target.value) || 0)}
                         placeholder="0,00"
@@ -693,14 +702,14 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
 
             {/* CUSTO POR ATB */}
             <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
-              <h4 className="text-sm font-black uppercase text-slate-400 mb-4 leading-none tracking-widest">Custo por ATB (Acumulado no Mês)</h4>
+              <h4 className="text-sm font-black uppercase text-slate-600 mb-4 leading-none tracking-widest">Custo por ATB (Acumulado no Mês)</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {(Object.entries(financeStats.costByAtb) as [string, { qty: number; cost: number }][])
                   .sort((a, b) => b[1].cost - a[1].cost)
                   .map(([atb, data]) => (
-                    <div key={atb} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:shadow-md transition-all">
-                      <p className="text-[9px] font-black text-slate-500 truncate mb-2 uppercase tracking-tighter" title={atb}>{atb}</p>
-                      <p className="text-xl font-black text-emerald-600 leading-none">R$ {data.cost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                    <div key={atb} className="bg-slate-50 p-4 rounded-2xl border border-slate-200 hover:shadow-md transition-all hover:bg-white">
+                      <p className="text-[9px] font-black text-slate-700 truncate mb-2 uppercase tracking-tighter" title={atb}>{atb}</p>
+                      <p className="text-xl font-black text-emerald-700 leading-none">R$ {data.cost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                       <div className="mt-3 flex items-center justify-between">
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{data.qty} Prescrições</span>
                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
@@ -711,21 +720,21 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
             </div>
 
             <div className="bg-white rounded-3xl shadow-md border border-slate-100 overflow-hidden">
-              <h4 className="text-sm font-black uppercase text-slate-400 p-6 border-b leading-none tracking-widest bg-slate-50/50">Planilha de Auditoria Financeira Detalhada</h4>
+              <h4 className="text-sm font-black uppercase text-slate-600 p-6 border-b leading-none tracking-widest bg-slate-100/50">Planilha de Auditoria Financeira Detalhada</h4>
               <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
                 <table className="w-full text-left">
-                  <thead className="bg-slate-50 text-slate-400 text-xs font-black uppercase tracking-widest border-b sticky top-0 z-10">
+                  <thead className="bg-slate-100 text-slate-700 text-xs font-black uppercase tracking-widest border-b-2 sticky top-0 z-10">
                     <tr><th className="px-6 py-4">Paciente</th><th className="px-6 py-4">Setor</th><th className="px-6 py-4">Antibiótico</th><th className="px-6 py-4 text-center">Tempo Uso</th><th className="px-6 py-4 text-right">Custo Aproximado</th></tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-[13px]">
                     {filteredPatients.map(p =>
                       p.antibiotics.map(a => (
-                        <tr key={`${p.id}-${a.id}`} className="hover:bg-slate-50 transition-colors">
-                          <td className="px-6 py-4 font-black text-slate-800 uppercase text-sm leading-tight">{p.name}</td>
-                          <td className="px-6 py-4 text-slate-500 uppercase font-black text-xs">{p.sector}</td>
-                          <td className="px-6 py-4 font-black text-blue-600 uppercase text-xs">{a.name}</td>
-                          <td className="px-6 py-4 text-center font-bold">{getATBDay(a.startDate)}º Dia</td>
-                          <td className="px-6 py-4 font-black text-emerald-600 text-right text-base">R$ {((atbCosts[a.name.toUpperCase()] || 50) * a.durationDays).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        <tr key={`${p.id}-${a.id}`} className="hover:bg-slate-100 transition-colors border-b border-slate-50">
+                          <td className="px-6 py-4 font-black text-slate-900 uppercase text-sm leading-tight">{p.name}</td>
+                          <td className="px-6 py-4 text-slate-800 uppercase font-black text-xs">{p.sector}</td>
+                          <td className="px-6 py-4 font-black text-blue-800 uppercase text-xs">{a.name}</td>
+                          <td className="px-6 py-4 text-center font-black text-slate-800">{getATBDay(a.startDate)}º Dia</td>
+                          <td className="px-6 py-4 font-black text-emerald-700 text-right text-base">R$ {((atbCosts[a.name.toUpperCase()] || 50) * a.durationDays).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                         </tr>
                       ))
                     )}
@@ -755,7 +764,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
 
             <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden">
               <table className="w-full text-left">
-                <thead className="bg-slate-50 text-slate-400 text-[11px] font-black uppercase tracking-widest border-b">
+                <thead className="bg-slate-100 text-slate-700 text-[12px] font-black uppercase tracking-widest border-b-2">
                   <tr><th className="px-8 py-5">Paciente / Leito</th><th className="px-8 py-5">Setor</th><th className="px-8 py-5">Antibiótico</th><th className="px-8 py-5 text-center">Status</th></tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-sm">
@@ -765,11 +774,11 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                       const med = p.antibiotics.find(a => a.status === AntibioticStatus.EM_USO);
                       const remaining = med ? getDaysRemaining(calculateEndDate(med.startDate, med.durationDays)) : 0;
                       return (
-                        <tr key={p.id} className="hover:bg-red-50">
-                          <td className="px-1.5 py-1 leading-tight"><span className="font-bold text-slate-800">{p.name}</span><br /><span className="text-[6px] text-slate-400 uppercase">Leito {p.bed}</span></td>
-                          <td className="px-1.5 py-1 text-slate-600 uppercase text-[7px]">{p.sector}</td>
-                          <td className="px-1.5 py-1 font-black text-red-600 leading-tight">{med?.name}</td>
-                          <td className="px-1.5 py-1 text-center"><span className={`px-1.5 py-0.5 rounded font-black text-[7px] ${remaining <= 0 ? 'bg-red-600 text-white' : 'bg-amber-100 text-amber-700'}`}>{remaining <= 0 ? 'VENC' : 'HOJE'}</span></td>
+                        <tr key={p.id} className="hover:bg-red-50 border-b border-red-50">
+                          <td className="px-4 py-3 leading-tight"><span className="font-black text-slate-900 text-sm">{p.name}</span><br /><span className="text-[10px] text-slate-600 uppercase font-black">Leito {p.bed}</span></td>
+                          <td className="px-4 py-3 text-slate-800 uppercase font-black text-xs">{p.sector}</td>
+                          <td className="px-4 py-3 font-black text-red-700 leading-tight text-sm">{med?.name}</td>
+                          <td className="px-4 py-3 text-center"><span className={`px-3 py-1 rounded-lg font-black text-xs ${remaining <= 0 ? 'bg-red-600 text-white' : 'bg-amber-100 text-amber-800'}`}>{remaining <= 0 ? 'VENCIDO' : 'VENCE HOJE'}</span></td>
                         </tr>
                       );
                     })}
@@ -804,7 +813,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     <div className="bg-white p-2 rounded shadow-xs border border-slate-100">
-                      <h4 className="text-[8px] font-black uppercase text-slate-400 mb-1.5 leading-none">Administração</h4>
+                      <h4 className="text-[10px] font-black uppercase text-slate-600 mb-1.5 leading-none">Administração</h4>
                       <div className="flex gap-1.5">
                         <div className="flex-1 bg-emerald-50 p-2 rounded text-center">
                           <p className="text-base font-black text-emerald-600 leading-none">{ccStats.beforeRate}%</p>
@@ -818,7 +827,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                     </div>
 
                     <div className="bg-white p-2 rounded shadow-xs border border-slate-100">
-                      <h4 className="text-[8px] font-black uppercase text-slate-400 mb-1.5 leading-none">Tratamento</h4>
+                      <h4 className="text-[10px] font-black uppercase text-slate-600 mb-1.5 leading-none">Tratamento</h4>
                       <div className="flex gap-1.5">
                         <div className="flex-1 bg-amber-50 p-2 rounded text-center">
                           <p className="text-base font-black text-amber-600 leading-none">{ccStats.profilatico}</p>
@@ -851,15 +860,15 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                   {/* LISTA DE PACIENTES CC */}
                   <div className="bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden">
                     <table className="w-full text-left">
-                      <thead className="bg-slate-50 text-slate-400 text-[11px] font-black uppercase tracking-widest border-b">
+                      <thead className="bg-slate-100 text-slate-700 text-[11px] font-black uppercase tracking-widest border-b-2">
                         <tr><th className="px-6 py-5">Paciente</th><th className="px-6 py-5 text-center">Leito</th><th className="px-6 py-5">ATB Prescrito</th><th className="px-6 py-5 text-center">Tipo</th><th className="px-6 py-5 text-center">Incisão/Rel.</th></tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-[13px]">
                         {filteredCcPatients.map(p => (
-                          <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-6 py-5 font-black text-slate-800 uppercase text-sm">{p.name}</td>
-                            <td className="px-6 py-5 text-slate-600 font-black text-center"><span className="bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">{p.bed}</span></td>
-                            <td className="px-6 py-5 font-black text-purple-600 uppercase italic">{p.antibiotics.map(a => a.name).join(', ')}</td>
+                          <tr key={p.id} className="hover:bg-slate-100 transition-colors border-b border-slate-50">
+                            <td className="px-6 py-5 font-black text-slate-900 uppercase text-sm">{p.name}</td>
+                            <td className="px-6 py-5 text-slate-800 font-black text-center"><span className="bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">{p.bed}</span></td>
+                            <td className="px-6 py-5 font-black text-purple-700 uppercase italic opacity-90">{p.antibiotics.map(a => a.name).join(', ')}</td>
                             <td className="px-6 py-5 text-center"><span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase border shadow-sm ${p.treatmentType === TreatmentType.PROFILATICO ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>{p.treatmentType === TreatmentType.PROFILATICO ? 'Profilático' : 'Terapêutico'}</span></td>
                             <td className="px-6 py-5 text-center">
                               <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase shadow-sm border ${p.incisionRelation === IncisionRelation.BEFORE_60 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
@@ -888,7 +897,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
       </div>
 
       <div className="pt-8 border-t border-slate-200 text-center pb-6 no-print">
-        <p className="text-xs font-black text-slate-400 uppercase tracking-[0.4em] opacity-50">© 2025 SVA — Sistema de Vigilância Ativa e Farmacêutica</p>
+        <p className="text-xs font-black text-slate-600 dark:text-slate-500 uppercase tracking-[0.4em] opacity-80">© 2025 SVA — Sistema de Vigilância Ativa e Farmacêutica</p>
       </div>
     </div>
   );

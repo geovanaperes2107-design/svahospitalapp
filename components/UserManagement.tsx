@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { UserPlus, Shield, Key, Trash2, Edit2, Search, X, CheckCircle2, Building2, Save, Image as ImageIcon, Upload, Monitor, Lock, Unlock, MailCheck, AlertCircle } from 'lucide-react';
+import { UserPlus, Shield, Key, Trash2, Edit2, Search, X, CheckCircle2, Building2, Save, Image as ImageIcon, Upload, Monitor, Lock, Unlock, MailCheck, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { supabase } from '../supabaseClient';
 import { User, UserRole } from '../types';
 
 interface UserManagementProps {
@@ -30,6 +31,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, currentUser, onA
     const [tempHospitalName, setTempHospitalName] = useState(hospitalName);
     const [showEmailToast, setShowEmailToast] = useState<{ name: string, email: string } | null>(null);
     const [showSettings, setShowSettings] = useState(false);
+    const [visiblePasswordId, setVisiblePasswordId] = useState<string | null>(null);
+    const [showModalPassword, setShowModalPassword] = useState(false);
 
     const bgInputRef = useRef<HTMLInputElement>(null);
     const loginBgInputRef = useRef<HTMLInputElement>(null);
@@ -71,16 +74,31 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, currentUser, onA
         localStorage.removeItem('sva_user_form_draft'); // Limpa rascunho
     };
 
-    const handleResetPassword = () => {
+    const handleResetPassword = async () => {
         if (!newResetPassword || !resetPasswordUser) return;
-        onUpdateUser({
-            ...resetPasswordUser,
-            password: newResetPassword,
-            needsPasswordChange: true
-        });
-        alert(`Senha de ${resetPasswordUser.name} resetada! O acesso será solicitado na próxima entrada.`);
-        setResetPasswordUser(null);
-        setNewResetPassword('');
+
+        try {
+            // Update Auth if it's the current user
+            if (resetPasswordUser.id === currentUser.id || resetPasswordUser.email === currentUser.email) {
+                const { error: authError } = await supabase.auth.updateUser({
+                    password: newResetPassword
+                });
+                if (authError) throw authError;
+            }
+
+            // Always update profiles/local state
+            onUpdateUser({
+                ...resetPasswordUser,
+                password: newResetPassword,
+                needsPasswordChange: true
+            });
+
+            alert(`Senha de ${resetPasswordUser.name} alterada com sucesso! O acesso deverá ser feito com a nova senha.`);
+            setResetPasswordUser(null);
+            setNewResetPassword('');
+        } catch (err: any) {
+            alert(`Erro ao alterar senha: ${err.message || 'Erro desconhecido'}`);
+        }
     };
 
     const handleDelete = (e: React.MouseEvent, u: User) => {
@@ -128,8 +146,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, currentUser, onA
                         <button
                             onClick={() => setShowSettings(!showSettings)}
                             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-[9px] font-black uppercase transition-all ${showSettings
-                                    ? 'bg-slate-800 text-white shadow-lg'
-                                    : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'
+                                ? 'bg-slate-800 text-white shadow-lg'
+                                : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'
                                 }`}
                         >
                             <Building2 size={16} /> Configurações
@@ -306,8 +324,23 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, currentUser, onA
                             <h3 className="text-lg font-black uppercase text-slate-800">Alterar Senha</h3>
                             <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">Colaborador: {resetPasswordUser.name}</p>
                         </div>
-                        <input autoFocus type="password" placeholder="Nova Senha" className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-xl font-bold text-xs"
-                            value={newResetPassword} onChange={e => setNewResetPassword(e.target.value)} />
+                        <div className="relative">
+                            <input
+                                autoFocus
+                                type={showModalPassword ? "text" : "password"}
+                                placeholder="Nova Senha"
+                                className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-xl font-bold text-xs pr-12"
+                                value={newResetPassword}
+                                onChange={e => setNewResetPassword(e.target.value)}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowModalPassword(!showModalPassword)}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                                {showModalPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
+                        </div>
                         <div className="flex gap-2">
                             <button onClick={() => setResetPasswordUser(null)} className="flex-1 py-3 bg-slate-100 rounded-xl text-[10px] font-black uppercase text-slate-500">Voltar</button>
                             <button onClick={handleResetPassword} className="flex-1 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase shadow-lg">Confirmar</button>
@@ -354,9 +387,18 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, currentUser, onA
                                             {u.role}
                                         </span>
                                     </td>
-                                    <td className="px-8 py-5 text-slate-400 font-black">{u.cpf}</td>
+                                    <td className="px-8 py-5 text-slate-400 font-black">
+                                        {visiblePasswordId === u.id ? u.password : (u.cpf || '***')}
+                                    </td>
                                     <td className="px-8 py-5 text-right space-x-2">
                                         <button onClick={() => { setEditingUser(u); setFormData(u); setShowForm(true); }} className="p-2.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-all border border-slate-200" title="Editar"><Edit2 size={16} /></button>
+                                        <button
+                                            onClick={() => setVisiblePasswordId(visiblePasswordId === u.id ? null : u.id)}
+                                            className={`p-2.5 rounded-xl transition-all border ${visiblePasswordId === u.id ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}
+                                            title="Ver Senha"
+                                        >
+                                            {visiblePasswordId === u.id ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
                                         <button onClick={() => setResetPasswordUser(u)} className="p-2.5 bg-yellow-50 text-yellow-600 rounded-xl hover:bg-yellow-100 transition-all border border-yellow-100" title="Alterar Senha"><Key size={16} /></button>
                                         <button
                                             type="button"
