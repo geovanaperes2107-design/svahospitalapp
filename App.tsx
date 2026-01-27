@@ -29,7 +29,11 @@ const App: React.FC = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state change event:', event, !!session);
       setSession(session);
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+      }
       if (event === 'PASSWORD_RECOVERY') {
         setRecoverySession(true);
       }

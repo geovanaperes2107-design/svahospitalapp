@@ -26,7 +26,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
   };
 
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>, isLoginField: boolean) => {
-    const value = formatCpf(e.target.value);
+    const rawValue = e.target.value;
+    const value = formatCpf(rawValue);
     if (isLoginField) setEmailOrCpf(value);
     else setCpf(value);
   };
@@ -84,18 +85,25 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
         setMode('LOGIN');
       } else {
         // Login Flow
-        let emailToLogin = emailOrCpf;
-        const isCpf = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(emailOrCpf);
+        let emailToLogin = emailOrCpf.trim();
+        const cleanInput = emailOrCpf.replace(/\D/g, '');
+        const isCpfMatch = cleanInput.length === 11 && /^\d+$/.test(cleanInput);
 
-        if (isCpf) {
-          // Lookup email by CPF
+        if (isCpfMatch) {
+          // Normalize the CPF for lookup
+          const formattedCpf = formatCpf(cleanInput);
+
+          // Lookup email by CPF (trying both formatted and unformatted to be safe)
           const { data: profiles, error: profileError } = await supabase
             .from('profiles')
             .select('email')
-            .eq('cpf', emailOrCpf)
-            .single();
+            .or(`cpf.eq.${formattedCpf},cpf.eq.${cleanInput}`)
+            .maybeSingle();
 
-          if (profileError || !profiles) throw new Error('CPF não encontrado ou erro ao buscar usuário.');
+          if (profileError || !profiles) {
+            console.error('Profile lookup error:', profileError);
+            throw new Error('CPF não encontrado no sistema. Verifique os dados ou contate o administrador.');
+          }
           emailToLogin = profiles.email;
         }
 
@@ -183,8 +191,13 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
                   value={emailOrCpf}
                   onChange={(e) => {
                     const val = e.target.value;
-                    if (/^\d/.test(val)) handleCpfChange(e, true);
-                    else setEmailOrCpf(val);
+                    const digitsOnly = val.replace(/\D/g, '');
+                    // Se começar com número e tiver mais que um dígito, trata como CPF
+                    if (/^\d/.test(val)) {
+                      handleCpfChange(e, true);
+                    } else {
+                      setEmailOrCpf(val);
+                    }
                   }}
                   className="w-full bg-slate-50 border border-slate-200 pl-12 pr-4 py-4 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300"
                   placeholder={mode === 'SIGNUP' ? "seu@email.com" : "seu@email.com ou CPF"}

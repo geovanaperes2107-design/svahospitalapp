@@ -35,7 +35,8 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
       startDate: new Date().toISOString().split('T')[0],
       durationDays: 7,
       status: AntibioticStatus.EM_USO,
-      times: ['08:00']
+      times: ['08:00'],
+      route: 'EV'
     }];
   });
 
@@ -70,7 +71,8 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
           startDate: new Date().toISOString().split('T')[0],
           durationDays: formData.sector === 'Centro Cirúrgico' ? 1 : 7,
           status: AntibioticStatus.EM_USO,
-          times: ['08:00']
+          times: ['08:00'],
+          route: 'EV'
         });
       }
     } else {
@@ -114,7 +116,8 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
         user: 'Sistema',
         details: 'Paciente cadastrado no sistema.'
       }],
-      antibiotics: atbs as Antibiotic[]
+      antibiotics: atbs as Antibiotic[],
+      procedureDate: formData.sector === 'Centro Cirúrgico' ? (formData.procedureDate || new Date().toISOString().split('T')[0]) : undefined
     };
 
     onAdd(newPatient);
@@ -179,6 +182,13 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
               {[1, 2, 3, 4, 5].map(n => <option key={n} value={n} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{n} Med{n !== 1 ? 's' : ''}</option>)}
             </select>
           </div>
+          {formData.sector === 'Centro Cirúrgico' && (
+            <div className="col-span-1 space-y-1.5 animate-in fade-in slide-in-from-top-2">
+              <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Data do Procedimento</label>
+              <input type="date" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs focus:ring-4 focus:ring-emerald-50 dark:focus:ring-emerald-900/20 focus:border-emerald-500 outline-none shadow-inner text-slate-900 dark:text-white"
+                value={formData.procedureDate || new Date().toISOString().split('T')[0]} onChange={e => setFormData({ ...formData, procedureDate: e.target.value })} />
+            </div>
+          )}
           <div className="col-span-4 space-y-1.5">
             <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Diagnóstico Principal</label>
             <textarea className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs focus:ring-4 focus:ring-emerald-50 dark:focus:ring-emerald-900/20 focus:border-emerald-500 outline-none h-20 resize-none leading-relaxed shadow-inner text-slate-900 dark:text-white"
