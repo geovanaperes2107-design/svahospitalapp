@@ -224,13 +224,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
                   { label: 'Adesão', value: `${stats.adesao}%`, icon: <CheckCircle2 size={20} />, color: 'text-indigo-500' },
                   { label: 'Finalizados', value: stats.finalizados, icon: <ClipboardList size={20} />, color: 'text-slate-600' },
                 ].map((s, i) => (
-                  <div key={i} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between h-36">
+                  <div key={i} className="bg-white dark:bg-slate-800 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col justify-between h-36 transition-colors">
                     <div className="flex justify-between items-start">
-                      <p className="text-xs font-black text-slate-400 uppercase tracking-widest leading-none">{s.label}</p>
-                      <div className={`p-1.5 rounded-2xl bg-slate-50 ${s.color}`}>{React.cloneElement(s.icon as React.ReactElement, { size: 22 })}</div>
+                      <p className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">{s.label}</p>
+                      <div className={`p-1.5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 ${s.color}`}>{React.cloneElement(s.icon as React.ReactElement, { size: 22 })}</div>
                     </div>
                     <div>
-                      <p className="text-4xl font-black text-slate-900 leading-none">{s.value}</p>
+                      <p className="text-4xl font-black text-slate-900 dark:text-white leading-none">{s.value}</p>
                     </div>
                   </div>
                 ))}
@@ -243,12 +243,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {stats.expiredList.slice(0, 6).map(p => (
-                      <div key={p.id} className="bg-white p-5 rounded-3xl border-l-[8px] border-l-red-500 border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between group">
+                      <div key={p.id} className="bg-white dark:bg-slate-800 p-5 rounded-3xl border-l-[8px] border-l-red-500 border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all flex items-center justify-between group">
                         <div className="text-left">
-                          <p className="text-base font-black text-slate-800 uppercase leading-none truncate max-w-[200px]">{p.name}</p>
-                          <p className="text-xs font-bold text-slate-400 mt-2.5 uppercase">Setor: <span className="text-slate-600">{p.sector}</span> | Leito: <span className="text-slate-600">{p.bed}</span></p>
+                          <p className="text-base font-black text-slate-800 dark:text-white uppercase leading-none truncate max-w-[200px]">{p.name}</p>
+                          <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mt-2.5 uppercase">Setor: <span className="text-slate-600 dark:text-slate-300">{p.sector}</span> | Leito: <span className="text-slate-600 dark:text-slate-300">{p.bed}</span></p>
                         </div>
-                        <button onClick={handleNotifyClick} className="p-3 bg-slate-50 text-slate-400 rounded-2xl group-hover:bg-red-50 group-hover:text-red-600 transition-colors">
+                        <button onClick={handleNotifyClick} className="p-3 bg-slate-50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-500 rounded-2xl group-hover:bg-red-50 dark:group-hover:bg-red-900/20 group-hover:text-red-600 transition-colors">
                           <ChevronRight size={24} />
                         </button>
                       </div>
@@ -262,12 +262,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
                   const isSector = SECTORS.includes(item.id);
                   const count = isSector ? stats.sectorCounts[item.id] : 0;
                   return (
-                    <button key={item.id} onClick={() => setActiveTab(item.id)} className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all text-left group">
+                    <button key={item.id} onClick={() => setActiveTab(item.id)} className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all text-left group">
                       <div className={`h-18 ${item.color} p-4 flex justify-between items-center transition-all group-hover:h-20`}>
                         <div className="bg-white/20 p-2 rounded-2xl text-white">{React.cloneElement(item.icon as React.ReactElement, { size: 24 })}</div>
-                        {isSector && <span className="bg-white/95 px-2.5 py-1 rounded-full text-[10px] font-black text-slate-800 shadow-sm">{count} Pct{count !== 1 ? 's' : ''}</span>}
+                        {isSector && <span className="bg-white/95 dark:bg-slate-900/95 px-2.5 py-1 rounded-full text-[10px] font-black text-slate-800 dark:text-slate-200 shadow-sm">{count} Pct{count !== 1 ? 's' : ''}</span>}
                       </div>
-                      <div className="p-4 pt-3"><h3 className="font-black text-slate-800 text-sm uppercase tracking-tighter truncate">{item.label}</h3></div>
+                      <div className="p-4 pt-3"><h3 className="font-black text-slate-800 dark:text-white text-sm uppercase tracking-tighter truncate">{item.label}</h3></div>
                     </button>
                   );
                 })}
@@ -299,13 +299,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
 
           {['finalizados', 'Centro Cirúrgico', 'infectologia', ...SECTORS].includes(activeTab) && (
             <div className="max-w-[1200px] mx-auto space-y-3 text-left animate-in fade-in pb-6">
-              <div className="flex flex-col md:flex-row justify-between items-center no-print bg-white p-8 rounded-[2.5rem] shadow-md border border-slate-100 gap-8">
+              <div className="flex flex-col md:flex-row justify-between items-center no-print bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-md border border-slate-100 dark:border-slate-700 gap-8 transition-colors">
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center gap-8">
                     <div className={`p-5 rounded-[1.5rem] text-white shadow-lg ${MENU_ITEMS.find(m => m.id === activeTab)?.color || 'bg-slate-500'}`}>{React.cloneElement(MENU_ITEMS.find(m => m.id === activeTab)?.icon as React.ReactElement, { size: 36 })}</div>
                     <div>
-                      <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter leading-none">{MENU_ITEMS.find(m => m.id === activeTab)?.label}</h2>
-                      <p className="text-sm font-black text-slate-400 uppercase tracking-widest mt-2 leading-none">Gestão e Monitoramento</p>
+                      <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-none">{MENU_ITEMS.find(m => m.id === activeTab)?.label}</h2>
+                      <p className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-2 leading-none">Gestão e Monitoramento</p>
                     </div>
                   </div>
                   {activeTab === 'Centro Cirúrgico' && (
@@ -339,13 +339,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
                     </div>
                   )}
                   <div className="relative w-full md:w-[450px]">
-                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={24} />
-                    <input type="text" placeholder="Filtrar por nome ou leito..." className="w-full pl-14 pr-8 py-5 bg-slate-50 rounded-2xl font-bold text-base outline-none focus:bg-white border focus:border-blue-400 transition-all shadow-inner" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={24} />
+                    <input type="text" placeholder="Filtrar por nome ou leito..." className="w-full pl-14 pr-8 py-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl font-bold text-base outline-none focus:bg-white dark:focus:bg-slate-800 border border-transparent focus:border-blue-400 dark:focus:border-blue-500 transition-all shadow-inner text-slate-900 dark:text-white" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                   </div>
                 </div>
               </div>
               <div className="flex flex-col gap-4">
-                {sortedPatients.map(p => <PatientCard key={p.id} patient={p} role={user.role} activeTab={activeTab} onUpdate={onUpdatePatient} onDelete={onDeletePatient} />)}
+                {sortedPatients.map(p => <PatientCard key={p.id} patient={p} role={user.role} activeTab={activeTab} onUpdate={onUpdatePatient} onDelete={onDeletePatient} isDarkMode={isDarkMode} />)}
               </div>
             </div>
           )}

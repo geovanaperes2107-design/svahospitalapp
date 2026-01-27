@@ -58,6 +58,16 @@ const App: React.FC = () => {
   });
 
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('sva_dark_mode') === 'true');
+
+  // Sincronização da classe 'dark' no documento para ativação das classes utilitárias do Tailwind
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
+
   const toggleTheme = useCallback(() => {
     setIsDarkMode(prev => {
       const newVal = !prev;

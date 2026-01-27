@@ -134,10 +134,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, currentUser, onA
 
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-2xl font-black text-slate-800 flex items-center gap-2">
-                        <Shield className="text-emerald-600" size={26} /> {currentUser.role === UserRole.ADMINISTRADOR ? 'Controle de Colaboradores' : 'Meu Perfil'}
+                    <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-2">
+                        <Shield className="text-emerald-600 dark:text-emerald-500" size={26} /> {currentUser.role === UserRole.ADMINISTRADOR ? 'Controle de Colaboradores' : 'Meu Perfil'}
                     </h2>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                    <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">
                         {currentUser.role === UserRole.ADMINISTRADOR ? 'Apenas você gerencia quem acessa este sistema' : 'Gerencie seus dados de acesso'}
                     </p>
                 </div>
@@ -146,8 +146,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, currentUser, onA
                         <button
                             onClick={() => setShowSettings(!showSettings)}
                             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-[9px] font-black uppercase transition-all ${showSettings
-                                ? 'bg-slate-800 text-white shadow-lg'
-                                : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'
+                                ? 'bg-slate-800 dark:bg-white text-white dark:text-slate-900 shadow-lg'
+                                : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                                 }`}
                         >
                             <Building2 size={16} /> Configurações
@@ -164,48 +164,48 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, currentUser, onA
 
             {currentUser.role === UserRole.ADMINISTRADOR && showSettings && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-3">
-                        <h3 className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-1.5 tracking-widest">
+                    <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm space-y-3 transition-colors">
+                        <h3 className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 flex items-center gap-1.5 tracking-widest">
                             <Building2 size={14} className="text-emerald-500" /> Unidade Hospitalar
                         </h3>
                         <div className="space-y-3">
                             <input
                                 type="text"
-                                className="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-bold text-sm focus:border-emerald-500 outline-none"
+                                className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 p-3 rounded-xl font-bold text-sm focus:border-emerald-500 outline-none text-slate-900 dark:text-white"
                                 value={hospitalName}
                                 onChange={e => setHospitalName(e.target.value)}
                                 placeholder="Nome da Unidade"
                             />
-                            <p className="text-[8px] font-bold text-slate-400 leading-tight uppercase">Nome da unidade é gravado instantaneamente.</p>
+                            <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 leading-tight uppercase">Nome da unidade é gravado instantaneamente.</p>
                         </div>
                     </div>
 
-                    <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-3">
-                        <h3 className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-1.5 tracking-widest">
+                    <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm space-y-3 transition-colors">
+                        <h3 className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 flex items-center gap-1.5 tracking-widest">
                             <MailCheck size={14} className="text-blue-500" /> Relatórios (E-mail)
                         </h3>
                         <div className="space-y-3">
                             <input
                                 type="email"
-                                className="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-bold text-sm focus:border-emerald-500 outline-none"
+                                className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 p-3 rounded-xl font-bold text-sm focus:border-emerald-500 outline-none text-slate-900 dark:text-white"
                                 value={reportEmail}
                                 onChange={e => setReportEmail(e.target.value)}
                                 placeholder="exemplo@email.com"
                             />
-                            <p className="text-[8px] font-bold text-slate-400 leading-tight uppercase">Configurado para envio mensal automático.</p>
+                            <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 leading-tight uppercase">Configurado para envio mensal automático.</p>
                         </div>
                     </div>
 
-                    <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-3">
-                        <h3 className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-1.5 tracking-widest">
+                    <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm space-y-3 transition-colors">
+                        <h3 className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 flex items-center gap-1.5 tracking-widest">
                             <ImageIcon size={14} className="text-purple-500" /> Personalização
                         </h3>
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1">
-                                <label className="text-[8px] font-black text-slate-400 uppercase ml-1">Painel</label>
-                                <button onClick={() => bgInputRef.current?.click()} className="w-full h-14 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center relative overflow-hidden group">
-                                    {bgImage ? <img src={bgImage} className="absolute inset-0 w-full h-full object-cover opacity-20" /> : <Monitor size={18} className="text-slate-300" />}
-                                    <span className="text-[7px] font-black uppercase text-slate-400 z-10">Fundo</span>
+                                <label className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1">Painel</label>
+                                <button onClick={() => bgInputRef.current?.click()} className="w-full h-14 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center relative overflow-hidden group hover:border-emerald-500 transition-colors">
+                                    {bgImage ? <img src={bgImage} className="absolute inset-0 w-full h-full object-cover opacity-20" /> : <Monitor size={18} className="text-slate-300 dark:text-slate-600" />}
+                                    <span className="text-[7px] font-black uppercase text-slate-400 dark:text-slate-500 z-10">Fundo</span>
                                     <input type="file" ref={bgInputRef} className="hidden" accept="image/*" onChange={e => {
                                         const file = e.target.files?.[0];
                                         if (file) {
@@ -217,10 +217,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, currentUser, onA
                                 </button>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-[8px] font-black text-slate-400 uppercase ml-1">Login</label>
-                                <button onClick={() => loginBgInputRef.current?.click()} className="w-full h-14 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center relative overflow-hidden group">
-                                    {loginBgImage ? <img src={loginBgImage} className="absolute inset-0 w-full h-full object-cover opacity-20" /> : <Key size={18} className="text-slate-300" />}
-                                    <span className="text-[7px] font-black uppercase text-slate-400 z-10">Fundo</span>
+                                <label className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1">Login</label>
+                                <button onClick={() => loginBgInputRef.current?.click()} className="w-full h-14 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center relative overflow-hidden group hover:border-emerald-500 transition-colors">
+                                    {loginBgImage ? <img src={loginBgImage} className="absolute inset-0 w-full h-full object-cover opacity-20" /> : <Key size={18} className="text-slate-300 dark:text-slate-600" />}
+                                    <span className="text-[7px] font-black uppercase text-slate-400 dark:text-slate-500 z-10">Fundo</span>
                                     <input type="file" ref={loginBgInputRef} className="hidden" accept="image/*" onChange={e => {
                                         const file = e.target.files?.[0];
                                         if (file) {
@@ -238,21 +238,21 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, currentUser, onA
 
             {showForm && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4">
-                    <div className="bg-white w-full max-w-xl rounded-[40px] shadow-2xl overflow-hidden border border-slate-100 animate-in zoom-in-95">
-                        <div className="bg-slate-900 p-8 text-white flex justify-between items-center">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-[40px] shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 transition-colors">
+                        <div className="bg-slate-900 dark:bg-slate-950 p-8 text-white flex justify-between items-center">
                             <h3 className="text-xl font-black uppercase tracking-tight">{editingUser ? 'Editar Registro' : 'Novo Registro'}</h3>
                             <button onClick={() => { setShowForm(false); localStorage.removeItem('sva_user_form_draft'); }} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={24} /></button>
                         </div>
                         <form onSubmit={handleSubmit} className="p-8 space-y-6 text-left">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Foto de Perfil (Opcional)</label>
+                                    <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Foto de Perfil (Opcional)</label>
                                     <div className="flex items-center gap-3">
-                                        <button type="button" onClick={() => profilePicRef.current?.click()} className="w-12 h-12 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden hover:border-emerald-500 transition-colors relative group">
+                                        <button type="button" onClick={() => profilePicRef.current?.click()} className="w-12 h-12 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden hover:border-emerald-500 transition-colors relative group bg-slate-50 dark:bg-slate-900">
                                             {formData.photoURL ? (
                                                 <img src={formData.photoURL} className="w-full h-full object-cover" />
                                             ) : (
-                                                <ImageIcon size={18} className="text-slate-300 group-hover:text-emerald-500" />
+                                                <ImageIcon size={18} className="text-slate-300 dark:text-slate-600 group-hover:text-emerald-500" />
                                             )}
                                             <input type="file" ref={profilePicRef} className="hidden" accept="image/*" onChange={e => {
                                                 const file = e.target.files?.[0];
@@ -264,51 +264,51 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, currentUser, onA
                                             }} />
                                         </button>
                                         {formData.photoURL && (
-                                            <button type="button" onClick={() => setFormData(prev => ({ ...prev, photoURL: undefined }))} className="text-[9px] font-black text-red-500 uppercase hover:underline">Remover</button>
+                                            <button type="button" onClick={() => setFormData(prev => ({ ...prev, photoURL: undefined }))} className="text-[9px] font-black text-red-500 dark:text-red-400 uppercase hover:underline">Remover</button>
                                         )}
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Nome Completo</label>
-                                    <input required className="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-bold text-xs"
+                                    <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Nome Completo</label>
+                                    <input required className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 p-3 rounded-xl font-bold text-xs text-slate-900 dark:text-white"
                                         value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value.toUpperCase() })} />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Setor</label>
-                                    <input required className="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-bold text-xs"
+                                    <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Setor</label>
+                                    <input required className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 p-3 rounded-xl font-bold text-xs text-slate-900 dark:text-white"
                                         value={formData.sector || ''} onChange={e => setFormData({ ...formData, sector: e.target.value })} />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[9px] font-black uppercase text-slate-400 ml-1">CPF (Login de Acesso)</label>
-                                    <input required className="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-bold text-xs"
+                                    <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">CPF (Login de Acesso)</label>
+                                    <input required className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 p-3 rounded-xl font-bold text-xs text-slate-900 dark:text-white"
                                         value={formData.cpf || ''} onChange={e => setFormData({ ...formData, cpf: e.target.value })} placeholder="000.000.000-00" />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[9px] font-black uppercase text-slate-400 ml-1">E-mail</label>
-                                    <input required type="email" className="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-bold text-xs"
+                                    <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">E-mail</label>
+                                    <input required type="email" className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 p-3 rounded-xl font-bold text-xs text-slate-900 dark:text-white"
                                         value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Perfil de Acesso</label>
-                                    <select required className="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-bold text-xs"
+                                    <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Perfil de Acesso</label>
+                                    <select required className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 p-3 rounded-xl font-bold text-xs text-slate-900 dark:text-white"
                                         value={formData.role || ''} onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}>
-                                        {Object.values(UserRole).map(r => <option key={r} value={r}>{r}</option>)}
+                                        {Object.values(UserRole).map(r => <option key={r} value={r} className="bg-white dark:bg-slate-800">{r}</option>)}
                                     </select>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Telefone</label>
-                                    <input required className="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-bold text-xs"
+                                    <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Telefone</label>
+                                    <input required className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 p-3 rounded-xl font-bold text-xs text-slate-900 dark:text-white"
                                         value={formData.mobile || ''} onChange={e => setFormData({ ...formData, mobile: e.target.value })} />
                                 </div>
                                 {!editingUser && (
-                                    <div className="md:col-span-2 space-y-1 pt-4 border-t border-slate-100">
-                                        <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Definir Senha Inicial</label>
-                                        <input required type="password" placeholder="Mínimo 4 caracteres" className="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-bold text-xs"
+                                    <div className="md:col-span-2 space-y-1 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                        <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Definir Senha Inicial</label>
+                                        <input required type="password" placeholder="Mínimo 4 caracteres" className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 p-3 rounded-xl font-bold text-xs text-slate-900 dark:text-white"
                                             value={formData.password || ''} onChange={e => setFormData({ ...formData, password: e.target.value })} />
                                     </div>
                                 )}
                             </div>
-                            <button type="submit" className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-xs shadow-xl hover:bg-emerald-700">
+                            <button type="submit" className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-xs shadow-xl hover:bg-emerald-700 transition-all">
                                 {editingUser ? 'Salvar Alterações' : 'Concluir Registro do Colaborador'}
                             </button>
                         </form>
@@ -318,51 +318,51 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, currentUser, onA
 
             {resetPasswordUser && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
-                    <div className="bg-white w-full max-sm rounded-[32px] shadow-2xl p-8 text-center space-y-6 animate-in zoom-in-95">
-                        <div className="mx-auto w-12 h-12 bg-yellow-100 text-yellow-600 rounded-2xl flex items-center justify-center"><Key size={24} /></div>
+                    <div className="bg-white dark:bg-slate-900 w-full max-sm rounded-[32px] shadow-2xl p-8 text-center space-y-6 animate-in zoom-in-95 transition-colors">
+                        <div className="mx-auto w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-500 rounded-2xl flex items-center justify-center"><Key size={24} /></div>
                         <div>
-                            <h3 className="text-lg font-black uppercase text-slate-800">Alterar Senha</h3>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">Colaborador: {resetPasswordUser.name}</p>
+                            <h3 className="text-lg font-black uppercase text-slate-800 dark:text-white">Alterar Senha</h3>
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-1">Colaborador: {resetPasswordUser.name}</p>
                         </div>
                         <div className="relative">
                             <input
                                 autoFocus
                                 type={showModalPassword ? "text" : "password"}
                                 placeholder="Nova Senha"
-                                className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-xl font-bold text-xs pr-12"
+                                className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 p-4 rounded-xl font-bold text-xs pr-12 text-slate-900 dark:text-white outline-none focus:border-yellow-500"
                                 value={newResetPassword}
                                 onChange={e => setNewResetPassword(e.target.value)}
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowModalPassword(!showModalPassword)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                             >
                                 {showModalPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                             </button>
                         </div>
                         <div className="flex gap-2">
-                            <button onClick={() => setResetPasswordUser(null)} className="flex-1 py-3 bg-slate-100 rounded-xl text-[10px] font-black uppercase text-slate-500">Voltar</button>
-                            <button onClick={handleResetPassword} className="flex-1 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase shadow-lg">Confirmar</button>
+                            <button onClick={() => setResetPasswordUser(null)} className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 rounded-xl text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">Voltar</button>
+                            <button onClick={handleResetPassword} className="flex-1 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-[10px] font-black uppercase shadow-lg hover:opacity-90 transition-all">Confirmar</button>
                         </div>
                     </div>
                 </div>
             )}
 
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="p-4 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden transition-colors">
+                <div className="p-4 border-b border-slate-50 dark:border-slate-700 flex items-center justify-between bg-slate-50/30 dark:bg-slate-900/10">
                     <div className="relative max-w-sm w-full">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                        <input type="text" placeholder="Filtrar por nome ou CPF..." className="w-full pl-10 pr-4 py-2.5 bg-white rounded-xl border-2 border-slate-100 focus:border-emerald-500 outline-none font-bold text-xs shadow-sm" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600" size={16} />
+                        <input type="text" placeholder="Filtrar por nome ou CPF..." className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 rounded-xl border-2 border-slate-100 dark:border-slate-700 focus:border-emerald-500 outline-none font-bold text-xs shadow-sm text-slate-900 dark:text-white" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                     </div>
-                    <div className="flex items-center gap-1.5 text-slate-400">
+                    <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500">
                         <AlertCircle size={14} />
                         <span className="text-[8px] font-black uppercase">Dica: Você não pode excluir a si mesma</span>
                     </div>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-[11px] font-bold">
-                        <thead className="bg-slate-50 text-slate-400 uppercase">
+                        <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-500 uppercase">
                             <tr>
                                 <th className="px-8 py-4">Nome / E-mail</th>
                                 <th className="px-8 py-4">Setor</th>
@@ -371,40 +371,40 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, currentUser, onA
                                 <th className="px-8 py-4 text-right">Ações</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                             {filteredUsers.map(u => (
-                                <tr key={u.id} className={`hover:bg-slate-50/50 transition-colors ${u.id === currentUser.id ? 'bg-emerald-50/20' : ''}`}>
+                                <tr key={u.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors ${u.id === currentUser.id ? 'bg-emerald-50/20 dark:bg-emerald-900/10' : ''}`}>
                                     <td className="px-8 py-5">
-                                        <p className="text-slate-800 uppercase font-black">{u.name}</p>
-                                        <p className="text-[9px] text-slate-400 lowercase">{u.email}</p>
+                                        <p className="text-slate-800 dark:text-white uppercase font-black">{u.name}</p>
+                                        <p className="text-[9px] text-slate-400 dark:text-slate-500 lowercase">{u.email}</p>
                                         {u.id === currentUser.id && <span className="text-[8px] bg-emerald-600 text-white px-2 py-0.5 rounded-full uppercase">Sua Conta</span>}
                                     </td>
-                                    <td className="px-8 py-5 uppercase text-slate-500">{u.sector}</td>
+                                    <td className="px-8 py-5 uppercase text-slate-500 dark:text-slate-400">{u.sector}</td>
                                     <td className="px-8 py-5">
-                                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${u.role === UserRole.ADMINISTRADOR ? 'bg-indigo-50 text-indigo-700' :
-                                            u.role === UserRole.VISUALIZADOR ? 'bg-slate-50 text-slate-400' : 'bg-emerald-50 text-emerald-700'
+                                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${u.role === UserRole.ADMINISTRADOR ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' :
+                                            u.role === UserRole.VISUALIZADOR ? 'bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
                                             }`}>
                                             {u.role}
                                         </span>
                                     </td>
-                                    <td className="px-8 py-5 text-slate-400 font-black">
+                                    <td className="px-8 py-5 text-slate-400 dark:text-slate-500 font-black">
                                         {visiblePasswordId === u.id ? u.password : (u.cpf || '***')}
                                     </td>
                                     <td className="px-8 py-5 text-right space-x-2">
-                                        <button onClick={() => { setEditingUser(u); setFormData(u); setShowForm(true); }} className="p-2.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-all border border-slate-200" title="Editar"><Edit2 size={16} /></button>
+                                        <button onClick={() => { setEditingUser(u); setFormData(u); setShowForm(true); }} className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700" title="Editar"><Edit2 size={16} /></button>
                                         <button
                                             onClick={() => setVisiblePasswordId(visiblePasswordId === u.id ? null : u.id)}
-                                            className={`p-2.5 rounded-xl transition-all border ${visiblePasswordId === u.id ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}
+                                            className={`p-2.5 rounded-xl transition-all border ${visiblePasswordId === u.id ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
                                             title="Ver Senha"
                                         >
                                             {visiblePasswordId === u.id ? <EyeOff size={16} /> : <Eye size={16} />}
                                         </button>
-                                        <button onClick={() => setResetPasswordUser(u)} className="p-2.5 bg-yellow-50 text-yellow-600 rounded-xl hover:bg-yellow-100 transition-all border border-yellow-100" title="Alterar Senha"><Key size={16} /></button>
+                                        <button onClick={() => setResetPasswordUser(u)} className="p-2.5 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-500 rounded-xl hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-all border border-yellow-100 dark:border-yellow-900" title="Alterar Senha"><Key size={16} /></button>
                                         <button
                                             type="button"
                                             onClick={(e) => handleDelete(e, u)}
                                             disabled={u.id === currentUser.id}
-                                            className={`p-2.5 rounded-xl transition-all border ${u.id === currentUser.id ? 'bg-slate-50 text-slate-200 border-slate-100 cursor-not-allowed opacity-30' : 'bg-red-50 text-red-600 border-red-100 hover:bg-red-100 active:scale-95'}`}
+                                            className={`p-2.5 rounded-xl transition-all border ${u.id === currentUser.id ? 'bg-slate-50 dark:bg-slate-900 text-slate-200 dark:text-slate-700 border-slate-100 dark:border-slate-800 cursor-not-allowed opacity-30' : 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-100 dark:border-red-900 hover:bg-red-100 dark:hover:bg-red-900/50 active:scale-95'}`}
                                             title={u.id === currentUser.id ? "Auto-exclusão bloqueada" : "Excluir Registro"}
                                         >
                                             <Trash2 size={18} />

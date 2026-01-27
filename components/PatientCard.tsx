@@ -27,9 +27,10 @@ interface PatientCardProps {
   activeTab: string;
   onUpdate: (updatedPatient: Patient) => void;
   onDelete: (id: string) => void;
+  isDarkMode: boolean;
 }
 
-const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onUpdate, onDelete }) => {
+const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onUpdate, onDelete, isDarkMode }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showSectorMenu, setShowSectorMenu] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState<string | null>(null);
@@ -213,13 +214,13 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
     : patient.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO);
 
   return (
-    <div className={`relative rounded-xl mb-3 w-full max-w-5xl mx-auto border transition-all duration-300 shadow-sm ${getCardTheme()}`}>
+    <div className={`relative rounded-xl mb-3 w-full max-w-5xl mx-auto border transition-all duration-300 shadow-sm text-slate-800 ${getCardTheme()}`}>
 
       {/* 🔝 HEADER OTIMIZADO */}
-      <div className="px-4 py-3 flex items-start justify-between border-b border-black/5 bg-white/40 rounded-t-xl">
+      <div className={`px-4 py-3 flex items-start justify-between border-b rounded-t-xl transition-colors ${patient.isEvaluated ? 'border-purple-200 bg-purple-100/50' : 'border-black/5 bg-white/40'}`}>
         <div className="flex gap-4 items-start flex-1 text-left">
           <div className="bg-white px-2 py-1.5 rounded-xl border border-black/5 shadow-sm min-w-[60px] text-center">
-            <span className="text-2xl font-black block leading-none">{patient.bed}</span>
+            <span className="text-2xl font-black block leading-none text-slate-800">{patient.bed}</span>
             <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Leito</span>
           </div>
           <div className="flex-1">
@@ -247,13 +248,13 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
         <div className="flex items-center gap-1.5">
           {!isInfectoPanel && (
             <div className="relative">
-              <button onClick={() => setShowSectorMenu(!showSectorMenu)} className="px-2 py-1 bg-white rounded-lg border border-slate-200 text-[9px] font-black uppercase flex items-center gap-1 hover:bg-slate-50">
+              <button onClick={() => setShowSectorMenu(!showSectorMenu)} className="px-2 py-1 bg-white rounded-lg border border-slate-200 text-[9px] font-black uppercase flex items-center gap-1 hover:bg-slate-50 text-slate-700">
                 {patient.sector} <ChevronDown size={12} />
               </button>
               {showSectorMenu && (
                 <div className="absolute top-full right-0 mt-2 w-64 bg-white shadow-2xl rounded-2xl p-1.5 z-[100] border border-slate-100 flex flex-col gap-1 max-h-80 overflow-y-auto custom-scrollbar">
-                  <div className="px-3 py-2 border-b border-slate-50 mb-1">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Alterar Setor</p>
+                  <div className="px-3 py-2 border-b border-slate-50 dark:border-slate-700 mb-1">
+                    <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Alterar Setor</p>
                   </div>
                   {SECTORS.map(s => (
                     <button key={s} onClick={() => { onUpdate({ ...patient, sector: s }); setShowSectorMenu(false); }} className={`text-left px-4 py-2.5 text-[11px] font-black uppercase hover:bg-slate-50 rounded-xl transition-colors ${patient.sector === s ? 'text-blue-600 bg-blue-50/50' : 'text-slate-600'}`}>
@@ -271,7 +272,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
             </button>
           )}
 
-          <button onClick={() => setShowMenu(!showMenu)} className="p-2 bg-white rounded-xl border border-slate-200 text-slate-400 hover:text-slate-800" title="Ver Detalhes">
+          <button onClick={() => setShowMenu(!showMenu)} className="p-2 bg-white rounded-xl border border-slate-200 text-slate-400 hover:text-slate-800 transition-colors" title="Ver Detalhes">
             <MoreVertical size={18} />
           </button>
         </div>
@@ -288,7 +289,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
           const endDate = format(addDays(parseISO(atb.startDate), atb.durationDays), 'dd/MM/yyyy');
 
           return (
-            <div key={atb.id} className="bg-white/60 rounded-xl p-2 border border-black/5 flex flex-col gap-2 shadow-inner transition-all hover:bg-white/80">
+            <div key={atb.id} className="rounded-xl p-2 border border-black/5 bg-white/60 hover:bg-white/80 transition-all flex flex-col gap-2 shadow-inner">
               <div className="flex justify-between items-center">
                 <div className="text-left flex items-center gap-2.5">
                   <div className="relative">
@@ -309,23 +310,23 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                     )}
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <h4 className="text-[12px] font-black text-slate-800 uppercase tracking-tight">{atb.name}</h4>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Hor: <span className="text-slate-700 font-black">{atb.times.join('/')}</span></p>
+                    <h4 className="text-[13px] font-black text-slate-800 uppercase tracking-tight">{atb.name}</h4>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Hor: <span className="text-slate-700 font-black">{atb.times.join('/')}</span></p>
                   </div>
                 </div>
 
                 {/* AÇÕES */}
                 {!isInfectoPanel && (
                   <div className="flex gap-1.5">
-                    <button onClick={() => { setNewAtb({ ...newAtb, name: atb.name, dose: atb.dose, freq: atb.frequency, times: atb.times.join(', '), duration: atb.durationDays }); setEditMode({ type: 'troca', atbId: atb.id, oldAtbName: atb.name }); }} className="p-1.5 bg-slate-800 text-white rounded-lg shadow hover:scale-105 transition-all" title="Substituir">
+                    <button onClick={() => { setNewAtb({ ...newAtb, name: atb.name, dose: atb.dose, freq: atb.frequency, times: atb.times.join(', '), duration: atb.durationDays }); setEditMode({ type: 'troca', atbId: atb.id, oldAtbName: atb.name }); }} className="p-1.5 bg-slate-800 text-white rounded-lg shadow hover:scale-105 transition-all border border-slate-700" title="Substituir">
                       <Dna size={14} />
                     </button>
                     {!isCC && (
-                      <button onClick={() => { setNewAtb({ ...newAtb, duration: atb.durationDays, times: atb.times.join(', ') }); setEditMode({ type: 'tempo', atbId: atb.id }); }} className="p-1.5 bg-blue-500 text-white rounded-lg shadow hover:scale-105 transition-all" title="Alterar Tempo">
+                      <button onClick={() => { setNewAtb({ ...newAtb, duration: atb.durationDays, times: atb.times.join(', ') }); setEditMode({ type: 'tempo', atbId: atb.id }); }} className="p-1.5 bg-blue-500 dark:bg-blue-600 text-white rounded-lg shadow hover:scale-105 transition-all" title="Alterar Tempo">
                         <Clock size={14} />
                       </button>
                     )}
-                    <button onClick={() => { setNewAtb({ ...newAtb, name: atb.name, dose: atb.dose, freq: atb.frequency, times: atb.times.join(', ') }); setEditMode({ type: 'editar', atbId: atb.id }); }} className="p-1.5 bg-white border border-slate-200 text-slate-400 rounded-lg hover:text-slate-800 shadow-sm" title="Editar">
+                    <button onClick={() => { setNewAtb({ ...newAtb, name: atb.name, dose: atb.dose, freq: atb.frequency, times: atb.times.join(', ') }); setEditMode({ type: 'editar', atbId: atb.id }); }} className="p-1.5 bg-white border border-slate-200 text-slate-400 rounded-lg hover:text-slate-800 shadow-sm transition-colors" title="Editar">
                       <Edit3 size={14} />
                     </button>
                   </div>
@@ -334,12 +335,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
 
               {/* DADOS DE TRATAMENTO */}
               <div className={`grid grid-cols-3 ${isCC ? 'md:grid-cols-5' : 'md:grid-cols-6'} gap-2`}>
-                <div className="bg-white p-1.5 rounded-lg shadow-xs border border-black/5 text-center flex flex-col justify-center">
+                <div className="bg-white p-1.5 rounded-lg shadow-sm border border-black/5 text-center flex flex-col justify-center">
                   <p className="text-[7px] font-black text-slate-400 uppercase leading-none mb-1">Início</p>
                   <p className="text-[11px] font-black text-slate-800 leading-none">{atb.startDate.split('-').reverse().join('/')}</p>
                 </div>
 
-                <div className="bg-white p-1.5 rounded-lg shadow-xs border border-black/5 text-center flex flex-col justify-center">
+                <div className="bg-white p-1.5 rounded-lg shadow-sm border border-black/5 text-center flex flex-col justify-center">
                   <p className="text-[7px] font-black text-slate-400 uppercase leading-none mb-1">Fim Prev.</p>
                   <p className={`text-[11px] font-black leading-none ${isCC ? 'text-purple-600' : 'text-slate-800'}`}>
                     {isCC ? 'INTRAOP' : endDate}
@@ -347,17 +348,17 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                 </div>
 
                 {isCC ? (
-                  <div className="bg-white p-1.5 rounded-lg shadow-xs border border-black/5 text-center flex flex-col justify-center">
+                  <div className="bg-white p-1.5 rounded-lg shadow-sm border border-black/5 text-center flex flex-col justify-center">
                     <p className="text-[7px] font-black text-slate-400 uppercase leading-none mb-1">Freq.</p>
                     <p className="text-[11px] font-black text-slate-800 leading-none uppercase">Dose Única</p>
                   </div>
                 ) : (
                   <>
-                    <div className="bg-white p-1.5 rounded-lg shadow-xs border border-black/5 text-center flex flex-col justify-center">
+                    <div className="bg-white p-1.5 rounded-lg shadow-sm border border-black/5 text-center flex flex-col justify-center">
                       <p className="text-[7px] font-black text-slate-400 uppercase leading-none mb-1">Trat.</p>
                       <p className="text-[11px] font-black text-slate-800 leading-none">{atb.durationDays}D</p>
                     </div>
-                    <div className="bg-white p-1.5 rounded-lg shadow-xs border border-black/5 text-center flex flex-col justify-center">
+                    <div className="bg-white p-1.5 rounded-lg shadow-sm border border-black/5 text-center flex flex-col justify-center">
                       <p className="text-[7px] font-black text-slate-400 uppercase leading-none mb-1">Freq.</p>
                       <p className="text-[11px] font-black text-slate-800 leading-none">{atb.frequency}</p>
                     </div>
@@ -365,7 +366,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                 )}
 
                 {!isCC && (
-                  <div className="bg-white p-1.5 rounded-lg shadow-xs border border-black/5 text-center flex flex-col justify-center">
+                  <div className="bg-white p-1.5 rounded-lg shadow-sm border border-black/5 text-center flex flex-col justify-center">
                     <p className="text-[7px] font-black text-slate-400 uppercase leading-none mb-1">Venc.</p>
                     <p className={`text-[11px] font-black leading-none ${isVencido ? 'text-red-600' : daysRemaining <= 2 ? 'text-amber-600' : 'text-emerald-600'}`}>
                       {isVencido ? 'VENCIDO' : `${daysRemaining}D`}
@@ -373,7 +374,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                   </div>
                 )}
 
-                <div className="bg-white p-1 rounded-lg shadow-xs border border-black/5 text-center flex flex-col items-center justify-center">
+                <div className="bg-white p-1 rounded-lg shadow-sm border border-black/5 text-center flex flex-col items-center justify-center">
                   <p className="text-[7px] font-black text-slate-400 uppercase leading-none mb-1">Dia</p>
                   <input type="number" disabled={isCC || isInfectoPanel} className="w-full bg-slate-50 border border-slate-200 rounded text-center text-[11px] font-black py-0 outline-none focus:border-blue-500 text-slate-800 disabled:opacity-50" value={isCC ? 1 : displayDay} onChange={e => {
                     const val = parseInt(e.target.value) || 1;
@@ -416,8 +417,6 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                   onChange={e => {
                     const newVal = e.target.value;
                     setTempInfectoComment(newVal);
-                    // Debounce is not used here but could be added if performance issues arise.
-                    // For now, call onUpdate with a new object.
                     onUpdate({ ...patient, infectoComment: newVal });
                   }}
                   placeholder="Orientações técnicas..."
@@ -450,31 +449,31 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
         {showMenu && (
           <div className="mt-6 space-y-6 animate-in slide-in-from-top-3 duration-300 text-left border-t border-black/5 pt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white/80 rounded-2xl p-6 border border-black/5 shadow-sm space-y-4">
+              <div className="bg-white/80 p-6 border border-black/5 shadow-sm rounded-2xl space-y-4">
                 <label className="text-sm font-black uppercase text-slate-400 flex items-center gap-2"><MessageSquare size={18} className="text-blue-500" /> Notas da Farmácia</label>
                 <textarea className="w-full bg-slate-50 p-4 rounded-xl text-sm font-bold text-slate-600 h-28 border-0 outline-none focus:ring-2 focus:ring-blue-100 placeholder:opacity-50" value={patient.pharmacyNote || ''} onChange={e => onUpdate({ ...patient, pharmacyNote: e.target.value })} placeholder="Observações da farmácia..." />
               </div>
-              <div className="bg-white/80 rounded-2xl p-6 border border-black/5 shadow-sm space-y-4">
+              <div className="bg-white/80 p-6 border border-black/5 shadow-sm rounded-2xl space-y-4">
                 <label className="text-sm font-black uppercase text-emerald-500 flex items-center gap-2"><Activity size={18} /> Notas da Assistência</label>
                 <textarea className="w-full bg-slate-50 p-4 rounded-xl text-sm font-bold text-slate-600 h-28 border-0 outline-none focus:ring-2 focus:ring-emerald-100 placeholder:opacity-50" value={patient.prescriberNotes || ''} onChange={e => onUpdate({ ...patient, prescriberNotes: e.target.value })} placeholder="Evolução clínica / Conduta..." />
               </div>
-              <div className="bg-white/80 rounded-2xl p-6 border border-black/5 shadow-sm space-y-4">
+              <div className="bg-white/80 p-6 border border-black/5 shadow-sm rounded-2xl space-y-4">
                 <label className="text-sm font-black uppercase text-orange-500 flex items-center gap-2"><ShieldCheck size={18} /> Parecer Infectologia</label>
                 <div className="w-full bg-slate-50 p-4 rounded-xl text-sm font-bold text-slate-400 h-28 border-0 overflow-y-auto">
                   {patient.infectoComment || 'Nenhum parecer da infectologia registrado até o momento.'}
                 </div>
               </div>
               {isCC && (
-                <div className="bg-white/80 rounded-2xl p-6 border border-black/5 shadow-sm space-y-4">
+                <div className="bg-white/80 p-6 border border-black/5 shadow-sm rounded-2xl space-y-4">
                   <label className="text-sm font-black uppercase text-purple-600 flex items-center gap-2"><Clock size={18} /> Detalhes Cirúrgicos</label>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Data do Proc.</p>
-                      <input type="date" className="w-full bg-slate-50 p-3 rounded-xl font-bold text-sm border-0 outline-none focus:ring-2 focus:ring-purple-100" value={patient.procedureDate || ''} onChange={e => onUpdate({ ...patient, procedureDate: e.target.value })} />
+                      <input type="date" className="w-full bg-slate-50 p-3 rounded-xl font-bold text-sm border-0 outline-none focus:ring-2 focus:ring-purple-100 text-slate-800" value={patient.procedureDate || ''} onChange={e => onUpdate({ ...patient, procedureDate: e.target.value })} />
                     </div>
                     <div className="space-y-1">
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tempo Op.</p>
-                      <input type="text" className="w-full bg-slate-50 p-3 rounded-xl font-bold text-sm border-0 outline-none focus:ring-2 focus:ring-purple-100" value={patient.operativeTime || ''} onChange={e => onUpdate({ ...patient, operativeTime: e.target.value })} placeholder="Ex: 2h 30min" />
+                      <input type="text" className="w-full bg-slate-50 p-3 rounded-xl font-bold text-sm border-0 outline-none focus:ring-2 focus:ring-purple-100 text-slate-800" value={patient.operativeTime || ''} onChange={e => onUpdate({ ...patient, operativeTime: e.target.value })} placeholder="Ex: 2h 30min" />
                     </div>
                   </div>
                 </div>
@@ -500,8 +499,8 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
 
       {editMode && !isInfectoPanel && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[8000] flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-5 space-y-4 text-left border-t-4 border-blue-600">
-            <h3 className="text-lg font-black uppercase tracking-tight pb-2 border-b">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl p-5 space-y-4 text-left border-t-4 border-blue-600">
+            <h3 className="text-lg font-black uppercase tracking-tight pb-2 border-b dark:border-slate-800 dark:text-white">
               {editMode.type === 'novo' ? 'Novo Tratamento' : editMode.type === 'troca' ? '🧬 Substituir ATB' : editMode.type === 'tempo' ? 'Duração e Horário' : 'Ajustar Dados'}
             </h3>
 
@@ -509,32 +508,32 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
               {editMode.type !== 'tempo' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <div className="md:col-span-2 space-y-0.5">
-                    <label className="text-[9px] font-black uppercase text-slate-400">
+                    <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500">
                       {editMode.type === 'editar' ? 'Paciente (Leito)' : 'Medicamento'}
                     </label>
                     {editMode.type === 'editar' ? (
                       <input
-                        className="w-full bg-slate-50 border border-slate-200 p-2 rounded-xl font-bold text-xs outline-none focus:border-blue-500 uppercase"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl font-bold text-xs outline-none focus:border-blue-500 uppercase text-slate-900 dark:text-white"
                         value={tempBed}
                         onChange={e => setTempBed(e.target.value)}
                         placeholder="Leito do Paciente"
                       />
                     ) : (
-                      <select className="w-full bg-slate-50 border border-slate-200 p-2 rounded-xl font-bold text-xs outline-none focus:border-blue-500" value={newAtb.name} onChange={e => setNewAtb({ ...newAtb, name: e.target.value })}>
-                        <option value="">Selecione um ATB...</option>
-                        {ANTIBIOTICS_LIST.map(a => <option key={a} value={a}>{a}</option>)}
+                      <select className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl font-bold text-xs outline-none focus:border-blue-500 text-slate-900 dark:text-white" value={newAtb.name} onChange={e => setNewAtb({ ...newAtb, name: e.target.value })}>
+                        <option value="" className="bg-white dark:bg-slate-800">Selecione um ATB...</option>
+                        {ANTIBIOTICS_LIST.map(a => <option key={a} value={a} className="bg-white dark:bg-slate-800">{a}</option>)}
                       </select>
                     )}
                   </div>
                   <div className="space-y-0.5">
-                    <label className="text-[9px] font-black uppercase text-slate-400">Dose</label>
-                    <input className="w-full bg-slate-50 border border-slate-200 p-2 rounded-xl font-bold text-xs outline-none focus:border-blue-500" value={newAtb.dose} onChange={e => setNewAtb({ ...newAtb, dose: e.target.value })} placeholder="Ex: 1G" />
+                    <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500">Dose</label>
+                    <input className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl font-bold text-xs outline-none focus:border-blue-500 text-slate-900 dark:text-white" value={newAtb.dose} onChange={e => setNewAtb({ ...newAtb, dose: e.target.value })} placeholder="Ex: 1G" />
                   </div>
                   {!isCC && (
                     <div className="space-y-0.5">
-                      <label className="text-[9px] font-black uppercase text-slate-400">Frequência</label>
-                      <select className="w-full bg-slate-50 border border-slate-200 p-2 rounded-xl font-bold text-xs outline-none focus:border-blue-500" value={newAtb.freq} onChange={e => setNewAtb({ ...newAtb, freq: e.target.value })}>
-                        {FREQUENCY_OPTIONS.map(f => <option key={f} value={f}>{f}</option>)}
+                      <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500">Frequência</label>
+                      <select className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl font-bold text-xs outline-none focus:border-blue-500 text-slate-900 dark:text-white" value={newAtb.freq} onChange={e => setNewAtb({ ...newAtb, freq: e.target.value })}>
+                        {FREQUENCY_OPTIONS.map(f => <option key={f} value={f} className="bg-white dark:bg-slate-800">{f}</option>)}
                       </select>
                     </div>
                   )}
@@ -542,31 +541,31 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
               )}
 
               <div className="space-y-0.5">
-                <label className="text-[9px] font-black uppercase text-slate-400">Horários (Separar por vírgula)</label>
-                <input className="w-full bg-slate-50 border border-slate-200 p-2 rounded-xl font-bold text-xs outline-none focus:border-blue-500" value={newAtb.times} onChange={e => setNewAtb({ ...newAtb, times: e.target.value })} placeholder="Ex: 10:00, 16:00..." />
+                <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500">Horários (Separar por vírgula)</label>
+                <input className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl font-bold text-xs outline-none focus:border-blue-500 text-slate-900 dark:text-white" value={newAtb.times} onChange={e => setNewAtb({ ...newAtb, times: e.target.value })} placeholder="Ex: 10:00, 16:00..." />
               </div>
 
               {!isCC && (editMode.type === 'tempo' || editMode.type === 'novo' || editMode.type === 'troca') && (
                 <div className="space-y-0.5">
-                  <label className="text-[9px] font-black uppercase text-slate-400">Duração Total (Dias)</label>
-                  <input type="number" className="w-full bg-slate-50 border border-slate-200 p-2 rounded-xl font-bold text-xs outline-none focus:border-blue-500" value={newAtb.duration} onChange={e => setNewAtb({ ...newAtb, duration: parseInt(e.target.value) || 1 })} />
+                  <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500">Duração Total (Dias)</label>
+                  <input type="number" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl font-bold text-xs outline-none focus:border-blue-500 text-slate-900 dark:text-white" value={newAtb.duration} onChange={e => setNewAtb({ ...newAtb, duration: parseInt(e.target.value) || 1 })} />
                 </div>
               )}
 
               {(editMode.type === 'tempo' || editMode.type === 'troca') && (
                 <div className="space-y-0.5">
-                  <label className="text-[9px] font-black uppercase text-red-600 flex items-center gap-2">Justificativa Clínica *</label>
-                  <textarea required className="w-full bg-red-50/30 border border-red-100 p-2 rounded-xl font-bold text-xs outline-none focus:border-red-400 h-20" value={newAtb.justification} onChange={e => setNewAtb({ ...newAtb, justification: e.target.value })} placeholder="Descreva o motivo técnico..." />
+                  <label className="text-[9px] font-black uppercase text-red-600 dark:text-red-400 flex items-center gap-2">Justificativa Clínica *</label>
+                  <textarea required className="w-full bg-red-50/30 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 p-2 rounded-xl font-bold text-xs outline-none focus:border-red-400 text-slate-900 dark:text-white h-20" value={newAtb.justification} onChange={e => setNewAtb({ ...newAtb, justification: e.target.value })} placeholder="Descreva o motivo técnico..." />
                 </div>
               )}
             </div>
 
             <div className="flex gap-2 pt-2">
-              <button onClick={() => { setEditMode(null); localStorage.removeItem(`sva_draft_atb_editmode_${patient.id}`); localStorage.removeItem(`sva_draft_atb_data_${patient.id}`); }} className="flex-1 py-2.5 bg-slate-100 rounded-xl font-black uppercase text-[10px] text-slate-500">Descartar</button>
+              <button onClick={() => { setEditMode(null); localStorage.removeItem(`sva_draft_atb_editmode_${patient.id}`); localStorage.removeItem(`sva_draft_atb_data_${patient.id}`); }} className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl font-black uppercase text-[10px] text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">Descartar</button>
               <button
                 disabled={(editMode.type === 'tempo' || editMode.type === 'troca') && !newAtb.justification.trim()}
                 onClick={handleSaveAction}
-                className="flex-[2] py-2.5 bg-slate-900 text-white rounded-xl font-black uppercase text-[10px] shadow-lg disabled:opacity-30 hover:bg-black transition-all"
+                className="flex-[2] py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-black uppercase text-[10px] shadow-lg disabled:opacity-30 hover:bg-black dark:hover:bg-slate-100 transition-all"
               >
                 Salvar Alterações
               </button>
