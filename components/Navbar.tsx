@@ -34,9 +34,13 @@ const Navbar: React.FC<NavbarProps> = ({
                 <div className="bg-emerald-600 p-2 md:p-2.5 rounded-xl md:rounded-2xl shadow-lg shadow-emerald-100/50 shrink-0">
                     <Building2 className="text-white" size={24} />
                 </div>
-                <div className="text-left hidden sm:block">
-                    <h1 className="text-base md:text-xl font-black text-slate-900 leading-none tracking-tight uppercase">SVA <span className="hidden lg:inline">• Vigilância de Antimicrobianos</span></h1>
-                    <p className="text-[8px] md:text-[10px] text-slate-400 font-bold uppercase tracking-[0.1em] md:tracking-[0.2em] mt-1 truncate max-w-[150px] md:max-w-none">{hospitalName}</p>
+                <div className="text-left flex-1 min-w-0">
+                    <h1 className="text-xs sm:text-base md:text-xl font-black text-slate-900 leading-none tracking-tight uppercase truncate">
+                        SVA <span className="hidden mini:inline sm:inline">• Vigilância</span>
+                    </h1>
+                    <p className="text-[7px] sm:text-[9px] md:text-[10px] text-slate-400 font-bold uppercase tracking-tight mt-0.5 truncate max-w-[120px] sm:max-w-none">
+                        {hospitalName}
+                    </p>
                 </div>
             </div>
 
