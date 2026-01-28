@@ -480,7 +480,8 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                 <textarea className="w-full bg-slate-50 p-4 rounded-xl text-sm font-bold text-slate-600 h-28 border-0 outline-none focus:ring-2 focus:ring-blue-100 placeholder:opacity-50" value={tempPharmacyNote} onChange={e => setTempPharmacyNote(e.target.value)} placeholder="Observações da farmácia..." />
                 <button
                   onClick={() => {
-                    onUpdate({ ...patient, pharmacyNote: tempPharmacyNote, history: addHistory('Nota Farmácia', tempPharmacyNote || 'Nota vazia') });
+                    onUpdate({ ...patient, pharmacyNote: '', history: addHistory('Nota Farmácia', tempPharmacyNote || 'Nota vazia') });
+                    setTempPharmacyNote('');
                   }}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-black uppercase text-xs shadow hover:bg-blue-700 transition-all"
                 >
