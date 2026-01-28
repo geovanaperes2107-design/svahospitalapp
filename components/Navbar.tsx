@@ -32,11 +32,11 @@ const Navbar: React.FC<NavbarProps> = ({
                 </button>
 
                 <div className="bg-emerald-600 p-2 md:p-2.5 rounded-xl md:rounded-2xl shadow-lg shadow-emerald-100/50 shrink-0">
-                    <Building2 className="text-white" size={20} md:size={24} />
+                    <Building2 className="text-white" size={24} />
                 </div>
-                <div className="text-left hidden mini:block">
-                    <h1 className="text-sm md:text-xl font-black text-slate-900 leading-none tracking-tight uppercase">SVA <span className="hidden sm:inline">• Vigilância</span></h1>
-                    <p className="text-[8px] md:text-[10px] text-slate-400 font-bold uppercase tracking-[0.1em] md:tracking-[0.2em] mt-1 truncate max-w-[120px] md:max-w-none">{hospitalName}</p>
+                <div className="text-left hidden sm:block">
+                    <h1 className="text-base md:text-xl font-black text-slate-900 leading-none tracking-tight uppercase">SVA <span className="hidden lg:inline">• Vigilância de Antimicrobianos</span></h1>
+                    <p className="text-[8px] md:text-[10px] text-slate-400 font-bold uppercase tracking-[0.1em] md:tracking-[0.2em] mt-1 truncate max-w-[150px] md:max-w-none">{hospitalName}</p>
                 </div>
             </div>
 
@@ -46,7 +46,7 @@ const Navbar: React.FC<NavbarProps> = ({
                     className={`p-2 md:p-2.5 rounded-xl transition-all ${isDarkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}
                     title={isDarkMode ? "Modo Claro" : "Modo Noturno (Dark Mode)"}
                 >
-                    {isDarkMode ? <Sun size={18} md:size={20} /> : <Moon size={18} md:size={20} />}
+                    {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
                 </button>
 
                 <div className="flex items-center gap-2 md:gap-4">
@@ -58,7 +58,7 @@ const Navbar: React.FC<NavbarProps> = ({
                         {user.photoURL ? (
                             <img src={user.photoURL} alt={user.name} className="w-full h-full object-cover" />
                         ) : (
-                            <UserIcon size={20} md:size={24} />
+                            <UserIcon size={24} />
                         )}
                     </div>
                 </div>
