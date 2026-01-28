@@ -10,7 +10,8 @@ import {
   X,
   ChevronRight,
   ArrowRight,
-  ClipboardList
+  ClipboardList,
+  ShieldCheck
 } from 'lucide-react';
 import { UserRole, Patient, InfectoStatus, AntibioticStatus, User } from '../types';
 import Sidebar from './Sidebar';
@@ -72,7 +73,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
   const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
   const [reportInitialTab, setReportInitialTab] = useState<string>(() => localStorage.getItem('sva_report_initial_tab') || 'monitoramento');
 
+  // Estados para Sidebar e Responsividade
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => localStorage.getItem('sva_sidebar_collapsed') === 'true');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   // Persistence Effects
+  useEffect(() => {
+    localStorage.setItem('sva_sidebar_collapsed', String(isSidebarCollapsed));
+  }, [isSidebarCollapsed]);
   useEffect(() => {
     localStorage.setItem('sva_active_tab', activeTab);
   }, [activeTab]);
@@ -194,25 +202,51 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
   };
 
   return (
-    <div className={`flex h-screen w-full transition-colors duration-300 ${isDarkMode ? 'dark bg-[#0f172a] text-slate-100' : 'bg-slate-50 text-slate-900'} overflow-hidden`}>
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} role={user.role} patients={patients} onLogout={onLogout} canManageUsers={user.role === UserRole.ADMINISTRADOR} />
+    <div className={`flex h-screen w-full transition-colors duration-300 ${isDarkMode ? 'dark bg-[#0f172a] text-slate-100' : 'bg-slate-50 text-slate-900'} overflow-hidden relative`}>
+      {/* Sidebar Overlay para Mobile */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[1000] md:hidden backdrop-blur-sm"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        role={user.role}
+        patients={patients}
+        onLogout={onLogout}
+        canManageUsers={user.role === UserRole.ADMINISTRADOR}
+        isCollapsed={isSidebarCollapsed}
+        setIsCollapsed={setIsSidebarCollapsed}
+        isMobileOpen={isMobileMenuOpen}
+        setIsMobileOpen={setIsMobileMenuOpen}
+      />
 
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-        <Navbar hospitalName={hospitalName} user={user} isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
+        <Navbar
+          hospitalName={hospitalName}
+          user={user}
+          isDarkMode={isDarkMode}
+          toggleTheme={toggleTheme}
+          isMobileMenuOpen={isMobileMenuOpen}
+          setIsMobileMenuOpen={setIsMobileMenuOpen}
+        />
 
         {systemAlert && (
-          <div className="mx-6 mt-4 animate-in slide-in-from-top-4 duration-300">
+          <div className="mx-2 md:mx-6 mt-4 animate-in slide-in-from-top-4 duration-300">
             <div className={`p-4 rounded-2xl border flex items-center justify-between shadow-lg ${systemAlert.type === 'warning' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-blue-50 border-blue-200 text-blue-800'}`}>
               <div className="flex items-center gap-3">
-                {systemAlert.type === 'warning' ? <AlertTriangle size={20} /> : <Bell size={20} />}
-                <p className="text-sm font-black uppercase tracking-tight">{systemAlert.message}</p>
+                <ShieldCheck size={18} className={systemAlert.type === 'warning' ? 'text-red-500' : 'text-blue-500'} />
+                <p className="text-[10px] md:text-sm font-black uppercase tracking-tight">{systemAlert.message}</p>
               </div>
               <button onClick={() => setSystemAlert(null)} className="p-1 hover:bg-black/5 rounded-full"><X size={16} /></button>
             </div>
           </div>
         )}
 
-        <main className="flex-1 overflow-y-auto p-3 relative custom-scrollbar">
+        <main className="flex-1 overflow-y-auto p-3 md:p-6 relative custom-scrollbar">
           {activeTab === 'inicio' && (
             <div className="max-w-7xl mx-auto space-y-3 animate-in fade-in text-left">
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">

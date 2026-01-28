@@ -235,15 +235,15 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
             <span className="text-2xl font-black block leading-none text-slate-800">{patient.bed}</span>
             <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Leito</span>
           </div>
-          <div className="flex-1">
-            <h3 className="text-base md:text-lg font-black uppercase text-slate-800 tracking-tight leading-none">{patient.name}</h3>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-              <span className="text-[9px] font-black text-slate-500 uppercase flex items-center gap-1"><Calendar size={12} /> {patient.birthDate}</span>
-              <span className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1">
-                <Activity size={12} /> {isCC ? 'NÃO CIRÚRGICO' : patient.treatmentType}
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm md:text-lg font-black uppercase text-slate-800 tracking-tight leading-none truncate">{patient.name}</h3>
+            <div className="flex flex-wrap items-center gap-x-2 md:gap-x-3 gap-y-1 mt-1">
+              <span className="text-[8px] md:text-[9px] font-black text-slate-500 uppercase flex items-center gap-1"><Calendar size={10} /> {patient.birthDate}</span>
+              <span className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase flex items-center gap-1">
+                <Activity size={10} /> {isCC ? 'NÃO CIRÚRGICO' : patient.treatmentType}
               </span>
               {!isCC && (
-                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ${patient.infectoStatus === InfectoStatus.AUTORIZADO ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
+                <span className={`px-1 py-0.5 rounded text-[7px] md:text-[8px] font-black uppercase border ${patient.infectoStatus === InfectoStatus.AUTORIZADO ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
                   patient.infectoStatus === InfectoStatus.NAO_AUTORIZADO ? 'bg-red-100 text-red-700 border-red-200' : 'bg-slate-100 text-slate-500 border-slate-200'
                   }`}>
                   Inf: {patient.infectoStatus}
@@ -251,7 +251,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
               )}
             </div>
             {/* DIAGNÓSTICO */}
-            <p className="text-[9px] font-bold text-slate-500 leading-tight mt-1 italic" title={patient.diagnosis}>
+            <p className="text-[8px] md:text-[9px] font-bold text-slate-500 leading-tight mt-1 italic truncate" title={patient.diagnosis}>
               <span className="font-black text-slate-400 uppercase mr-1 not-italic">Dx:</span> {patient.diagnosis}
             </p>
           </div>
