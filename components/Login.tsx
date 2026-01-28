@@ -174,7 +174,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
                   type="email"
                   required
                   value={emailOrCpf}
-                  onChange={(e) => setEmailOrCpf(e.target.value)}
+                  onChange={(e) => setEmailOrCpf(e.target.value.replace(/\s/g, ''))}
                   className="w-full bg-slate-50 border border-slate-200 pl-12 pr-4 py-4 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300"
                   placeholder="seu@email.com"
                 />
@@ -212,7 +212,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
                     if (/^\d/.test(val)) {
                       handleCpfChange(e, true);
                     } else {
-                      setEmailOrCpf(val);
+                      setEmailOrCpf(val.replace(/\s/g, ''));
                     }
                   }}
                   className="w-full bg-slate-50 border border-slate-200 pl-12 pr-4 py-4 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300"

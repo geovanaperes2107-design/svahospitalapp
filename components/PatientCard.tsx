@@ -16,7 +16,8 @@ import {
   ThumbsDown,
   CheckCircle2,
   XCircle,
-  Trash2
+  Trash2,
+  Save
 } from 'lucide-react';
 import { Patient, UserRole, AntibioticStatus, InfectoStatus, Antibiotic, HistoryEntry, TreatmentType, IncisionRelation, MedicationCategory } from '../types';
 import { SECTORS, ANTIBIOTICS_LIST, FREQUENCY_OPTIONS, MEDICATION_LISTS } from '../constants';
@@ -66,6 +67,8 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
 
   const [tempInfectoComment, setTempInfectoComment] = useState(patient.infectoComment || '');
   const [tempBed, setTempBed] = useState(patient.bed || ''); // Estado para edição de leito
+  const [tempPharmacyNote, setTempPharmacyNote] = useState(patient.pharmacyNote || '');
+  const [tempPrescriberNotes, setTempPrescriberNotes] = useState(patient.prescriberNotes || '');
 
   // Inicializa o leito temporário ao abrir modal de edição
   useEffect(() => {
@@ -73,6 +76,14 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
       setTempBed(patient.bed || '');
     }
   }, [editMode, patient.bed]);
+
+  // Sincroniza notas temporárias quando o menu de detalhes é aberto
+  useEffect(() => {
+    if (showMenu) {
+      setTempPharmacyNote(patient.pharmacyNote || '');
+      setTempPrescriberNotes(patient.prescriberNotes || '');
+    }
+  }, [showMenu, patient.pharmacyNote, patient.prescriberNotes]);
 
   const isCC = patient.sector === 'Centro Cirúrgico';
   const isInfectoPanel = activeTab === 'infectologia';
@@ -466,11 +477,27 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white/80 p-6 border border-black/5 shadow-sm rounded-2xl space-y-4">
                 <label className="text-sm font-black uppercase text-slate-400 flex items-center gap-2"><MessageSquare size={18} className="text-blue-500" /> Notas da Farmácia</label>
-                <textarea className="w-full bg-slate-50 p-4 rounded-xl text-sm font-bold text-slate-600 h-28 border-0 outline-none focus:ring-2 focus:ring-blue-100 placeholder:opacity-50" value={patient.pharmacyNote || ''} onChange={e => onUpdate({ ...patient, pharmacyNote: e.target.value })} placeholder="Observações da farmácia..." />
+                <textarea className="w-full bg-slate-50 p-4 rounded-xl text-sm font-bold text-slate-600 h-28 border-0 outline-none focus:ring-2 focus:ring-blue-100 placeholder:opacity-50" value={tempPharmacyNote} onChange={e => setTempPharmacyNote(e.target.value)} placeholder="Observações da farmácia..." />
+                <button
+                  onClick={() => {
+                    onUpdate({ ...patient, pharmacyNote: tempPharmacyNote, history: addHistory('Nota Farmácia', tempPharmacyNote || 'Nota vazia') });
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-black uppercase text-xs shadow hover:bg-blue-700 transition-all"
+                >
+                  <Save size={14} /> Salvar
+                </button>
               </div>
               <div className="bg-white/80 p-6 border border-black/5 shadow-sm rounded-2xl space-y-4">
-                <label className="text-sm font-black uppercase text-emerald-500 flex items-center gap-2"><Activity size={18} /> Notas da Assistência</label>
-                <textarea className="w-full bg-slate-50 p-4 rounded-xl text-sm font-bold text-slate-600 h-28 border-0 outline-none focus:ring-2 focus:ring-emerald-100 placeholder:opacity-50" value={patient.prescriberNotes || ''} onChange={e => onUpdate({ ...patient, prescriberNotes: e.target.value })} placeholder="Evolução clínica / Conduta..." />
+                <label className="text-sm font-black uppercase text-emerald-500">Notas da Assistência</label>
+                <textarea className="w-full bg-slate-50 p-4 rounded-xl text-sm font-bold text-slate-600 h-28 border-0 outline-none focus:ring-2 focus:ring-emerald-100 placeholder:opacity-50" value={tempPrescriberNotes} onChange={e => setTempPrescriberNotes(e.target.value)} placeholder="Evolução clínica / Conduta..." />
+                <button
+                  onClick={() => {
+                    onUpdate({ ...patient, prescriberNotes: tempPrescriberNotes, history: addHistory('Nota Assistência', tempPrescriberNotes || 'Nota vazia') });
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl font-black uppercase text-xs shadow hover:bg-emerald-700 transition-all"
+                >
+                  <Save size={14} /> Salvar
+                </button>
               </div>
               <div className="bg-white/80 p-6 border border-black/5 shadow-sm rounded-2xl space-y-4">
                 <label className="text-sm font-black uppercase text-orange-500 flex items-center gap-2"><ShieldCheck size={18} /> Parecer Infectologia</label>

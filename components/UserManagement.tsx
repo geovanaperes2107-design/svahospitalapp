@@ -189,7 +189,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, currentUser, onA
                                 type="email"
                                 className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 p-3 rounded-xl font-bold text-sm focus:border-emerald-500 outline-none text-slate-900 dark:text-white"
                                 value={reportEmail}
-                                onChange={e => setReportEmail(e.target.value)}
+                                onChange={e => setReportEmail(e.target.value.replace(/\s/g, ''))}
                                 placeholder="exemplo@email.com"
                             />
                             <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 leading-tight uppercase">Configurado para envio mensal automático.</p>
@@ -286,7 +286,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, currentUser, onA
                                 <div className="space-y-1">
                                     <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">E-mail</label>
                                     <input required type="email" className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 p-3 rounded-xl font-bold text-xs text-slate-900 dark:text-white"
-                                        value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                                        value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value.replace(/\s/g, '') })} />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Perfil de Acesso</label>
