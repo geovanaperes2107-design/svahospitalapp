@@ -233,7 +233,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
   const stats = useMemo(() => {
     const activeAtbPatients = patients.filter(p => p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO));
     const expiredPatients = activeAtbPatients.filter(p =>
-      p.sector !== 'Centro Cirúrgico' &&
+      !p.sector.includes('Centro Cir') &&
       p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0)
     );
 

@@ -145,7 +145,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
       });
     });
 
-    const vencidosCount = filteredPatients.filter(p => p.sector !== 'Centro Cirúrgico' && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0)).length;
+    const vencidosCount = filteredPatients.filter(p => !p.sector.includes('Centro Cir') && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0)).length;
 
     return {
       active: totalActive, substituted: totalSubstituted, finalized: totalFinalized, suspended: totalSuspended,
@@ -773,7 +773,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-sm">
                   {filteredPatients
-                    .filter(p => p.sector !== 'Centro Cirúrgico' && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 1))
+                    .filter(p => !p.sector.includes('Centro Cir') && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 1))
                     .map(p => {
                       const med = p.antibiotics.find(a => a.status === AntibioticStatus.EM_USO);
                       const remaining = med ? getDaysRemaining(calculateEndDate(med.startDate, med.durationDays)) : 0;
