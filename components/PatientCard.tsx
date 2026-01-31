@@ -77,10 +77,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
     localStorage.setItem(`sva_draft_atb_data_${patient.id}`, JSON.stringify(newAtb));
   }, [editMode, newAtb, patient.id]);
 
-  const [tempInfectoComment, setTempInfectoComment] = useState(patient.infectoComment || '');
   const [tempBed, setTempBed] = useState(patient.bed || ''); // Estado para edição de leito
   const [tempPharmacyNote, setTempPharmacyNote] = useState(patient.pharmacyNote || '');
   const [tempPrescriberNotes, setTempPrescriberNotes] = useState(patient.prescriberNotes || '');
+
+  // State for per-antibiotic comments in Infecto panel
+  const [atbInfectoComments, setAtbInfectoComments] = useState<Record<string, string>>({});
 
   // Inicializa o leito temporário ao abrir modal de edição
   useEffect(() => {
@@ -96,6 +98,15 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
       setTempPrescriberNotes(patient.prescriberNotes || '');
     }
   }, [showMenu, patient.pharmacyNote, patient.prescriberNotes]);
+
+  // Initialize antibiotic comments
+  useEffect(() => {
+    const comments: Record<string, string> = {};
+    patient.antibiotics.forEach(a => {
+      comments[a.id] = a.infectoComment || '';
+    });
+    setAtbInfectoComments(comments);
+  }, [patient.antibiotics]);
 
   const isCC = patient.sector === 'Centro Cirúrgico';
   const isInfectoPanel = activeTab === 'infectologia';
@@ -132,7 +143,8 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
         durationDays: isCC ? 1 : newAtb.duration,
         times: newAtb.times.split(',').map(t => t.trim()).filter(t => t !== ''),
         status: AntibioticStatus.EM_USO,
-        justification: newAtb.justification
+        justification: newAtb.justification,
+        infectoStatus: InfectoStatus.PENDENTE // New ATBs start as pending
       };
       updatedAtbs.push(atbObj);
       updateLog = `Adicionado ATB: ${newAtb.name}`;
@@ -148,7 +160,8 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
         durationDays: isCC ? 1 : newAtb.duration,
         times: newAtb.times.split(',').map(t => t.trim()).filter(t => t !== ''),
         status: AntibioticStatus.EM_USO,
-        justification: newAtb.justification
+        justification: newAtb.justification,
+        infectoStatus: InfectoStatus.PENDENTE // New ATBs start as pending
       };
       updatedAtbs.push(atbObj);
       updateLog = `Substituição: ${newAtb.name} substituiu ${editMode.oldAtbName}. Motivo: ${newAtb.justification}`;
@@ -186,6 +199,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
       updateLog = `Tempo alterado para ${newAtb.duration} dias. Motivo: ${newAtb.justification}`;
     }
 
+    // Recalculate patient status if necessary, though simpler to leave as is for now
     onUpdate({ ...updatedPatient, antibiotics: updatedAtbs, history: addHistory('Ajuste ATB', updateLog) });
     setEditMode(null);
     setNewAtb({ ...newAtb, justification: '', name: '', times: '' });
@@ -193,12 +207,47 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
     localStorage.removeItem(`sva_draft_atb_data_${patient.id}`);
   };
 
-  const handleInfectoEvaluation = (status: InfectoStatus) => {
+  const derivePatientInfectoStatus = (atbs: Antibiotic[]): InfectoStatus => {
+    const activeAtbs = atbs.filter(a => a.status === AntibioticStatus.EM_USO);
+    if (activeAtbs.length === 0) return InfectoStatus.PENDENTE;
+
+    // If any active ATB is NOT_AUTHORIZED, patient is NOT_AUTHORIZED
+    if (activeAtbs.some(a => a.infectoStatus === InfectoStatus.NAO_AUTORIZADO)) {
+      return InfectoStatus.NAO_AUTORIZADO;
+    }
+    // If any active ATB is PENDING (or undefined), patient is PENDING
+    if (activeAtbs.some(a => !a.infectoStatus || a.infectoStatus === InfectoStatus.PENDENTE)) {
+      return InfectoStatus.PENDENTE;
+    }
+    // If ALL active ATBs are AUTHORIZED, patient is AUTHORIZED
+    if (activeAtbs.every(a => a.infectoStatus === InfectoStatus.AUTORIZADO)) {
+      return InfectoStatus.AUTORIZADO;
+    }
+
+    return InfectoStatus.PENDENTE;
+  };
+
+  const handleInfectoEvaluation = (atbId: string, status: InfectoStatus) => {
+    const comment = atbInfectoComments[atbId];
+    const updatedAntibiotics = patient.antibiotics.map(a => {
+      if (a.id === atbId) {
+        return {
+          ...a,
+          infectoStatus: status,
+          infectoComment: comment
+        };
+      }
+      return a;
+    });
+
+    const newPatientStatus = derivePatientInfectoStatus(updatedAntibiotics);
+    const atbName = patient.antibiotics.find(a => a.id === atbId)?.name || 'Desconhecido';
+
     onUpdate({
       ...patient,
-      infectoStatus: status,
-      infectoComment: tempInfectoComment,
-      history: addHistory('Avaliação Infecto', `Status: ${status}. Parecer: ${tempInfectoComment || 'Sem parecer.'}`)
+      antibiotics: updatedAntibiotics,
+      infectoStatus: newPatientStatus, // Update top-level status based on aggregate
+      history: addHistory('Avaliação Infecto', `ATB: ${atbName} -> Status: ${status}. Parecer: ${comment || 'Sem parecer.'}`)
     });
   };
 
@@ -355,6 +404,9 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
           const isVencido = daysRemaining <= 0;
           const endDate = format(addDays(parseISO(atb.startDate), atb.durationDays), 'dd/MM/yyyy');
 
+          // Infecto status fallback for display
+          const atbStatus = atb.infectoStatus || InfectoStatus.PENDENTE;
+
           return (
             <div key={atb.id} className="rounded-xl p-2 border border-black/5 bg-white/60 hover:bg-white/80 transition-all flex flex-col gap-2 shadow-inner">
               <div className="flex justify-between items-center">
@@ -380,6 +432,15 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                     <h4 className="text-[13px] font-black text-slate-800 uppercase tracking-tight">{atb.name}</h4>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Hor: <span className="text-slate-700 font-black">{atb.times.join('/')}</span></p>
                   </div>
+
+                  {/* Status do ATB na visão da Infecto */}
+                  {isInfectoPanel && (
+                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ml-2 ${atbStatus === InfectoStatus.AUTORIZADO ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
+                        atbStatus === InfectoStatus.NAO_AUTORIZADO ? 'bg-red-100 text-red-700 border-red-200' : 'bg-slate-100 text-slate-500 border-slate-200'
+                      }`}>
+                      {atbStatus}
+                    </span>
+                  )}
                 </div>
 
                 {/* AÇÕES */}
@@ -466,46 +527,46 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                   </div>
                 )}
               </div>
+
+              {/* === ÁREA DE AVALIAÇÃO DA INFECTOLOGIA (POR ANTIBIÓTICO) === */}
+              {isInfectoPanel && (
+                <div className="mt-2 bg-blue-50/50 rounded-xl p-2 border border-blue-100/50 shadow-inner">
+                  <div className="flex gap-3 items-stretch">
+                    <div className="flex-1">
+                      <label className="text-[8px] font-black uppercase text-blue-500 flex items-center gap-1 mb-1">
+                        <MessageSquare size={10} /> Parecer: {atb.name}
+                      </label>
+                      <textarea
+                        className="w-full bg-white p-1.5 rounded-lg text-[10px] font-bold text-slate-600 h-10 border border-blue-100 outline-none focus:ring-1 focus:ring-blue-400 shadow-sm resize-none"
+                        value={atbInfectoComments[atb.id] || ''}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setAtbInfectoComments(prev => ({ ...prev, [atb.id]: val }));
+                        }}
+                        placeholder="Justificativa..."
+                      />
+                    </div>
+                    <div className="flex flex-col justify-center gap-1 w-24">
+                      <button
+                        onClick={() => handleInfectoEvaluation(atb.id, InfectoStatus.AUTORIZADO)}
+                        className={`flex items-center justify-center gap-1 py-1.5 text-white rounded font-black uppercase text-[8px] shadow transition-all ${atbStatus === InfectoStatus.AUTORIZADO ? 'bg-emerald-700 ring-2 ring-emerald-300' : 'bg-emerald-500 hover:bg-emerald-600 opacity-90'}`}
+                      >
+                        <ThumbsUp size={10} /> Autorizar
+                      </button>
+                      <button
+                        onClick={() => handleInfectoEvaluation(atb.id, InfectoStatus.NAO_AUTORIZADO)}
+                        className={`flex items-center justify-center gap-1 py-1.5 text-white rounded font-black uppercase text-[8px] shadow transition-all ${atbStatus === InfectoStatus.NAO_AUTORIZADO ? 'bg-red-700 ring-2 ring-red-300' : 'bg-red-500 hover:bg-red-600 opacity-90'}`}
+                      >
+                        <ThumbsDown size={10} /> Não
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
           );
         })}
-
-        {/* 🛡️ BLOCO EXCLUSIVO DA INFECTOLOGIA */}
-        {isInfectoPanel && (
-          <div className="mt-2 bg-white/40 rounded-xl p-2 border border-blue-100 shadow-inner">
-            <div className="flex gap-3 items-stretch">
-              <div className="flex-1">
-                <label className="text-[9px] font-black uppercase text-blue-600 flex items-center gap-1 mb-1">
-                  <MessageSquare size={12} /> Parecer (Opcional)
-                </label>
-                <textarea
-                  className="w-full bg-white/80 p-2 rounded-lg text-[11px] font-bold text-slate-600 h-12 border-0 outline-none focus:ring-1 focus:ring-blue-400 shadow-sm resize-none"
-                  value={tempInfectoComment}
-                  onChange={e => {
-                    const newVal = e.target.value;
-                    setTempInfectoComment(newVal);
-                    onUpdate({ ...patient, infectoComment: newVal });
-                  }}
-                  placeholder="Orientações técnicas..."
-                />
-              </div>
-              <div className="flex flex-col justify-center gap-1.5 w-28">
-                <button
-                  onClick={() => handleInfectoEvaluation(InfectoStatus.AUTORIZADO)}
-                  className="flex items-center justify-center gap-1.5 py-1.5 bg-emerald-600 text-white rounded font-black uppercase text-[9px] shadow hover:bg-emerald-700"
-                >
-                  <ThumbsUp size={12} /> Autorizar
-                </button>
-                <button
-                  onClick={() => handleInfectoEvaluation(InfectoStatus.NAO_AUTORIZADO)}
-                  className="flex items-center justify-center gap-1.5 py-1.5 bg-red-600 text-white rounded font-black uppercase text-[9px] shadow hover:bg-red-700"
-                >
-                  <ThumbsDown size={12} /> Não
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="flex justify-end pt-1">
           <button onClick={() => onUpdate({ ...patient, isEvaluated: !patient.isEvaluated })} className={`px-4 py-1 rounded-full font-black uppercase text-[9px] shadow transition-all ${patient.isEvaluated ? 'bg-purple-600 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'}`}>
@@ -542,9 +603,11 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                 </button>
               </div>
               <div className="bg-white/80 p-6 border border-black/5 shadow-sm rounded-2xl space-y-4">
-                <label className="text-sm font-black uppercase text-orange-500 flex items-center gap-2"><ShieldCheck size={18} /> Parecer Infectologia</label>
+                <label className="text-sm font-black uppercase text-orange-500 flex items-center gap-2"><ShieldCheck size={18} /> Parecer Infectologia (Geral)</label>
                 <div className="w-full bg-slate-50 p-4 rounded-xl text-sm font-bold text-slate-400 h-28 border-0 overflow-y-auto">
-                  {patient.infectoComment || 'Nenhum parecer da infectologia registrado até o momento.'}
+                  {/* Shows aggregate of comments if needed, or just keep as is for historical/general comments */}
+                  {patient.infectoComment || 'Nenhum parecer geral registrado.'}
+                  {patient.antibiotics.map(a => a.infectoComment ? <div key={a.id} className="mt-2 pt-2 border-t border-slate-200"><span className="text-slate-800 uppercase text-[10px]">{a.name}:</span> {a.infectoComment}</div> : null)}
                 </div>
               </div>
               {isCC && (
