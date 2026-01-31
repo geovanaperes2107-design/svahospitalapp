@@ -47,13 +47,12 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
 
   useEffect(() => {
     if (formData.sector === 'Centro Cirúrgico') {
-      const updatedAtbs = atbs.map(atb => ({
+      setAtbs(prevAtbs => prevAtbs.map(atb => ({
         ...atb,
         name: 'CEFAZOLINA PO P/ SOL INJ 1G',
         frequency: 'Dose Única',
         durationDays: 1
-      }));
-      setAtbs(updatedAtbs);
+      })));
       setFormData(prev => ({ ...prev, treatmentType: TreatmentType.PROFILATICO }));
     }
   }, [formData.sector]);
