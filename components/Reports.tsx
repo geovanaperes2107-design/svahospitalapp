@@ -18,7 +18,7 @@ interface ReportsProps {
   patientDays: number;
   setPatientDays: (days: number) => void;
 }
-type ReportTab = 'monitoramento' | 'stewardship' | 'epidemiologia' | 'censo' | 'ddd' | 'vencimento' | 'cc' | 'financeiro';
+type ReportTab = 'monitoramento' | 'stewardship' | 'epidemiologia' | 'censo' | 'ddd' | 'vencimento' | 'finalizados' | 'cc' | 'financeiro';
 
 // Tabela DDD OMS (editável por admin)
 const DDD_OMS_VALUES: Record<string, number> = {
@@ -378,6 +378,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
           { id: 'ddd', label: 'DDD ANVISA', icon: <Scale size={18} /> },
           { id: 'financeiro', label: 'Financeiro', icon: <DollarSign size={18} /> },
           { id: 'vencimento', label: 'Vencimentos', icon: <Clock size={18} /> },
+          { id: 'finalizados', label: 'Finalizados', icon: <CheckCircle2 size={18} /> },
           { id: 'cc', label: 'C. Cirúrgico', icon: <Scissors size={18} /> }
         ].map(t => (
           <button key={t.id} onClick={() => setActiveReportTab(t.id as ReportTab)}
@@ -786,6 +787,55 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                         </tr>
                       );
                     })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ===== ANTIBIÓTICOS FINALIZADOS ===== */}
+        {activeReportTab === 'finalizados' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-emerald-600 p-8 rounded-3xl shadow-xl text-white flex justify-between items-center border-b-4 border-emerald-800">
+              <div className="flex items-center gap-6">
+                <div className="bg-white/20 p-4 rounded-2xl"><CheckCircle2 size={32} /></div>
+                <div>
+                  <h2 className="text-2xl font-black uppercase leading-none tracking-tighter">Tratamentos Concluídos</h2>
+                  <p className="text-xs font-black opacity-80 uppercase tracking-widest mt-2">Histórico de Antibióticos Finalizados</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-6xl font-black leading-none tracking-tighter">{stats.finalized}</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] mt-1">Finalizados</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden">
+              <table className="w-full text-left">
+                <thead className="bg-slate-100 text-slate-700 text-[12px] font-black uppercase tracking-widest border-b-2">
+                  <tr><th className="px-8 py-5">Paciente / Leito</th><th className="px-8 py-5">Setor</th><th className="px-8 py-5">Antibiótico</th><th className="px-8 py-5">Período</th><th className="px-8 py-5 text-center">Status</th></tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-sm">
+                  {filteredPatients
+                    .flatMap(p => p.antibiotics
+                      .filter(a => a.status === AntibioticStatus.FINALIZADO && (atbFilter === 'Todos' || atbFilter === 'Todos os ATBs' || a.name === atbFilter))
+                      .map(a => ({ patient: p, atb: a }))
+                    )
+                    .map(({ patient, atb }) => {
+                      const endDate = calculateEndDate(atb.startDate, atb.durationDays);
+                      return (
+                        <tr key={`${patient.id}-${atb.id}`} className="hover:bg-emerald-50 border-b border-emerald-50">
+                          <td className="px-4 py-3 leading-tight"><span className="font-black text-slate-900 text-sm">{patient.name}</span><br /><span className="text-[10px] text-slate-600 uppercase font-black">Leito {patient.bed}</span></td>
+                          <td className="px-4 py-3 text-slate-800 uppercase font-black text-xs">{patient.sector}</td>
+                          <td className="px-4 py-3 font-black text-emerald-700 leading-tight text-sm">{atb.name}</td>
+                          <td className="px-4 py-3 text-slate-600 text-xs font-bold">{new Date(atb.startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}</td>
+                          <td className="px-4 py-3 text-center"><span className="px-3 py-1 rounded-lg font-black text-xs bg-emerald-100 text-emerald-800">FINALIZADO</span></td>
+                        </tr>
+                      );
+                    })}
+                  {filteredPatients.flatMap(p => p.antibiotics.filter(a => a.status === AntibioticStatus.FINALIZADO)).length === 0 && (
+                    <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-400 font-black text-sm uppercase italic">Nenhum antibiótico finalizado encontrado neste período</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
