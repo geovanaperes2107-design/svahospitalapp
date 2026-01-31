@@ -11,6 +11,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
   const [emailOrCpf, setEmailOrCpf] = useState('');
   const [password, setPassword] = useState('');
   const [cpf, setCpf] = useState(''); // Only for sign up
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<'LOGIN' | 'SIGNUP' | 'FORGOT'>('LOGIN');
   const [error, setError] = useState<string | null>(null);
@@ -76,7 +77,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
           // Create profile
           const { error: profileError } = await supabase
             .from('profiles')
-            .insert([{ id: authData.user.id, email: emailOrCpf, cpf: cpf }]);
+            .insert([{ id: authData.user.id, email: emailOrCpf, cpf: cpf, name: name.toUpperCase() }]);
 
           if (profileError) console.error('Error creating profile:', profileError);
         }
@@ -221,23 +222,36 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
               </div>
             </div>
 
-            {mode === 'SIGNUP' && (
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-4">
-                <label className="text-xs font-black text-slate-500 uppercase tracking-widest pl-2">CPF</label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">CPF</div>
-                  <input
-                    type="text"
-                    required
-                    value={cpf}
-                    onChange={(e) => handleCpfChange(e, false)}
-                    className="w-full bg-slate-50 border border-slate-200 pl-12 pr-4 py-4 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300"
-                    placeholder="000.000.000-00"
-                    maxLength={14}
-                  />
-                </div>
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-4">
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest pl-2">Nome Completo</label>
+              <div className="relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Nome</div>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value.toUpperCase())}
+                  className="w-full bg-slate-50 border border-slate-200 pl-12 pr-4 py-4 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300 uppercase"
+                  placeholder="SEU NOME"
+                />
               </div>
-            )}
+            </div>
+
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-4">
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest pl-2">CPF</label>
+              <div className="relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">CPF</div>
+                <input
+                  type="text"
+                  required
+                  value={cpf}
+                  onChange={(e) => handleCpfChange(e, false)}
+                  className="w-full bg-slate-50 border border-slate-200 pl-12 pr-4 py-4 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300"
+                  placeholder="000.000.000-00"
+                  maxLength={14}
+                />
+              </div>
+            </div>
 
             <div className="space-y-2">
               <div className="flex justify-between items-center px-2">
@@ -285,6 +299,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
               setError(null);
               setEmailOrCpf('');
               setCpf('');
+              setName('');
               setPassword('');
             }}
             className="text-xs font-black text-blue-600 uppercase hover:underline tracking-wider"

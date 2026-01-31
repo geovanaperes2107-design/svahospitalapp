@@ -82,30 +82,7 @@ const App: React.FC = () => {
 
   const [systemAlert, setSystemAlert] = useState<{ message: string, type: 'info' | 'warning' | 'success' } | null>(null);
 
-  const [users, setUsers] = useState<User[]>(() => {
-    const saved = localStorage.getItem('hesmb_users');
-    let userList: User[] = saved ? JSON.parse(saved) : [];
-    // Only keeping local users backup/cache logic if needed, but ideally users should also be in DB. 
-    // For now, focusing on Patients migration as requested.
-    const geovanaCPF = '060.044.891-66';
-    const geovanaExists = userList.some(u => u.cpf.replace(/\D/g, '') === geovanaCPF.replace(/\D/g, ''));
-
-    if (!geovanaExists) {
-      userList.push({
-        id: 'geovana-master',
-        name: 'GEOVANA CORREA PERES',
-        email: 'geovana.peres@heslmb.org.br',
-        password: 'Geovana20',
-        role: UserRole.ADMINISTRADOR,
-        sector: 'DIRETORIA',
-        cpf: geovanaCPF,
-        mobile: '(64) 99999-9999',
-        birthDate: '01/01/1980',
-        needsPasswordChange: false
-      });
-    }
-    return userList;
-  });
+  const [users, setUsers] = useState<User[]>([]);
 
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -162,6 +139,27 @@ const App: React.FC = () => {
     };
   };
 
+  const mapProfileToUser = (profile: any): User => ({
+    id: profile.id,
+    name: profile.name || 'SEM NOME',
+    email: profile.email,
+    cpf: profile.cpf,
+    role: profile.role || UserRole.VISUALIZADOR,
+    sector: profile.sector || 'GERAL',
+    mobile: profile.mobile || '',
+    birthDate: profile.birth_date ? format(new Date(profile.birth_date), 'dd/MM/yyyy') : '',
+    photoURL: profile.photo_url,
+    needsPasswordChange: profile.needs_password_change,
+    password: '' // Password hidden/unknown
+  });
+
+  const parseDateToDb = (dateStr?: string) => {
+    if (!dateStr) return null;
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return null;
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  };
+
   // --- SUPABASE FETCH & SUBSCRIPTION ---
   const fetchPatients = useCallback(async () => {
     const { data, error } = await supabase.from('pacientes').select('*');
@@ -174,15 +172,29 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const fetchUsers = useCallback(async () => {
+    const { data: profiles, error } = await supabase.from('profiles').select('*');
+    if (error) {
+      console.error('Error fetching users:', error);
+    } else {
+      setUsers(profiles.map(mapProfileToUser));
+    }
+  }, []);
+
   useEffect(() => {
     if (session) {
       fetchPatients();
+      fetchUsers();
 
       const channel = supabase
-        .channel('public:pacientes')
+        .channel('public:data')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'pacientes' }, (payload) => {
           console.log('Realtime chage received:', payload);
-          fetchPatients(); // Simplest strategy: reload all on change to ensure consistency
+          fetchPatients();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
+          console.log('Realtime profile change:', payload);
+          fetchUsers();
         })
         .subscribe();
 
@@ -190,7 +202,7 @@ const App: React.FC = () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [session, fetchPatients]);
+  }, [session, fetchPatients, fetchUsers]);
 
 
   // --- ROTINA DE TAREFAS AGENDADAS (07:30 E 22:00) ---
@@ -293,15 +305,14 @@ const App: React.FC = () => {
   }, [patients, reportEmail, atbCosts, hospitalName]);
 
   useEffect(() => {
-    // Only save settings to local storage, NOT patients
-    localStorage.setItem('hesmb_users', JSON.stringify(users));
+    // Only save settings to local storage, NOT patients OR users anymore
     localStorage.setItem('sva_hospital_name', hospitalName);
     localStorage.setItem('sva_bg_image', bgImage);
     localStorage.setItem('sva_login_bg_image', loginBgImage);
     localStorage.setItem('sva_report_email', reportEmail);
     localStorage.setItem('sva_patient_days', patientDays.toString());
     localStorage.setItem('sva_atb_costs', JSON.stringify(atbCosts));
-  }, [users, hospitalName, bgImage, loginBgImage, reportEmail, patientDays, atbCosts]);
+  }, [hospitalName, bgImage, loginBgImage, reportEmail, patientDays, atbCosts]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -354,23 +365,49 @@ const App: React.FC = () => {
   };
 
   const handleAddUser = useCallback((u: User) => {
-    setUsers(prev => [...prev, u]);
+    alert("ATENÇÃO: Para novos cadastros ficarem salvos no banco de dados, peça para o colaborador criar sua conta usando a opção 'Primeiro acesso? Criar Conta' na tela de login. Após criar a conta, ele aparecerá nesta lista para você editar as permissões.");
+    // We do NOT add to local users list anymore to prevent confusion.
   }, []);
 
-  const handleUpdateUser = useCallback((u: User) => {
+  const handleUpdateUser = useCallback(async (u: User) => {
+    // Check if updating logged in user
+    const payload: any = {
+      name: u.name,
+      sector: u.sector,
+      role: u.role,
+      mobile: u.mobile,
+      birth_date: parseDateToDb(u.birthDate),
+      photo_url: u.photoURL,
+      needs_password_change: u.needsPasswordChange
+    };
+
+    // Optimistic update
     setUsers(prev => prev.map(old => old.id === u.id ? u : old));
-  }, []);
 
-  const handleDeleteUser = useCallback((id: string) => {
-    setUsers(prev => {
-      const isGeovana = prev.find(u => u.id === id)?.cpf === '060.044.891-66';
-      if (isGeovana) {
-        alert("A conta master de GEOVANA CORREA PERES não pode ser excluída.");
-        return prev;
+    const { error } = await supabase.from('profiles').update(payload).eq('id', u.id);
+    if (error) {
+      console.error("Error updating user profile:", error);
+      alert("Erro ao atualizar perfil do usuário: " + error.message);
+      fetchUsers();
+    }
+  }, [fetchUsers]);
+
+  const handleDeleteUser = useCallback(async (id: string) => {
+    if (id === user?.id) {
+      alert("Você não pode excluir a si mesmo.");
+      return;
+    }
+
+    const confirm = window.confirm("ATENÇÃO: Isso excluirá o PERFIL do usuário da lista, mas não exclui a conta de acesso (Login). Para bloquear o acesso, altere a senha ou o perfil.");
+    if (confirm) {
+      setUsers(prev => prev.filter(u => u.id !== id));
+      const { error } = await supabase.from('profiles').delete().eq('id', id);
+      if (error) {
+        console.error("Error deleting profile:", error);
+        fetchUsers();
       }
-      return prev.filter(u => u.id !== id);
-    });
-  }, []);
+    }
+  }, [user]);
 
   if (recoverySession) {
     return <PasswordReset onSuccess={() => setRecoverySession(false)} />;
@@ -380,12 +417,12 @@ const App: React.FC = () => {
     return <Login onLoginSuccess={fetchPatients} bgImage={loginBgImage} />;
   }
 
-  // Mock user for now if session exists but user object is not fully hydrated from DB
+  // Current User Logic
   const currentUser = user || users.find(u => u.email === session?.user?.email) || {
     id: session?.user?.id,
     name: session?.user?.email?.split('@')[0].toUpperCase(),
     email: session?.user?.email,
-    role: UserRole.ADMINISTRADOR, // Default role for now
+    role: UserRole.VISUALIZADOR,
     sector: 'GERAL',
     cpf: '',
     mobile: '',
