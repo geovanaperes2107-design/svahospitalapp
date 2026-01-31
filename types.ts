@@ -83,6 +83,7 @@ export interface Patient {
   isEvaluated: boolean;
   lastEvaluationDate?: string;
   history: HistoryEntry[];
+  order?: number;
 }
 
 export interface User {

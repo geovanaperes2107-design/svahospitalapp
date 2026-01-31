@@ -77,6 +77,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => localStorage.getItem('sva_sidebar_collapsed') === 'true');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Estados para Drag and Drop
+  const [draggedPatientId, setDraggedPatientId] = useState<string | null>(null);
+  const [dragOverPatientId, setDragOverPatientId] = useState<string | null>(null);
+
   // Persistence Effects
   useEffect(() => {
     localStorage.setItem('sva_sidebar_collapsed', String(isSidebarCollapsed));
@@ -150,10 +154,81 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
 
   const sortedPatients = useMemo(() => {
     return [...filteredPatients].sort((a, b) => {
+      // Primeiro ordena por order (se definido)
+      const orderA = a.order ?? Infinity;
+      const orderB = b.order ?? Infinity;
+      if (orderA !== orderB) return orderA - orderB;
+      // Depois mantém a lógica original de avaliados por último
       if (a.isEvaluated === b.isEvaluated) return 0;
       return a.isEvaluated ? 1 : -1;
     });
   }, [filteredPatients]);
+
+  const handleMovePatient = (patientId: string, direction: 'up' | 'down') => {
+    const currentIndex = sortedPatients.findIndex(p => p.id === patientId);
+    if (currentIndex === -1) return;
+
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= sortedPatients.length) return;
+
+    // Troca as ordens dos dois pacientes
+    const patient1 = sortedPatients[currentIndex];
+    const patient2 = sortedPatients[newIndex];
+
+    // Atribui orders se não existirem
+    const order1 = patient1.order ?? currentIndex;
+    const order2 = patient2.order ?? newIndex;
+
+    onUpdatePatient({ ...patient1, order: order2 });
+    onUpdatePatient({ ...patient2, order: order1 });
+  };
+
+  // Funções de Drag and Drop
+  const handleDragStart = (e: React.DragEvent, patientId: string) => {
+    setDraggedPatientId(patientId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, patientId: string) => {
+    e.preventDefault();
+    if (patientId !== draggedPatientId) {
+      setDragOverPatientId(patientId);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, targetPatientId: string) => {
+    e.preventDefault();
+    if (!draggedPatientId || draggedPatientId === targetPatientId) {
+      setDraggedPatientId(null);
+      setDragOverPatientId(null);
+      return;
+    }
+
+    const draggedIndex = sortedPatients.findIndex(p => p.id === draggedPatientId);
+    const targetIndex = sortedPatients.findIndex(p => p.id === targetPatientId);
+
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    // Reordena atribuindo nova ordem para todos os pacientes afetados
+    const newSortedPatients = [...sortedPatients];
+    const [draggedPatient] = newSortedPatients.splice(draggedIndex, 1);
+    newSortedPatients.splice(targetIndex, 0, draggedPatient);
+
+    // Atualiza a ordem de todos os pacientes reordenados
+    newSortedPatients.forEach((patient, index) => {
+      if (patient.order !== index) {
+        onUpdatePatient({ ...patient, order: index });
+      }
+    });
+
+    setDraggedPatientId(null);
+    setDragOverPatientId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedPatientId(null);
+    setDragOverPatientId(null);
+  };
 
   const stats = useMemo(() => {
     const activeAtbPatients = patients.filter(p => p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO));
@@ -378,7 +453,27 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
                 </div>
               </div>
               <div className="flex flex-col gap-4">
-                {sortedPatients.map(p => <PatientCard key={p.id} patient={p} role={user.role} activeTab={activeTab} onUpdate={onUpdatePatient} onDelete={onDeletePatient} isDarkMode={isDarkMode} />)}
+                {sortedPatients.map((p, index) => (
+                  <PatientCard
+                    key={p.id}
+                    patient={p}
+                    role={user.role}
+                    activeTab={activeTab}
+                    onUpdate={onUpdatePatient}
+                    onDelete={onDeletePatient}
+                    onMoveUp={() => handleMovePatient(p.id, 'up')}
+                    onMoveDown={() => handleMovePatient(p.id, 'down')}
+                    canMoveUp={index > 0}
+                    canMoveDown={index < sortedPatients.length - 1}
+                    isDarkMode={isDarkMode}
+                    onDragStart={handleDragStart}
+                    onDragOver={(e) => handleDragOver(e, p.id)}
+                    onDrop={handleDrop}
+                    onDragEnd={handleDragEnd}
+                    isDragging={draggedPatientId === p.id}
+                    isDragOver={dragOverPatientId === p.id}
+                  />
+                ))}
               </div>
             </div>
           )}

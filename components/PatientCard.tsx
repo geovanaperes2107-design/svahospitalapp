@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   MessageSquare,
   ChevronDown,
+  ChevronUp,
   Clock,
   Dna,
   ThumbsUp,
@@ -29,10 +30,21 @@ interface PatientCardProps {
   activeTab: string;
   onUpdate: (updatedPatient: Patient) => void;
   onDelete: (id: string) => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
   isDarkMode: boolean;
+  // Drag and Drop props
+  onDragStart?: (e: React.DragEvent, patientId: string) => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent, patientId: string) => void;
+  onDragEnd?: () => void;
+  isDragging?: boolean;
+  isDragOver?: boolean;
 }
 
-const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onUpdate, onDelete, isDarkMode }) => {
+const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onUpdate, onDelete, onMoveUp, onMoveDown, canMoveUp, canMoveDown, isDarkMode, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, isDragOver }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showSectorMenu, setShowSectorMenu] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState<string | null>(null);
@@ -226,7 +238,14 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
     : patient.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO);
 
   return (
-    <div className={`relative rounded-xl mb-3 w-full max-w-5xl mx-auto border transition-all duration-300 shadow-sm text-slate-800 ${getCardTheme()}`}>
+    <div
+      className={`relative rounded-xl mb-3 w-full max-w-5xl mx-auto border transition-all duration-300 shadow-sm text-slate-800 ${getCardTheme()} ${isDragging ? 'opacity-50 scale-[0.98] cursor-grabbing' : 'cursor-grab'} ${isDragOver ? 'border-blue-500 border-2 shadow-lg shadow-blue-200' : ''}`}
+      draggable={!isInfectoPanel}
+      onDragStart={(e) => onDragStart?.(e, patient.id)}
+      onDragOver={(e) => { e.preventDefault(); onDragOver?.(e); }}
+      onDrop={(e) => onDrop?.(e, patient.id)}
+      onDragEnd={onDragEnd}
+    >
 
       {/* 🔝 HEADER OTIMIZADO */}
       <div className={`px-4 py-3 flex items-start justify-between border-b rounded-t-xl transition-colors ${patient.isEvaluated ? 'border-purple-200 bg-purple-100/50' : 'border-black/5 bg-white/40'}`}>
@@ -287,6 +306,28 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
           <button onClick={() => setShowMenu(!showMenu)} className="p-2 bg-white rounded-xl border border-slate-200 text-slate-400 hover:text-slate-800 transition-colors" title="Ver Detalhes">
             <MoreVertical size={18} />
           </button>
+
+          {/* Botões de mover para cima/baixo */}
+          {!isInfectoPanel && (
+            <div className="flex flex-col gap-0.5">
+              <button
+                onClick={onMoveUp}
+                disabled={!canMoveUp}
+                className={`p-1.5 rounded-lg border transition-all ${canMoveUp ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 hover:scale-105' : 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed'}`}
+                title="Mover para cima"
+              >
+                <ChevronUp size={14} />
+              </button>
+              <button
+                onClick={onMoveDown}
+                disabled={!canMoveDown}
+                className={`p-1.5 rounded-lg border transition-all ${canMoveDown ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 hover:scale-105' : 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed'}`}
+                title="Mover para baixo"
+              >
+                <ChevronDown size={14} />
+              </button>
+            </div>
+          )}
 
           {!isInfectoPanel && (
             <button
