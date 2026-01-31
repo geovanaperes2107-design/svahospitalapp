@@ -125,6 +125,36 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
     alert("Paciente cadastrado com sucesso!");
   };
 
+  // Função para limpar o formulário e o rascunho
+  const handleClearForm = () => {
+    if (confirm("Tem certeza que deseja limpar o formulário? Todos os dados não salvos serão perdidos.")) {
+      const initialFormData = {
+        name: '',
+        birthDate: '',
+        bed: '',
+        sector: SECTORS[0],
+        diagnosis: '',
+        treatmentType: TreatmentType.TERAPEUTICO as TreatmentType,
+        numAtb: 1
+      };
+      const initialAtbs = [{
+        id: 'atb-init',
+        category: MedicationCategory.ANTIMICROBIANO,
+        name: '',
+        dose: '',
+        frequency: '24/24',
+        startDate: new Date().toISOString().split('T')[0],
+        durationDays: 7,
+        status: AntibioticStatus.EM_USO,
+        times: ['08:00'],
+        route: 'EV'
+      }];
+      setFormData(initialFormData);
+      setAtbs(initialAtbs);
+      localStorage.removeItem('sva_patient_registration_draft');
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto bg-white dark:bg-[#1e293b] rounded-3xl shadow-xl overflow-hidden border border-slate-100 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-300">
       <div className="bg-[#1e293b] p-6 text-white flex items-center justify-between">
@@ -135,7 +165,10 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Preencha os campos obrigatórios</p>
           </div>
         </div>
-        <button onClick={onCancel} type="button" className="p-2 hover:bg-white/10 rounded-xl transition-all"><X size={20} /></button>
+        <div className="flex gap-2">
+          <button onClick={handleClearForm} type="button" className="p-2 hover:bg-white/10 rounded-xl transition-all text-slate-400 hover:text-red-400" title="Limpar Formulário"><Trash2 size={20} /></button>
+          <button onClick={onCancel} type="button" className="p-2 hover:bg-white/10 rounded-xl transition-all"><X size={20} /></button>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="p-6 space-y-5 text-left">
