@@ -49,6 +49,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
     if (formData.sector === 'Centro Cirúrgico') {
       const updatedAtbs = atbs.map(atb => ({
         ...atb,
+        name: 'CEFAZOLINA PO P/ SOL INJ 1G',
         frequency: 'Dose Única',
         durationDays: 1
       }));
