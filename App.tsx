@@ -153,6 +153,20 @@ const App: React.FC = () => {
     password: '' // Password hidden/unknown
   });
 
+  const mapPreRegToUser = (pre: any): User => ({
+    id: `pre-${pre.cpf}`,
+    name: `${pre.name} (PENDENTE)`,
+    email: pre.email,
+    cpf: pre.cpf,
+    role: pre.role as UserRole,
+    sector: pre.sector,
+    mobile: '',
+    birthDate: '',
+    photoURL: undefined,
+    needsPasswordChange: true,
+    password: pre.temp_password // Exposed here if we want to show it, or keep hidden. Usually admin knows what they set.
+  });
+
   const parseDateToDb = (dateStr?: string) => {
     if (!dateStr) return null;
     const parts = dateStr.split('/');
@@ -173,12 +187,16 @@ const App: React.FC = () => {
   }, []);
 
   const fetchUsers = useCallback(async () => {
-    const { data: profiles, error } = await supabase.from('profiles').select('*');
-    if (error) {
-      console.error('Error fetching users:', error);
-    } else {
-      setUsers(profiles.map(mapProfileToUser));
-    }
+    const { data: profiles, error: pError } = await supabase.from('profiles').select('*');
+    const { data: preRegs, error: prError } = await supabase.from('pre_registrations').select('*');
+
+    if (pError) console.error('Error fetching profiles:', pError);
+    if (prError) console.error('Error fetching pre_registrations:', prError);
+
+    const validProfiles = profiles ? profiles.map(mapProfileToUser) : [];
+    const validPreRegs = preRegs ? preRegs.map(mapPreRegToUser) : [];
+
+    setUsers([...validProfiles, ...validPreRegs]);
   }, []);
 
   useEffect(() => {
@@ -194,6 +212,10 @@ const App: React.FC = () => {
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
           console.log('Realtime profile change:', payload);
+          fetchUsers();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'pre_registrations' }, (payload) => {
+          console.log('Realtime pre-reg change:', payload);
           fetchUsers();
         })
         .subscribe();
@@ -364,13 +386,33 @@ const App: React.FC = () => {
     }
   };
 
-  const handleAddUser = useCallback((u: User) => {
-    alert("ATENÇÃO: Para novos cadastros ficarem salvos no banco de dados, peça para o colaborador criar sua conta usando a opção 'Primeiro acesso? Criar Conta' na tela de login. Após criar a conta, ele aparecerá nesta lista para você editar as permissões.");
-    // We do NOT add to local users list anymore to prevent confusion.
-  }, []);
+  const handleAddUser = useCallback(async (u: User) => {
+    // Admin provisioning flow
+    if (!u.cpf || !u.password) {
+      alert("Para cadastrar um usuário, preencha CPF e uma Senha Chave (temporária).");
+      return;
+    }
+
+    const { error } = await supabase.from('pre_registrations').insert([{
+      cpf: u.cpf,
+      email: u.email,
+      name: u.name.toUpperCase(),
+      sector: u.sector,
+      role: u.role,
+      temp_password: u.password // The 'key' password
+    }]);
+
+    if (error) {
+      console.error('Erro ao pré-cadastrar usuário:', error);
+      alert(`Erro ao cadastrar: ${error.message}. Verifique se o CPF já existe.`);
+    } else {
+      alert(`Usuário ${u.name} pré-cadastrado com sucesso! Informe a senha chave "${u.password}" para o primeiro acesso.`);
+      fetchUsers();
+    }
+  }, [fetchUsers]);
 
   const handleUpdateUser = useCallback(async (u: User) => {
-    // Check if updating logged in user
+    // Update profile
     const payload: any = {
       name: u.name,
       sector: u.sector,
@@ -384,11 +426,23 @@ const App: React.FC = () => {
     // Optimistic update
     setUsers(prev => prev.map(old => old.id === u.id ? u : old));
 
-    const { error } = await supabase.from('profiles').update(payload).eq('id', u.id);
-    if (error) {
-      console.error("Error updating user profile:", error);
-      alert("Erro ao atualizar perfil do usuário: " + error.message);
-      fetchUsers();
+    // Determine if it is a pre-registration or full profile based on ID
+    if (String(u.id).startsWith('pre-')) {
+      const cpf = String(u.id).replace('pre-', '');
+      // For pre-regs, we only update core fields
+      const { error } = await supabase.from('pre_registrations').update({
+        name: u.name,
+        sector: u.sector,
+        role: u.role,
+      }).eq('cpf', cpf);
+      if (error) alert("Erro ao atualizar pré-cadastro: " + error.message);
+    } else {
+      const { error } = await supabase.from('profiles').update(payload).eq('id', u.id);
+      if (error) {
+        console.error("Error updating user profile:", error);
+        alert("Erro ao atualizar perfil do usuário: " + error.message);
+        fetchUsers();
+      }
     }
   }, [fetchUsers]);
 
@@ -398,24 +452,25 @@ const App: React.FC = () => {
       return;
     }
 
-    const confirm = window.confirm("ATENÇÃO: Isso excluirá o PERFIL do usuário da lista, mas não exclui a conta de acesso (Login). Para bloquear o acesso, altere a senha ou o perfil.");
+    const confirm = window.confirm("Confirmar exclusão deste usuário?");
     if (confirm) {
       setUsers(prev => prev.filter(u => u.id !== id));
-      const { error } = await supabase.from('profiles').delete().eq('id', id);
-      if (error) {
-        console.error("Error deleting profile:", error);
-        fetchUsers();
+
+      if (String(id).startsWith('pre-')) {
+        const cpf = String(id).replace('pre-', '');
+        const { error } = await supabase.from('pre_registrations').delete().eq('cpf', cpf);
+        if (error) alert("Erro ao excluir pré-cadastro: " + error.message);
+      } else {
+        const { error } = await supabase.from('profiles').delete().eq('id', id);
+        if (error) {
+          console.error("Error deleting profile:", error);
+          // We can't easily delete from auth.users via client without edge function, 
+          // so deleting profile effectively 'hides' them and prevents logic from working mostly.
+          fetchUsers();
+        }
       }
     }
-  }, [user]);
-
-  if (recoverySession) {
-    return <PasswordReset onSuccess={() => setRecoverySession(false)} />;
-  }
-
-  if (!session) {
-    return <Login onLoginSuccess={fetchPatients} bgImage={loginBgImage} />;
-  }
+  }, [user, fetchUsers]);
 
   // Current User Logic
   const currentUser = user || users.find(u => u.email === session?.user?.email) || {
@@ -430,6 +485,21 @@ const App: React.FC = () => {
     needsPasswordChange: false,
     password: ''
   };
+
+  // Check for Forced Password Change
+  const needsPasswordChange = users.find(u => u.id === currentUser.id)?.needsPasswordChange;
+
+  if (recoverySession || (session && needsPasswordChange)) {
+    return <PasswordReset onSuccess={() => {
+      setRecoverySession(false);
+      // Force reload user to clear flag
+      window.location.reload();
+    }} />;
+  }
+
+  if (!session) {
+    return <Login onLoginSuccess={fetchPatients} bgImage={loginBgImage} />;
+  }
 
   return (
     <Dashboard

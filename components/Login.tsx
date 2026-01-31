@@ -10,10 +10,8 @@ interface LoginProps {
 const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
   const [emailOrCpf, setEmailOrCpf] = useState('');
   const [password, setPassword] = useState('');
-  const [cpf, setCpf] = useState(''); // Only for sign up
-  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<'LOGIN' | 'SIGNUP' | 'FORGOT'>('LOGIN');
+  const [mode, setMode] = useState<'LOGIN' | 'FORGOT'>('LOGIN');
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -26,11 +24,10 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
       .replace(/(-\d{2})\d+?$/, '$1');
   };
 
-  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>, isLoginField: boolean) => {
+  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value;
     const value = formatCpf(rawValue);
-    if (isLoginField) setEmailOrCpf(value);
-    else setCpf(value);
+    setEmailOrCpf(value);
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -44,7 +41,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
       }
 
       const { error } = await supabase.auth.resetPasswordForEmail(emailOrCpf, {
-        redirectTo: window.location.origin + '/reset-password', // Ensure you handle this route if needed, or just let them reset via email link
+        redirectTo: window.location.origin + '/reset-password',
       });
 
       if (error) throw error;
@@ -62,77 +59,132 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
     setError(null);
 
     try {
-      if (mode === 'SIGNUP') {
-        // Sign Up Flow
-        if (cpf.length < 14) throw new Error('CPF incompleto.');
+      // Login Flow
+      let emailToLogin = emailOrCpf.trim();
+      const cleanInput = emailOrCpf.replace(/\D/g, '');
+      const isCpfMatch = cleanInput.length === 11 && /^\d+$/.test(cleanInput);
 
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: emailOrCpf,
-          password
-        });
+      if (isCpfMatch) {
+        // Normalize the CPF for lookup
+        const formattedCpf = formatCpf(cleanInput);
 
-        if (authError) throw authError;
+        console.log('Lookup debug:', { formattedCpf, cleanInput });
 
-        if (authData.user) {
-          // Create profile
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert([{ id: authData.user.id, email: emailOrCpf, cpf: cpf, name: name.toUpperCase() }]);
+        // Lookup email by CPF (trying both formatted and unformatted)
+        const { data: profiles, error: profileError } = await supabase
+          .from('profiles')
+          .select('email')
+          .or(`cpf.eq.${formattedCpf},cpf.eq.${cleanInput}`)
+          .maybeSingle();
 
-          if (profileError) console.error('Error creating profile:', profileError);
+        if (profileError) {
+          console.error('Database error during lookup:', profileError);
+          throw new Error(`Erro ao buscar CPF: ${profileError.message}`);
         }
 
-        setError('sucesso: Conta criada com sucesso! Você já pode entrar.');
-        setMode('LOGIN');
-      } else {
-        // Login Flow
-        let emailToLogin = emailOrCpf.trim();
-        const cleanInput = emailOrCpf.replace(/\D/g, '');
-        const isCpfMatch = cleanInput.length === 11 && /^\d+$/.test(cleanInput);
-
-        if (isCpfMatch) {
-          // Normalize the CPF for lookup
-          const formattedCpf = formatCpf(cleanInput);
-
-          console.log('Lookup debug:', { formattedCpf, cleanInput });
-
-          // Lookup email by CPF (trying both formatted and unformatted)
-          // Removing quotes around values as they can be misinterpreted by PostgREST
-          const { data: profiles, error: profileError } = await supabase
-            .from('profiles')
-            .select('email')
-            .or(`cpf.eq.${formattedCpf},cpf.eq.${cleanInput}`)
-            .maybeSingle();
-
-          if (profileError) {
-            console.error('Database error during lookup:', profileError);
-            throw new Error(`Erro ao buscar CPF: ${profileError.message}`);
-          }
-
-          if (!profiles) {
-            console.warn('CPF not found in profiles table:', formattedCpf);
-            throw new Error('Este CPF não está cadastrado. Por favor, crie uma conta primeiro ou verifique se o CPF está correto.');
-          }
-
-          emailToLogin = profiles.email;
+        if (!profiles) {
+          console.warn('CPF not found in profiles table:', formattedCpf);
+          throw new Error('Este CPF não está cadastrado. Solicite seu acesso ao administrador.');
         }
 
-        console.log('Tentando login para:', emailToLogin);
-
-        const { error } = await supabase.auth.signInWithPassword({
-          email: emailToLogin,
-          password,
-        });
-
-        if (error) {
-          console.error('Erro de autenticação Supabase:', error);
-          throw error;
-        }
-
-        onLoginSuccess();
+        emailToLogin = profiles.email;
       }
+
+      console.log('Tentando login para:', emailToLogin);
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: emailToLogin,
+        password,
+      });
+
+      if (error) {
+        console.error('Erro de autenticação Supabase:', error);
+        throw error;
+      }
+
+      onLoginSuccess();
     } catch (err: any) {
       console.error('Erro capturado no handleLogin:', err);
+
+      // JIT Sign Up Logic for Pre-registered Users
+      if (err.message === 'Invalid login credentials' || err.message.includes('Invalid login')) {
+        try {
+          const cleanInput = emailOrCpf.replace(/\D/g, '');
+          const isCpfMatch = cleanInput.length === 11 && /^\d+$/.test(cleanInput);
+          let emailForPreReg = emailOrCpf.trim();
+
+          // If input was CPF, we need to find the Email associated in pre_registrations
+          if (isCpfMatch) {
+            const formattedCpf = formatCpf(cleanInput);
+            const { data: preRegByCpf } = await supabase
+              .from('pre_registrations')
+              .select('*')
+              .or(`cpf.eq.${formattedCpf},cpf.eq.${cleanInput}`)
+              .maybeSingle();
+
+            if (preRegByCpf) emailForPreReg = preRegByCpf.email;
+          }
+
+          // Check pre_registrations
+          const { data: preReg } = await supabase
+            .from('pre_registrations')
+            .select('*')
+            .eq('email', emailForPreReg)
+            .maybeSingle();
+
+          if (preReg && preReg.temp_password === password) {
+            // Found pre-registration and password matches!
+            // Execute JIT Sign Up
+            console.log('Pre-registration found. Signing up...');
+
+            const { data: authData, error: signUpError } = await supabase.auth.signUp({
+              email: emailForPreReg,
+              password: password,
+              options: {
+                data: {
+                  name: preReg.name,
+                  cpf: preReg.cpf
+                }
+              }
+            });
+
+            if (signUpError) throw signUpError;
+
+            if (authData.user) {
+              // Create Profile
+              const { error: profileError } = await supabase
+                .from('profiles')
+                .insert([{
+                  id: authData.user.id,
+                  email: emailForPreReg,
+                  cpf: preReg.cpf,
+                  name: preReg.name.toUpperCase(),
+                  role: preReg.role,
+                  sector: preReg.sector,
+                  needs_password_change: true
+                }]);
+
+              if (profileError) console.error('Error creating profile for pre-reg:', profileError);
+
+              // Delete Pre-registration
+              await supabase.from('pre_registrations').delete().eq('cpf', preReg.cpf);
+
+              if (authData.session) {
+                // Session established (Email Confirmation likely disabled or not required)
+                onLoginSuccess();
+                return; // Successfully logged in via JIT
+              } else {
+                // Session null -> Email confirmation required
+                setError('Cadastro inicial realizado com sucesso! Verifique seu e-mail para ativar a conta antes de entrar.');
+                return;
+              }
+            }
+          }
+        } catch (jitError) {
+          console.error('Error during JIT check:', jitError);
+        }
+      }
+
       setError(err.message || 'Erro de autenticação. Tente novamente.');
     } finally {
       setLoading(false);
@@ -150,10 +202,10 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
           </div>
           <div className="mb-8">
             <h1 className="text-3xl font-black text-slate-900 tracking-tighter mb-2">
-              {mode === 'LOGIN' ? 'SVA' : mode === 'SIGNUP' ? 'Nova Conta' : 'Recuperar Senha'}
+              {mode === 'LOGIN' ? 'SVA' : 'Recuperar Senha'}
             </h1>
             <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">
-              {mode === 'LOGIN' ? 'Sistema de Vigilância de Antimicrobianos' : mode === 'SIGNUP' ? 'Preencha seus dados' : 'Informe seu e-mail cadastrado'}
+              {mode === 'LOGIN' ? 'Sistema de Vigilância de Antimicrobianos' : 'Informe seu e-mail cadastrado'}
             </p>
           </div>
         </div>
@@ -199,7 +251,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
         ) : (
           <form onSubmit={handleLogin} className="space-y-5 animate-in slide-in-from-left-10">
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-widest pl-2">{mode === 'SIGNUP' ? 'Email' : 'Email ou CPF'}</label>
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest pl-2">Login (Email ou CPF)</label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                 <input
@@ -208,47 +260,14 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
                   value={emailOrCpf}
                   onChange={(e) => {
                     const val = e.target.value;
-                    const digitsOnly = val.replace(/\D/g, '');
-                    // Se começar com número e tiver mais que um dígito, trata como CPF
                     if (/^\d/.test(val)) {
-                      handleCpfChange(e, true);
+                      handleCpfChange(e);
                     } else {
                       setEmailOrCpf(val.replace(/\s/g, ''));
                     }
                   }}
                   className="w-full bg-slate-50 border border-slate-200 pl-12 pr-4 py-4 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300"
-                  placeholder={mode === 'SIGNUP' ? "seu@email.com" : "seu@email.com ou CPF"}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2 animate-in fade-in slide-in-from-top-4">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-widest pl-2">Nome Completo</label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Nome</div>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value.toUpperCase())}
-                  className="w-full bg-slate-50 border border-slate-200 pl-12 pr-4 py-4 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300 uppercase"
-                  placeholder="SEU NOME"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2 animate-in fade-in slide-in-from-top-4">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-widest pl-2">CPF</label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">CPF</div>
-                <input
-                  type="text"
-                  required
-                  value={cpf}
-                  onChange={(e) => handleCpfChange(e, false)}
-                  className="w-full bg-slate-50 border border-slate-200 pl-12 pr-4 py-4 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300"
-                  placeholder="000.000.000-00"
-                  maxLength={14}
+                  placeholder="seu@email.com ou CPF"
                 />
               </div>
             </div>
@@ -287,26 +306,10 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
               disabled={loading}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase py-4 rounded-2xl shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0 flex items-center justify-center gap-2 text-sm tracking-wide"
             >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : (mode === 'SIGNUP' ? 'Cadastrar' : 'Entrar no Sistema')}
+              {loading ? <Loader2 className="animate-spin" size={20} /> : 'Entrar no Sistema'}
             </button>
           </form>
         )}
-
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => {
-              setMode(mode === 'LOGIN' ? 'SIGNUP' : 'LOGIN');
-              setError(null);
-              setEmailOrCpf('');
-              setCpf('');
-              setName('');
-              setPassword('');
-            }}
-            className="text-xs font-black text-blue-600 uppercase hover:underline tracking-wider"
-          >
-            {mode === 'LOGIN' ? 'Primeiro acesso? Criar Conta' : mode === 'SIGNUP' ? 'Já tem conta? Entrar' : ''}
-          </button>
-        </div>
 
         <div className="mt-8 text-center">
           <p className="text-[10px] font-bold text-slate-400 uppercase">Sistema de Gestão Hospitalar v2.0</p>

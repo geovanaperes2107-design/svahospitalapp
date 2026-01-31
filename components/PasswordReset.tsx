@@ -35,6 +35,13 @@ const PasswordReset: React.FC<PasswordResetProps> = ({ onSuccess }) => {
             });
 
             if (error) throw error;
+
+            // Update profile flag
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                await supabase.from('profiles').update({ needs_password_change: false }).eq('id', user.id);
+            }
+
             setSuccess(true);
             setTimeout(() => {
                 onSuccess();
