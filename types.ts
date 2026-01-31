@@ -62,6 +62,8 @@ export interface Antibiotic {
   suspendedAt?: string;
   route?: string;
   justification?: string;
+  infectoStatus?: InfectoStatus;
+  infectoComment?: string;
 }
 
 export interface Patient {
