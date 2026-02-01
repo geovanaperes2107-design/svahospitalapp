@@ -294,13 +294,20 @@ const App: React.FC = () => {
           });
       }
 
-      // Alerta 22:00 PM
-      const isPastAlertTime = now.getHours() >= 22;
+      // Alerta 21:30 PM
+      const isPastAlertTime = now.getHours() > 21 || (now.getHours() === 21 && now.getMinutes() >= 30);
       const lastAlertDate = localStorage.getItem('sva_last_night_alert');
       if (lastAlertDate !== todayStr && isPastAlertTime) {
-        const hasUnevaluated = patients.some(p => !p.isEvaluated);
-        if (hasUnevaluated) {
-          setSystemAlert({ message: 'Aviso: Existem pacientes pendentes de avaliação hoje (Alerta 22:00)', type: 'warning' });
+        const unevaluatedPatients = patients.filter(p => !p.isEvaluated);
+        if (unevaluatedPatients.length > 0) {
+          const names = unevaluatedPatients.map(p => p.name).slice(0, 3).join(', ');
+          const remaining = unevaluatedPatients.length - 3;
+          const messageSuffix = remaining > 0 ? ` e outros ${remaining} pacientes` : '';
+
+          setSystemAlert({
+            message: `Atenção (21:30): Pendentes de avaliação: ${names}${messageSuffix}`,
+            type: 'warning'
+          });
           localStorage.setItem('sva_last_night_alert', todayStr);
           setTimeout(() => setSystemAlert(null), 15000);
         }
