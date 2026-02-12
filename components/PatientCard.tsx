@@ -399,7 +399,15 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
           const start = startOfDay(parseISO(atb.startDate));
           const today = startOfDay(new Date());
           const calculatedDay = differenceInDays(today, start) + 1;
-          const displayDay = calculatedDay + (atb.cycleOffset || 0);
+
+          let displayDay = calculatedDay + (atb.cycleOffset || 0);
+
+          // Lógica de "pular uma meia-noite" se houve ajuste manual recente
+          if (atb.lastAdjustmentDate === format(today, 'yyyy-MM-dd')) {
+            // Se ajustou hoje, mantém o valor exato do ajuste
+            displayDay = calculatedDay + (atb.cycleOffset || 0);
+          }
+
           const daysRemaining = atb.durationDays - displayDay;
           const isVencido = daysRemaining <= 0;
           const endDate = format(addDays(parseISO(atb.startDate), atb.durationDays), 'dd/MM/yyyy');
@@ -507,7 +515,8 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                   <input type="number" disabled={isCC || isInfectoPanel} className="w-full bg-slate-50 border border-slate-200 rounded text-center text-[11px] font-black py-0 outline-none focus:border-blue-500 text-slate-800 disabled:opacity-50" value={isCC ? 1 : displayDay} onChange={e => {
                     const newVal = parseInt(e.target.value) || 1;
                     const offset = newVal - calculatedDay;
-                    onUpdate({ ...patient, antibiotics: patient.antibiotics.map(a => a.id === atb.id ? { ...a, cycleOffset: offset } : a) });
+                    const todayStr = format(new Date(), 'yyyy-MM-dd');
+                    onUpdate({ ...patient, antibiotics: patient.antibiotics.map(a => a.id === atb.id ? { ...a, cycleOffset: offset, lastAdjustmentDate: todayStr } : a) });
                   }} />
                 </div>
 

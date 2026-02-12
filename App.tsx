@@ -41,6 +41,7 @@ const App: React.FC = () => {
   const [configNotifyPending, setConfigNotifyPendingState] = useState(() => localStorage.getItem('sva_config_notify_pending') !== 'false');
   const [configNotifyExpired, setConfigNotifyExpiredState] = useState(() => localStorage.getItem('sva_config_notify_expired') !== 'false');
   const [configResetTime, setConfigResetTimeState] = useState(() => localStorage.getItem('sva_config_reset_time') || '07:30');
+  const [configResetTimeUTI, setConfigResetTimeUTIState] = useState(() => localStorage.getItem('sva_config_reset_time_uti') || '22:00');
   const [configPendingTime, setConfigPendingTimeState] = useState(() => localStorage.getItem('sva_config_pending_time') || '21:30');
 
   // --- HELPER PARA SALVAR CONFIGURAÇÕES NO SUPABASE E LOCALSTORAGE ---
@@ -69,6 +70,7 @@ const App: React.FC = () => {
   const setConfigNotifyPending = (val: boolean) => { setConfigNotifyPendingState(val); saveSetting('config_notify_pending', val, 'sva_config_notify_pending'); };
   const setConfigNotifyExpired = (val: boolean) => { setConfigNotifyExpiredState(val); saveSetting('config_notify_expired', val, 'sva_config_notify_expired'); };
   const setConfigResetTime = (val: string) => { setConfigResetTimeState(val); saveSetting('config_reset_time', val, 'sva_config_reset_time'); };
+  const setConfigResetTimeUTI = (val: string) => { setConfigResetTimeUTIState(val); saveSetting('config_reset_time_uti', val, 'sva_config_reset_time_uti'); };
   const setConfigPendingTime = (val: string) => { setConfigPendingTimeState(val); saveSetting('config_pending_time', val, 'sva_config_pending_time'); };
 
   useEffect(() => {
@@ -338,24 +340,49 @@ const App: React.FC = () => {
       const now = new Date();
       const todayStr = format(now, 'yyyy-MM-dd');
 
-      // Reset evaluations
+      // Reset evaluations por Setor
       if (configNotifyReset) {
-        const [resetHour, resetMin] = configResetTime.split(':').map(Number);
-        const isPastResetTime = now.getHours() > resetHour || (now.getHours() === resetHour && now.getMinutes() >= resetMin);
-        const lastResetDate = localStorage.getItem('sva_last_reset_evaluations');
-        if (lastResetDate !== todayStr && isPastResetTime) {
-          // Reset Logic: Update Supabase and Local State
-          supabase.from('pacientes').update({ is_evaluated: false }).neq('id', '00000000-0000-0000-0000-000000000000')
-            .then(({ error }) => {
-              if (!error) {
-                fetchPatients(); // Reload fresh data
-                localStorage.setItem('sva_last_reset_evaluations', todayStr);
-                setSystemAlert({ message: `Atenção: As avaliações diárias foram resetadas (Rotina ${configResetTime})`, type: 'info' });
-                setTimeout(() => setSystemAlert(null), 10000);
-              } else {
-                console.error('Erro ao resetar avaliações:', error);
-              }
-            });
+        const lastResetDateMap = JSON.parse(localStorage.getItem('sva_sector_resets') || '{}');
+        const sectorsToReset: string[] = [];
+
+        // Verifica Enfermaria (Geral)
+        const [hGen, mGen] = configResetTime.split(':').map(Number);
+        const isPastGenTime = now.getHours() > hGen || (now.getHours() === hGen && now.getMinutes() >= mGen);
+        if (lastResetDateMap['GERAL'] !== todayStr && isPastGenTime) {
+          sectorsToReset.push('GERAL');
+          lastResetDateMap['GERAL'] = todayStr;
+        }
+
+        // Verifica UTI
+        const [hUTI, mUTI] = configResetTimeUTI.split(':').map(Number);
+        const isPastUTITime = now.getHours() > hUTI || (now.getHours() === hUTI && now.getMinutes() >= mUTI);
+        if (lastResetDateMap['UTI'] !== todayStr && isPastUTITime) {
+          sectorsToReset.push('UTI');
+          lastResetDateMap['UTI'] = todayStr;
+        }
+
+        if (sectorsToReset.length > 0) {
+          let query = supabase.from('pacientes').update({ is_evaluated: false });
+
+          // Se for apenas alguns setores, aplicamos o filtro. 
+          // Se for tudo no mesmo minuto, a query reseta todos.
+          if (sectorsToReset.includes('GERAL') && sectorsToReset.includes('UTI')) {
+            // Reset global
+          } else {
+            query = query.in('sector', sectorsToReset.includes('UTI') ? ['UTI ADULTO', 'UTI NEONATAL'] : ['PRONTO SOCORRO', 'ENFERMARIA', 'CIRURGICO']);
+          }
+
+          query.then(({ error }) => {
+            if (!error) {
+              fetchPatients();
+              localStorage.setItem('sva_sector_resets', JSON.stringify(lastResetDateMap));
+              setSystemAlert({
+                message: `Reset de avaliações concluído para: ${sectorsToReset.join(', ')}`,
+                type: 'info'
+              });
+              setTimeout(() => setSystemAlert(null), 10000);
+            }
+          });
         }
       }
 
@@ -618,6 +645,8 @@ const App: React.FC = () => {
       setConfigNotifyExpired={setConfigNotifyExpired}
       configResetTime={configResetTime}
       setConfigResetTime={setConfigResetTime}
+      configResetTimeUTI={configResetTimeUTI}
+      setConfigResetTimeUTI={setConfigResetTimeUTI}
       configPendingTime={configPendingTime}
       setConfigPendingTime={setConfigPendingTime}
     />

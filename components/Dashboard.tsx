@@ -59,11 +59,13 @@ interface DashboardProps {
   setConfigNotifyExpired: (val: boolean) => void;
   configResetTime: string;
   setConfigResetTime: (val: string) => void;
+  configResetTimeUTI: string;
+  setConfigResetTimeUTI: (val: string) => void;
   configPendingTime: string;
   setConfigPendingTime: (val: string) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalName, setHospitalName, bgImage, setBgImage, loginBgImage, setLoginBgImage, onLogout, onUpdatePatient, onDeletePatient, onAddPatient, onAddUser, onUpdateUser, onDeleteUser, lastSaved, reportEmail, setReportEmail, atbCosts, setAtbCosts, patientDays, setPatientDays, systemAlert, setSystemAlert, isDarkMode, toggleTheme, configNotifyReset, setConfigNotifyReset, configNotifyPending, setConfigNotifyPending, configNotifyExpired, setConfigNotifyExpired, configResetTime, setConfigResetTime, configPendingTime, setConfigPendingTime }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalName, setHospitalName, bgImage, setBgImage, loginBgImage, setLoginBgImage, onLogout, onUpdatePatient, onDeletePatient, onAddPatient, onAddUser, onUpdateUser, onDeleteUser, lastSaved, reportEmail, setReportEmail, atbCosts, setAtbCosts, patientDays, setPatientDays, systemAlert, setSystemAlert, isDarkMode, toggleTheme, configNotifyReset, setConfigNotifyReset, configNotifyPending, setConfigNotifyPending, configNotifyExpired, setConfigNotifyExpired, configResetTime, setConfigResetTime, configResetTimeUTI, setConfigResetTimeUTI, configPendingTime, setConfigPendingTime }) => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('sva_active_tab') || 'inicio');
   const [searchTerm, setSearchTerm] = useState('');
   const [infectoSubTab, setInfectoSubTab] = useState<'todos' | 'pendentes' | 'autorizados' | 'nao_autorizados'>(() =>
@@ -477,6 +479,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
               setConfigNotifyExpired={setConfigNotifyExpired}
               configResetTime={configResetTime}
               setConfigResetTime={setConfigResetTime}
+              configResetTimeUTI={configResetTimeUTI}
+              setConfigResetTimeUTI={setConfigResetTimeUTI}
               configPendingTime={configPendingTime}
               setConfigPendingTime={setConfigPendingTime}
               patientDays={patientDays}

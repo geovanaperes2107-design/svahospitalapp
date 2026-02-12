@@ -30,6 +30,8 @@ interface UserManagementProps {
     setConfigNotifyExpired: (val: boolean) => void;
     configResetTime: string;
     setConfigResetTime: (val: string) => void;
+    configResetTimeUTI: string;
+    setConfigResetTimeUTI: (val: string) => void;
     configPendingTime: string;
     setConfigPendingTime: (val: string) => void;
 }
@@ -288,11 +290,24 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, currentUser, onA
                                 <div className="flex items-center gap-3">
                                     <input type="checkbox" className="w-5 h-5 rounded-lg border-slate-300 text-emerald-600 focus:ring-emerald-500" checked={configNotifyReset} onChange={e => setConfigNotifyReset(e.target.checked)} />
                                     <div>
-                                        <p className="text-[10px] font-black text-slate-700 dark:text-slate-200 uppercase">Reset de Avaliações</p>
-                                        <p className="text-[8px] font-bold text-slate-400 uppercase">Limpas status diário dos pacientes</p>
+                                        <p className="text-[10px] font-black text-slate-700 dark:text-slate-200 uppercase">Reset de Avaliações (GERAL)</p>
+                                        <p className="text-[8px] font-bold text-slate-400 uppercase">Limpa status diário (PS, ENFERMARIA, CC)</p>
                                     </div>
                                 </div>
                                 <input type="time" className="bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-black outline-none focus:border-emerald-500 text-slate-800 dark:text-white" value={configResetTime} onChange={e => setConfigResetTime(e.target.value)} />
+                            </label>
+
+                            <label className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 cursor-pointer group hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-colors">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-5 h-5 flex items-center justify-center">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-600"></div>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-700 dark:text-slate-200 uppercase">Reset de Avaliações (UTI)</p>
+                                        <p className="text-[8px] font-bold text-slate-400 uppercase">Limpa status diário (UTIs)</p>
+                                    </div>
+                                </div>
+                                <input type="time" className="bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-black outline-none focus:border-emerald-500 text-slate-800 dark:text-white" value={configResetTimeUTI} onChange={e => setConfigResetTimeUTI(e.target.value)} />
                             </label>
 
                             <label className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 cursor-pointer group hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-colors">

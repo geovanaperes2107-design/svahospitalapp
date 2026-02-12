@@ -56,6 +56,7 @@ export interface Antibiotic {
   startDate: string;
   durationDays: string | number;
   cycleOffset?: number;
+  lastAdjustmentDate?: string;
   times: string[];
   status: AntibioticStatus;
   swapReason?: string;
