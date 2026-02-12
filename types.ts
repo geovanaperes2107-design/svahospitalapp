@@ -1,10 +1,10 @@
 
 export enum UserRole {
-  INFECTOLOGIA = 'Infectologia',
-  CONTROLE_INFECCAO = 'Controle de Infecção',
-  FARMACIA = 'Farmácia',
-  ADMINISTRADOR = 'Administrador',
-  VISUALIZADOR = 'Visualizador'
+  INFECTOLOGIA = 'INFECTOLOGIA',
+  CONTROLE_INFECCAO = 'CONTROLE DE INFECÇÃO',
+  FARMACIA = 'FARMÁCIA',
+  ADMINISTRADOR = 'ADMINISTRADOR',
+  VISUALIZADOR = 'VISUALIZADOR'
 }
 
 export enum MedicationCategory {

@@ -51,9 +51,19 @@ interface DashboardProps {
   setSystemAlert: (alert: any) => void;
   isDarkMode: boolean;
   toggleTheme: () => void;
+  configNotifyReset: boolean;
+  setConfigNotifyReset: (val: boolean) => void;
+  configNotifyPending: boolean;
+  setConfigNotifyPending: (val: boolean) => void;
+  configNotifyExpired: boolean;
+  setConfigNotifyExpired: (val: boolean) => void;
+  configResetTime: string;
+  setConfigResetTime: (val: string) => void;
+  configPendingTime: string;
+  setConfigPendingTime: (val: string) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalName, setHospitalName, bgImage, setBgImage, loginBgImage, setLoginBgImage, onLogout, onUpdatePatient, onDeletePatient, onAddPatient, onAddUser, onUpdateUser, onDeleteUser, lastSaved, reportEmail, setReportEmail, atbCosts, setAtbCosts, patientDays, setPatientDays, systemAlert, setSystemAlert, isDarkMode, toggleTheme }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalName, setHospitalName, bgImage, setBgImage, loginBgImage, setLoginBgImage, onLogout, onUpdatePatient, onDeletePatient, onAddPatient, onAddUser, onUpdateUser, onDeleteUser, lastSaved, reportEmail, setReportEmail, atbCosts, setAtbCosts, patientDays, setPatientDays, systemAlert, setSystemAlert, isDarkMode, toggleTheme, configNotifyReset, setConfigNotifyReset, configNotifyPending, setConfigNotifyPending, configNotifyExpired, setConfigNotifyExpired, configResetTime, setConfigResetTime, configPendingTime, setConfigPendingTime }) => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('sva_active_tab') || 'inicio');
   const [searchTerm, setSearchTerm] = useState('');
   const [infectoSubTab, setInfectoSubTab] = useState<'todos' | 'pendentes' | 'autorizados' | 'nao_autorizados'>(() =>
@@ -261,16 +271,18 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
 
   const notifications = useMemo(() => {
     const list: { id: string, patientName: string, atbName: string }[] = [];
-    stats.expiredList.forEach(p => {
-      p.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0).forEach(a => {
-        const notifyId = `${p.id}-${a.id}`;
-        if (!dismissedNotifications.includes(notifyId)) {
-          list.push({ id: notifyId, patientName: p.name, atbName: a.name });
-        }
+    if (configNotifyExpired) {
+      stats.expiredList.forEach(p => {
+        p.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0).forEach(a => {
+          const notifyId = `${p.id}-${a.id}`;
+          if (!dismissedNotifications.includes(notifyId)) {
+            list.push({ id: notifyId, patientName: p.name, atbName: a.name });
+          }
+        });
       });
-    });
+    }
     return list;
-  }, [stats.expiredList, dismissedNotifications]);
+  }, [stats.expiredList, dismissedNotifications, configNotifyExpired]);
 
   const handleNotifyClick = () => {
     setReportInitialTab('vencimento');
@@ -311,13 +323,33 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
         />
 
         {systemAlert && (
-          <div className="mx-2 md:mx-6 mt-4 animate-in slide-in-from-top-4 duration-300">
-            <div className={`p-4 rounded-2xl border flex items-center justify-between shadow-lg ${systemAlert.type === 'warning' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-blue-50 border-blue-200 text-blue-800'}`}>
-              <div className="flex items-center gap-3">
-                <ShieldCheck size={18} className={systemAlert.type === 'warning' ? 'text-red-500' : 'text-blue-500'} />
-                <p className="text-[10px] md:text-sm font-black uppercase tracking-tight">{systemAlert.message}</p>
+          <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[99999] w-full max-w-3xl px-4 animate-in slide-in-from-top-4 duration-500">
+            <div
+              onClick={() => {
+                if (systemAlert.message.includes('Pendentes')) {
+                  setActiveTab('inicio'); // Go to dashboard/monitoramento where pending logic usually resides or is visible
+                  // Ideally we could filter for them, but just focusing the dashboard is a start. 
+                  // Or if user wants to go to 'infectologia' tab? Usually daily evaluation is general.
+                  // Let's just focus dashboard.
+                }
+              }}
+              className={`p-6 rounded-[2rem] border-2 flex items-center justify-between shadow-2xl backdrop-blur-md cursor-pointer hover:scale-[1.02] transition-all
+              ${systemAlert.type === 'warning' ? 'bg-red-500/95 border-red-400 text-white' : 'bg-blue-500/95 border-blue-400 text-white'}`}>
+              <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-full ${systemAlert.type === 'warning' ? 'bg-white/20' : 'bg-white/20'}`}>
+                  <ShieldCheck size={32} className="text-white animate-pulse" />
+                </div>
+                <div>
+                  <p className="text-xs md:text-sm font-black uppercase tracking-widest opacity-80 mb-1">Notificação do Sistema</p>
+                  <p className="text-sm md:text-lg font-black uppercase tracking-tight leading-tight">{systemAlert.message}</p>
+                </div>
               </div>
-              <button onClick={() => setSystemAlert(null)} className="p-1 hover:bg-black/5 rounded-full"><X size={16} /></button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setSystemAlert(null); }}
+                className="p-3 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors"
+              >
+                <X size={24} />
+              </button>
             </div>
           </div>
         )}
@@ -401,6 +433,18 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
               setReportEmail={setReportEmail}
               atbCosts={atbCosts}
               setAtbCosts={setAtbCosts}
+              configNotifyReset={configNotifyReset}
+              setConfigNotifyReset={setConfigNotifyReset}
+              configNotifyPending={configNotifyPending}
+              setConfigNotifyPending={setConfigNotifyPending}
+              configNotifyExpired={configNotifyExpired}
+              setConfigNotifyExpired={setConfigNotifyExpired}
+              configResetTime={configResetTime}
+              setConfigResetTime={setConfigResetTime}
+              configPendingTime={configPendingTime}
+              setConfigPendingTime={setConfigPendingTime}
+              patientDays={patientDays}
+              setPatientDays={setPatientDays}
             />
           )}
           {activeTab === 'cadastro' && <div className="max-w-4xl mx-auto"><PatientRegistration onAdd={(p) => { onAddPatient(p); setActiveTab('inicio'); }} onCancel={() => setActiveTab('inicio')} /></div>}

@@ -61,6 +61,12 @@ const App: React.FC = () => {
     };
   });
 
+  const [configNotifyReset, setConfigNotifyReset] = useState(() => localStorage.getItem('sva_config_notify_reset') !== 'false');
+  const [configNotifyPending, setConfigNotifyPending] = useState(() => localStorage.getItem('sva_config_notify_pending') !== 'false');
+  const [configNotifyExpired, setConfigNotifyExpired] = useState(() => localStorage.getItem('sva_config_notify_expired') !== 'false');
+  const [configResetTime, setConfigResetTime] = useState(() => localStorage.getItem('sva_config_reset_time') || '07:30');
+  const [configPendingTime, setConfigPendingTime] = useState(() => localStorage.getItem('sva_config_pending_time') || '21:30');
+
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('sva_dark_mode') === 'true');
 
   // Sincronização da classe 'dark' no documento para ativação das classes utilitárias do Tailwind
@@ -276,40 +282,46 @@ const App: React.FC = () => {
       const now = new Date();
       const todayStr = format(now, 'yyyy-MM-dd');
 
-      // Reset 07:30 AM
-      const isPastResetTime = now.getHours() > 7 || (now.getHours() === 7 && now.getMinutes() >= 30);
-      const lastResetDate = localStorage.getItem('sva_last_reset_evaluations');
-      if (lastResetDate !== todayStr && isPastResetTime) {
-        // Reset Logic: Update Supabase and Local State
-        supabase.from('pacientes').update({ is_evaluated: false }).neq('id', '00000000-0000-0000-0000-000000000000')
-          .then(({ error }) => {
-            if (!error) {
-              fetchPatients(); // Reload fresh data
-              localStorage.setItem('sva_last_reset_evaluations', todayStr);
-              setSystemAlert({ message: 'Atenção: As avaliações diárias foram resetadas (Rotina 07:30)', type: 'info' });
-              setTimeout(() => setSystemAlert(null), 10000);
-            } else {
-              console.error('Erro ao resetar avaliações:', error);
-            }
-          });
+      // Reset evaluations
+      if (configNotifyReset) {
+        const [resetHour, resetMin] = configResetTime.split(':').map(Number);
+        const isPastResetTime = now.getHours() > resetHour || (now.getHours() === resetHour && now.getMinutes() >= resetMin);
+        const lastResetDate = localStorage.getItem('sva_last_reset_evaluations');
+        if (lastResetDate !== todayStr && isPastResetTime) {
+          // Reset Logic: Update Supabase and Local State
+          supabase.from('pacientes').update({ is_evaluated: false }).neq('id', '00000000-0000-0000-0000-000000000000')
+            .then(({ error }) => {
+              if (!error) {
+                fetchPatients(); // Reload fresh data
+                localStorage.setItem('sva_last_reset_evaluations', todayStr);
+                setSystemAlert({ message: `Atenção: As avaliações diárias foram resetadas (Rotina ${configResetTime})`, type: 'info' });
+                setTimeout(() => setSystemAlert(null), 10000);
+              } else {
+                console.error('Erro ao resetar avaliações:', error);
+              }
+            });
+        }
       }
 
-      // Alerta 21:30 PM
-      const isPastAlertTime = now.getHours() > 21 || (now.getHours() === 21 && now.getMinutes() >= 30);
-      const lastAlertDate = localStorage.getItem('sva_last_night_alert');
-      if (lastAlertDate !== todayStr && isPastAlertTime) {
-        const unevaluatedPatients = patients.filter(p => !p.isEvaluated);
-        if (unevaluatedPatients.length > 0) {
-          const names = unevaluatedPatients.map(p => p.name).slice(0, 3).join(', ');
-          const remaining = unevaluatedPatients.length - 3;
-          const messageSuffix = remaining > 0 ? ` e outros ${remaining} pacientes` : '';
+      // Alerta de Pendentes
+      if (configNotifyPending) {
+        const [pendingHour, pendingMin] = configPendingTime.split(':').map(Number);
+        const isPastAlertTime = now.getHours() > pendingHour || (now.getHours() === pendingHour && now.getMinutes() >= pendingMin);
+        const lastAlertDate = localStorage.getItem('sva_last_night_alert');
+        if (lastAlertDate !== todayStr && isPastAlertTime) {
+          const unevaluatedPatients = patients.filter(p => !p.isEvaluated);
+          if (unevaluatedPatients.length > 0) {
+            const names = unevaluatedPatients.map(p => p.name).slice(0, 3).join(', ');
+            const remaining = unevaluatedPatients.length - 3;
+            const messageSuffix = remaining > 0 ? ` e outros ${remaining} pacientes` : '';
 
-          setSystemAlert({
-            message: `Atenção (21:30): Pendentes de avaliação: ${names}${messageSuffix}`,
-            type: 'warning'
-          });
-          localStorage.setItem('sva_last_night_alert', todayStr);
-          setTimeout(() => setSystemAlert(null), 15000);
+            setSystemAlert({
+              message: `Atenção (${configPendingTime}): Pendentes de avaliação: ${names}${messageSuffix}`,
+              type: 'warning'
+            });
+            localStorage.setItem('sva_last_night_alert', todayStr);
+            // Removed timeout to persist alert per user request
+          }
         }
       }
 
@@ -331,7 +343,7 @@ const App: React.FC = () => {
     checkScheduledTasks();
     const interval = setInterval(checkScheduledTasks, 60000);
     return () => clearInterval(interval);
-  }, [patients, reportEmail, atbCosts, hospitalName]);
+  }, [patients, reportEmail, atbCosts, hospitalName, configNotifyReset, configNotifyPending, configResetTime, configPendingTime]);
 
   useEffect(() => {
     // Only save settings to local storage, NOT patients OR users anymore
@@ -341,7 +353,12 @@ const App: React.FC = () => {
     localStorage.setItem('sva_report_email', reportEmail);
     localStorage.setItem('sva_patient_days', patientDays.toString());
     localStorage.setItem('sva_atb_costs', JSON.stringify(atbCosts));
-  }, [hospitalName, bgImage, loginBgImage, reportEmail, patientDays, atbCosts]);
+    localStorage.setItem('sva_config_notify_reset', String(configNotifyReset));
+    localStorage.setItem('sva_config_notify_pending', String(configNotifyPending));
+    localStorage.setItem('sva_config_notify_expired', String(configNotifyExpired));
+    localStorage.setItem('sva_config_reset_time', configResetTime);
+    localStorage.setItem('sva_config_pending_time', configPendingTime);
+  }, [hospitalName, bgImage, loginBgImage, reportEmail, patientDays, atbCosts, configNotifyReset, configNotifyPending, configNotifyExpired, configResetTime, configPendingTime]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -480,7 +497,7 @@ const App: React.FC = () => {
   }, [user, fetchUsers]);
 
   // Current User Logic
-  const currentUser = user || users.find(u => u.email === session?.user?.email) || {
+  const currentUser = user || users.find(u => u.email?.toLowerCase() === session?.user?.email?.toLowerCase()) || {
     id: session?.user?.id,
     name: session?.user?.email?.split('@')[0].toUpperCase(),
     email: session?.user?.email,
@@ -537,6 +554,16 @@ const App: React.FC = () => {
       setSystemAlert={setSystemAlert}
       isDarkMode={isDarkMode}
       toggleTheme={toggleTheme}
+      configNotifyReset={configNotifyReset}
+      setConfigNotifyReset={setConfigNotifyReset}
+      configNotifyPending={configNotifyPending}
+      setConfigNotifyPending={setConfigNotifyPending}
+      configNotifyExpired={configNotifyExpired}
+      setConfigNotifyExpired={setConfigNotifyExpired}
+      configResetTime={configResetTime}
+      setConfigResetTime={setConfigResetTime}
+      configPendingTime={configPendingTime}
+      setConfigPendingTime={setConfigPendingTime}
     />
   );
 };
