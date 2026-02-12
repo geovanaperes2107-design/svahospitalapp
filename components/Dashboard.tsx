@@ -67,6 +67,8 @@ interface DashboardProps {
   setConfigAtbDayLock: (val: boolean) => void;
   configAtbDayChangeTime: string;
   setConfigAtbDayChangeTime: (val: string) => void;
+  configAtbDayChangeTimeUTI: string;
+  setConfigAtbDayChangeTimeUTI: (val: string) => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({
@@ -76,7 +78,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   systemAlert, setSystemAlert, isDarkMode, toggleTheme, configNotifyReset, setConfigNotifyReset,
   configNotifyPending, setConfigNotifyPending, configNotifyExpired, setConfigNotifyExpired,
   configResetTime, setConfigResetTime, configResetTimeUTI, setConfigResetTimeUTI, configPendingTime,
-  setConfigPendingTime, configAtbDayLock, setConfigAtbDayLock, configAtbDayChangeTime, setConfigAtbDayChangeTime
+  setConfigPendingTime, configAtbDayLock, setConfigAtbDayLock, configAtbDayChangeTime, setConfigAtbDayChangeTime,
+  configAtbDayChangeTimeUTI, setConfigAtbDayChangeTimeUTI
 }) => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('sva_active_tab') || 'inicio');
   const [searchTerm, setSearchTerm] = useState('');
@@ -444,6 +447,8 @@ const Dashboard: React.FC<DashboardProps> = ({
               setConfigAtbDayLock={setConfigAtbDayLock}
               configAtbDayChangeTime={configAtbDayChangeTime}
               setConfigAtbDayChangeTime={setConfigAtbDayChangeTime}
+              configAtbDayChangeTimeUTI={configAtbDayChangeTimeUTI}
+              setConfigAtbDayChangeTimeUTI={setConfigAtbDayChangeTimeUTI}
               patientDays={patientDays}
               setPatientDays={setPatientDays}
             />
@@ -514,6 +519,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     isDarkMode={isDarkMode}
                     configAtbDayLock={configAtbDayLock}
                     configAtbDayChangeTime={configAtbDayChangeTime}
+                    configAtbDayChangeTimeUTI={configAtbDayChangeTimeUTI}
                     onDragStart={handleDragStart}
                     onDragOver={(e) => handleDragOver(e, p.id)}
                     onDrop={handleDrop}

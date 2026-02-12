@@ -38,6 +38,8 @@ interface UserManagementProps {
     setConfigAtbDayLock: (val: boolean) => void;
     configAtbDayChangeTime: string;
     setConfigAtbDayChangeTime: (val: string) => void;
+    configAtbDayChangeTimeUTI: string;
+    setConfigAtbDayChangeTimeUTI: (val: string) => void;
 }
 
 const UserManagement: React.FC<UserManagementProps> = ({
@@ -46,7 +48,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
     patientDays, setPatientDays, configNotifyReset, setConfigNotifyReset, configNotifyPending,
     setConfigNotifyPending, configNotifyExpired, setConfigNotifyExpired, configResetTime,
     setConfigResetTime, configResetTimeUTI, setConfigResetTimeUTI, configPendingTime, setConfigPendingTime,
-    configAtbDayLock, setConfigAtbDayLock, configAtbDayChangeTime, setConfigAtbDayChangeTime
+    configAtbDayLock, setConfigAtbDayLock, configAtbDayChangeTime, setConfigAtbDayChangeTime,
+    configAtbDayChangeTimeUTI, setConfigAtbDayChangeTimeUTI
 }) => {
     const [showForm, setShowForm] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -338,11 +341,24 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                         <Clock size={20} />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-black text-slate-700 dark:text-slate-200 uppercase">Virada de Dia (ATB)</p>
+                                        <p className="text-[10px] font-black text-slate-700 dark:text-slate-200 uppercase">Virada de Dia (GERAL)</p>
                                         <p className="text-[8px] font-bold text-slate-400 uppercase">Horário do incremento automático</p>
                                     </div>
                                 </div>
                                 <input type="time" className="bg-slate-50 dark:bg-slate-900 border-2 border-transparent focus:border-emerald-500 rounded-xl px-3 py-1.5 text-xs font-black outline-none text-slate-800 dark:text-white" value={configAtbDayChangeTime} onChange={e => setConfigAtbDayChangeTime(e.target.value)} />
+                            </label>
+
+                            <label className="flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 cursor-pointer group hover:border-emerald-500 transition-all">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-500">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-700 dark:text-slate-200 uppercase">Virada de Dia (UTI)</p>
+                                        <p className="text-[8px] font-bold text-slate-400 uppercase">Horário do incremento automático (UTIs)</p>
+                                    </div>
+                                </div>
+                                <input type="time" className="bg-slate-50 dark:bg-slate-900 border-2 border-transparent focus:border-emerald-500 rounded-xl px-3 py-1.5 text-xs font-black outline-none text-slate-800 dark:text-white" value={configAtbDayChangeTimeUTI} onChange={e => setConfigAtbDayChangeTimeUTI(e.target.value)} />
                             </label>
 
                             <label className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 cursor-pointer group hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-colors">

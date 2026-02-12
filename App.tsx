@@ -45,6 +45,7 @@ const App: React.FC = () => {
   const [configPendingTime, setConfigPendingTimeState] = useState(() => localStorage.getItem('sva_config_pending_time') || '21:30');
   const [configAtbDayLock, setConfigAtbDayLockState] = useState(() => localStorage.getItem('sva_config_atb_day_lock') !== 'false');
   const [configAtbDayChangeTime, setConfigAtbDayChangeTimeState] = useState(() => localStorage.getItem('sva_config_atb_day_change_time') || '00:00');
+  const [configAtbDayChangeTimeUTI, setConfigAtbDayChangeTimeUTIState] = useState(() => localStorage.getItem('sva_config_atb_day_change_time_uti') || '00:00');
 
   // --- HELPER PARA SALVAR CONFIGURAÇÕES NO SUPABASE E LOCALSTORAGE ---
   const saveSetting = async (key: string, value: any, localStorageKey: string) => {
@@ -76,6 +77,7 @@ const App: React.FC = () => {
   const setConfigPendingTime = (val: string) => { setConfigPendingTimeState(val); saveSetting('config_pending_time', val, 'sva_config_pending_time'); };
   const setConfigAtbDayLock = (val: boolean) => { setConfigAtbDayLockState(val); saveSetting('config_atb_day_lock', val, 'sva_config_atb_day_lock'); };
   const setConfigAtbDayChangeTime = (val: string) => { setConfigAtbDayChangeTimeState(val); saveSetting('config_atb_day_change_time', val, 'sva_config_atb_day_change_time'); };
+  const setConfigAtbDayChangeTimeUTI = (val: string) => { setConfigAtbDayChangeTimeUTIState(val); saveSetting('config_atb_day_change_time_uti', val, 'sva_config_atb_day_change_time_uti'); };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -241,7 +243,10 @@ const App: React.FC = () => {
           case 'config_notify_pending': setConfigNotifyPendingState(s.value); break;
           case 'config_notify_expired': setConfigNotifyExpiredState(s.value); break;
           case 'config_reset_time': setConfigResetTimeState(s.value); break;
+          case 'config_reset_time_uti': setConfigResetTimeUTIState(s.value); break;
           case 'config_pending_time': setConfigPendingTimeState(s.value); break;
+          case 'config_atb_day_change_time': setConfigAtbDayChangeTimeState(s.value); break;
+          case 'config_atb_day_change_time_uti': setConfigAtbDayChangeTimeUTIState(s.value); break;
         }
         // Sync to localStorage too
         localStorage.setItem(`sva_${s.key}`, typeof s.value === 'string' ? s.value : JSON.stringify(s.value));
@@ -657,6 +662,8 @@ const App: React.FC = () => {
       setConfigAtbDayLock={setConfigAtbDayLock}
       configAtbDayChangeTime={configAtbDayChangeTime}
       setConfigAtbDayChangeTime={setConfigAtbDayChangeTime}
+      configAtbDayChangeTimeUTI={configAtbDayChangeTimeUTI}
+      setConfigAtbDayChangeTimeUTI={setConfigAtbDayChangeTimeUTI}
     />
   );
 };

@@ -44,9 +44,10 @@ interface PatientCardProps {
   isDragOver?: boolean;
   configAtbDayLock?: boolean;
   configAtbDayChangeTime?: string;
+  configAtbDayChangeTimeUTI?: string;
 }
 
-const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onUpdate, onDelete, onMoveUp, onMoveDown, canMoveUp, canMoveDown, isDarkMode, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, isDragOver, configAtbDayLock, configAtbDayChangeTime }) => {
+const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onUpdate, onDelete, onMoveUp, onMoveDown, canMoveUp, canMoveDown, isDarkMode, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, isDragOver, configAtbDayLock, configAtbDayChangeTime, configAtbDayChangeTimeUTI }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showSectorMenu, setShowSectorMenu] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState<string | null>(null);
@@ -398,7 +399,8 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
 
       <div className="p-2 space-y-2">
         {antibioticsToDisplay.map((atb) => {
-          const changeTime = configAtbDayChangeTime || '00:00';
+          const isUTI = patient.sector?.includes('UTI');
+          const changeTime = isUTI ? (configAtbDayChangeTimeUTI || '00:00') : (configAtbDayChangeTime || '00:00');
           const [h, m] = changeTime.split(':').map(Number);
 
           const shiftDate = (date: Date) => {
