@@ -91,6 +91,17 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
   const [draggedPatientId, setDraggedPatientId] = useState<string | null>(null);
   const [dragOverPatientId, setDragOverPatientId] = useState<string | null>(null);
 
+  // Controle de alertas persistentes (Baloes)
+  const [dismissedPendingAlert, setDismissedPendingAlert] = useState(() => localStorage.getItem('sva_dismissed_pending_alert') === new Date().toISOString().split('T')[0]);
+
+  const unevaluatedPatients = useMemo(() => patients.filter(p => !p.isEvaluated && p.sector !== 'Centro Cirúrgico'), [patients]);
+
+  const handleDismissPendingAlert = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDismissedPendingAlert(true);
+    localStorage.setItem('sva_dismissed_pending_alert', new Date().toISOString().split('T')[0]);
+  };
+
   // Persistence Effects
   useEffect(() => {
     localStorage.setItem('sva_sidebar_collapsed', String(isSidebarCollapsed));
@@ -327,10 +338,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
             <div
               onClick={() => {
                 if (systemAlert.message.includes('Pendentes')) {
-                  setActiveTab('inicio'); // Go to dashboard/monitoramento where pending logic usually resides or is visible
-                  // Ideally we could filter for them, but just focusing the dashboard is a start. 
-                  // Or if user wants to go to 'infectologia' tab? Usually daily evaluation is general.
-                  // Let's just focus dashboard.
+                  setActiveTab('inicio');
                 }
               }}
               className={`p-6 rounded-[2rem] border-2 flex items-center justify-between shadow-2xl backdrop-blur-md cursor-pointer hover:scale-[1.02] transition-all
@@ -349,6 +357,34 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
                 className="p-3 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors"
               >
                 <X size={24} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {configNotifyPending && unevaluatedPatients.length > 0 && !dismissedPendingAlert && (
+          <div className="fixed bottom-10 right-10 z-[1000] w-full max-w-md px-4 animate-in slide-in-from-bottom-4 duration-500">
+            <div
+              onClick={() => setActiveTab('inicio')}
+              className="p-6 rounded-[2.5rem] bg-orange-600/95 border-2 border-orange-400 text-white flex items-center justify-between shadow-2xl backdrop-blur-md cursor-pointer hover:scale-[1.05] transition-all"
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-2xl bg-white/20">
+                  <Bell size={28} className="text-white animate-bounce" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1">Pendências Críticas</p>
+                  <p className="text-sm font-black uppercase tracking-tight leading-tight">
+                    {unevaluatedPatients.length} {unevaluatedPatients.length === 1 ? 'paciente aguarda' : 'pacientes aguardam'} avaliação
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleDismissPendingAlert}
+                className="p-2.5 bg-white/20 hover:bg-white/30 rounded-xl text-white transition-colors ml-4"
+                title="Fechar Balão"
+              >
+                <X size={20} />
               </button>
             </div>
           </div>
