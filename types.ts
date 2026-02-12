@@ -55,7 +55,7 @@ export interface Antibiotic {
   frequency: string;
   startDate: string;
   durationDays: string | number;
-  manualCycle?: number;
+  cycleOffset?: number;
   times: string[];
   status: AntibioticStatus;
   swapReason?: string;

@@ -268,7 +268,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
       const start = startOfDay(parseISO(a.startDate));
       const today = startOfDay(new Date());
       const calculatedDay = differenceInDays(today, start) + 1;
-      const currentCycle = a.manualCycle ?? calculatedDay;
+      const currentCycle = calculatedDay + (a.cycleOffset || 0);
       return a.durationDays - currentCycle;
     }));
     if (minDaysRemaining <= 0) return 'bg-red-50 border-red-500 shadow-red-100';
@@ -399,7 +399,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
           const start = startOfDay(parseISO(atb.startDate));
           const today = startOfDay(new Date());
           const calculatedDay = differenceInDays(today, start) + 1;
-          const displayDay = atb.manualCycle ?? calculatedDay;
+          const displayDay = calculatedDay + (atb.cycleOffset || 0);
           const daysRemaining = atb.durationDays - displayDay;
           const isVencido = daysRemaining <= 0;
           const endDate = format(addDays(parseISO(atb.startDate), atb.durationDays), 'dd/MM/yyyy');
@@ -436,7 +436,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                   {/* Status do ATB na visão da Infecto */}
                   {isInfectoPanel && (
                     <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ml-2 ${atbStatus === InfectoStatus.AUTORIZADO ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
-                        atbStatus === InfectoStatus.NAO_AUTORIZADO ? 'bg-red-100 text-red-700 border-red-200' : 'bg-slate-100 text-slate-500 border-slate-200'
+                      atbStatus === InfectoStatus.NAO_AUTORIZADO ? 'bg-red-100 text-red-700 border-red-200' : 'bg-slate-100 text-slate-500 border-slate-200'
                       }`}>
                       {atbStatus}
                     </span>
@@ -505,8 +505,9 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                 <div className="bg-white p-1 rounded-lg shadow-sm border border-black/5 text-center flex flex-col items-center justify-center">
                   <p className="text-[7px] font-black text-slate-400 uppercase leading-none mb-1">Dia</p>
                   <input type="number" disabled={isCC || isInfectoPanel} className="w-full bg-slate-50 border border-slate-200 rounded text-center text-[11px] font-black py-0 outline-none focus:border-blue-500 text-slate-800 disabled:opacity-50" value={isCC ? 1 : displayDay} onChange={e => {
-                    const val = parseInt(e.target.value) || 1;
-                    onUpdate({ ...patient, antibiotics: patient.antibiotics.map(a => a.id === atb.id ? { ...a, manualCycle: val } : a) });
+                    const newVal = parseInt(e.target.value) || 1;
+                    const offset = newVal - calculatedDay;
+                    onUpdate({ ...patient, antibiotics: patient.antibiotics.map(a => a.id === atb.id ? { ...a, cycleOffset: offset } : a) });
                   }} />
                 </div>
 
