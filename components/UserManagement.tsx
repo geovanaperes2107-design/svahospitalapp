@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { UserPlus, Shield, Key, Trash2, Edit2, Search, X, CheckCircle2, Building2, Save, Image as ImageIcon, Upload, Monitor, Lock, Unlock, MailCheck, AlertCircle, Eye, EyeOff, Bell } from 'lucide-react';
+import { UserPlus, Shield, Key, Trash2, Edit2, Search, X, CheckCircle2, Building2, Save, Image as ImageIcon, Upload, Monitor, Lock, Unlock, MailCheck, AlertCircle, Eye, EyeOff, Bell, Clock, Users } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { User, UserRole } from '../types';
 
