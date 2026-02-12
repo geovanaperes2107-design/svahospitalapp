@@ -17,9 +17,59 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [recoverySession, setRecoverySession] = useState(false);
 
-  const [hospitalName, setHospitalName] = useState(() => {
-    return localStorage.getItem('sva_hospital_name') || 'Hospital Estadual de São Luis de Montes Belos - HSLMB';
+  const [hospitalName, setHospitalNameState] = useState(() => localStorage.getItem('sva_hospital_name') || 'Hospital Estadual de São Luis de Montes Belos - HSLMB');
+  const [bgImage, setBgImageState] = useState(() => localStorage.getItem('sva_bg_image') || '');
+  const [loginBgImage, setLoginBgImageState] = useState(() => localStorage.getItem('sva_login_bg_image') || '');
+  const [reportEmail, setReportEmailState] = useState(() => localStorage.getItem('sva_report_email') || '');
+  const [patientDays, setPatientDaysState] = useState(() => parseInt(localStorage.getItem('sva_patient_days') || '1200'));
+  const [atbCosts, setAtbCostsState] = useState<Record<string, number>>(() => {
+    const saved = localStorage.getItem('sva_atb_costs');
+    return saved ? JSON.parse(saved) : {
+      'MEROPENEM PO P/ SOL INJ 1G': 85.00,
+      'VANCOMICINA PO P/ SOL INJ 500MG': 45.00,
+      'PIPERACILINA + TAZOBACTAM PO P/ SOL INJ 4 + 0,5G': 120.00,
+      'CEFTRIAXONA PO P/ SOL INJ 1G': 15.00,
+      'CIPROFLOXACINO COMP 500MG': 12.00,
+      'CEFEPIME PO P/ SOL INJ 1G': 55.00,
+      'LINEZOLIDA SOL INJ 2MG/ML 300ML': 250.00,
+      'POLIMIXINA B PO P/ SOL INJ 500.000UI': 180.00,
+      'FLUCONAZOL SOL INJ 2MG/ML 100ML': 25.00,
+    };
   });
+
+  const [configNotifyReset, setConfigNotifyResetState] = useState(() => localStorage.getItem('sva_config_notify_reset') !== 'false');
+  const [configNotifyPending, setConfigNotifyPendingState] = useState(() => localStorage.getItem('sva_config_notify_pending') !== 'false');
+  const [configNotifyExpired, setConfigNotifyExpiredState] = useState(() => localStorage.getItem('sva_config_notify_expired') !== 'false');
+  const [configResetTime, setConfigResetTimeState] = useState(() => localStorage.getItem('sva_config_reset_time') || '07:30');
+  const [configPendingTime, setConfigPendingTimeState] = useState(() => localStorage.getItem('sva_config_pending_time') || '21:30');
+
+  // --- HELPER PARA SALVAR CONFIGURAÇÕES NO SUPABASE E LOCALSTORAGE ---
+  const saveSetting = async (key: string, value: any, localStorageKey: string) => {
+    localStorage.setItem(localStorageKey, typeof value === 'string' ? value : JSON.stringify(value));
+    try {
+      await supabase.from('system_settings').upsert({ key, value }, { onConflict: 'key' });
+    } catch (err) {
+      console.error(`Erro ao salvar configuração ${key}:`, err);
+    }
+  };
+
+  const setHospitalName = (val: string) => { setHospitalNameState(val); saveSetting('hospital_name', val, 'sva_hospital_name'); };
+  const setBgImage = (val: string) => { setBgImageState(val); saveSetting('bg_image', val, 'sva_bg_image'); };
+  const setLoginBgImage = (val: string) => { setLoginBgImageState(val); saveSetting('login_bg_image', val, 'sva_login_bg_image'); };
+  const setReportEmail = (val: string) => { setReportEmailState(val); saveSetting('report_email', val, 'sva_report_email'); };
+  const setPatientDays = (val: number) => { setPatientDaysState(val); saveSetting('patient_days', val, 'sva_patient_days'); };
+  const setAtbCosts = (val: any) => {
+    setAtbCostsState(prev => {
+      const newVal = typeof val === 'function' ? val(prev) : val;
+      saveSetting('atb_costs', newVal, 'sva_atb_costs');
+      return newVal;
+    });
+  };
+  const setConfigNotifyReset = (val: boolean) => { setConfigNotifyResetState(val); saveSetting('config_notify_reset', val, 'sva_config_notify_reset'); };
+  const setConfigNotifyPending = (val: boolean) => { setConfigNotifyPendingState(val); saveSetting('config_notify_pending', val, 'sva_config_notify_pending'); };
+  const setConfigNotifyExpired = (val: boolean) => { setConfigNotifyExpiredState(val); saveSetting('config_notify_expired', val, 'sva_config_notify_expired'); };
+  const setConfigResetTime = (val: string) => { setConfigResetTimeState(val); saveSetting('config_reset_time', val, 'sva_config_reset_time'); };
+  const setConfigPendingTime = (val: string) => { setConfigPendingTimeState(val); saveSetting('config_pending_time', val, 'sva_config_pending_time'); };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -42,30 +92,6 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const [bgImage, setBgImage] = useState(() => localStorage.getItem('sva_bg_image') || '');
-  const [loginBgImage, setLoginBgImage] = useState(() => localStorage.getItem('sva_login_bg_image') || '');
-  const [reportEmail, setReportEmail] = useState(() => localStorage.getItem('sva_report_email') || '');
-  const [patientDays, setPatientDays] = useState(() => parseInt(localStorage.getItem('sva_patient_days') || '1200'));
-  const [atbCosts, setAtbCosts] = useState<Record<string, number>>(() => {
-    const saved = localStorage.getItem('sva_atb_costs');
-    return saved ? JSON.parse(saved) : {
-      'MEROPENEM PO P/ SOL INJ 1G': 85.00,
-      'VANCOMICINA PO P/ SOL INJ 500MG': 45.00,
-      'PIPERACILINA + TAZOBACTAM PO P/ SOL INJ 4 + 0,5G': 120.00,
-      'CEFTRIAXONA PO P/ SOL INJ 1G': 15.00,
-      'CIPROFLOXACINO COMP 500MG': 12.00,
-      'CEFEPIME PO P/ SOL INJ 1G': 55.00,
-      'LINEZOLIDA SOL INJ 2MG/ML 300ML': 250.00,
-      'POLIMIXINA B PO P/ SOL INJ 500.000UI': 180.00,
-      'FLUCONAZOL SOL INJ 2MG/ML 100ML': 25.00,
-    };
-  });
-
-  const [configNotifyReset, setConfigNotifyReset] = useState(() => localStorage.getItem('sva_config_notify_reset') !== 'false');
-  const [configNotifyPending, setConfigNotifyPending] = useState(() => localStorage.getItem('sva_config_notify_pending') !== 'false');
-  const [configNotifyExpired, setConfigNotifyExpired] = useState(() => localStorage.getItem('sva_config_notify_expired') !== 'false');
-  const [configResetTime, setConfigResetTime] = useState(() => localStorage.getItem('sva_config_reset_time') || '07:30');
-  const [configPendingTime, setConfigPendingTime] = useState(() => localStorage.getItem('sva_config_pending_time') || '21:30');
 
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('sva_dark_mode') === 'true');
 
@@ -192,6 +218,31 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const fetchSettings = useCallback(async () => {
+    const { data, error } = await supabase.from('system_settings').select('*');
+    if (error) {
+      console.error('Error fetching settings:', error);
+    } else if (data) {
+      data.forEach(s => {
+        switch (s.key) {
+          case 'hospital_name': setHospitalNameState(s.value); break;
+          case 'bg_image': setBgImageState(s.value); break;
+          case 'login_bg_image': setLoginBgImageState(s.value); break;
+          case 'report_email': setReportEmailState(s.value); break;
+          case 'patient_days': setPatientDaysState(Number(s.value)); break;
+          case 'atb_costs': setAtbCostsState(s.value); break;
+          case 'config_notify_reset': setConfigNotifyResetState(s.value); break;
+          case 'config_notify_pending': setConfigNotifyPendingState(s.value); break;
+          case 'config_notify_expired': setConfigNotifyExpiredState(s.value); break;
+          case 'config_reset_time': setConfigResetTimeState(s.value); break;
+          case 'config_pending_time': setConfigPendingTimeState(s.value); break;
+        }
+        // Sync to localStorage too
+        localStorage.setItem(`sva_${s.key}`, typeof s.value === 'string' ? s.value : JSON.stringify(s.value));
+      });
+    }
+  }, []);
+
   const fetchUsers = useCallback(async () => {
     const { data: profiles, error: pError } = await supabase.from('profiles').select('*');
     const { data: preRegs, error: prError } = await supabase.from('pre_registrations').select('*');
@@ -209,6 +260,7 @@ const App: React.FC = () => {
     if (session) {
       fetchPatients();
       fetchUsers();
+      fetchSettings();
 
       const channel = supabase
         .channel('public:data')
@@ -223,6 +275,10 @@ const App: React.FC = () => {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'pre_registrations' }, (payload) => {
           console.log('Realtime pre-reg change:', payload);
           fetchUsers();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'system_settings' }, (payload) => {
+          console.log('Realtime settings change:', payload);
+          fetchSettings();
         })
         .subscribe();
 
