@@ -43,6 +43,8 @@ const App: React.FC = () => {
   const [configResetTime, setConfigResetTimeState] = useState(() => localStorage.getItem('sva_config_reset_time') || '07:30');
   const [configResetTimeUTI, setConfigResetTimeUTIState] = useState(() => localStorage.getItem('sva_config_reset_time_uti') || '22:00');
   const [configPendingTime, setConfigPendingTimeState] = useState(() => localStorage.getItem('sva_config_pending_time') || '21:30');
+  const [configAtbDayLock, setConfigAtbDayLockState] = useState(() => localStorage.getItem('sva_config_atb_day_lock') !== 'false');
+  const [configAtbDayChangeTime, setConfigAtbDayChangeTimeState] = useState(() => localStorage.getItem('sva_config_atb_day_change_time') || '00:00');
 
   // --- HELPER PARA SALVAR CONFIGURAÇÕES NO SUPABASE E LOCALSTORAGE ---
   const saveSetting = async (key: string, value: any, localStorageKey: string) => {
@@ -72,6 +74,8 @@ const App: React.FC = () => {
   const setConfigResetTime = (val: string) => { setConfigResetTimeState(val); saveSetting('config_reset_time', val, 'sva_config_reset_time'); };
   const setConfigResetTimeUTI = (val: string) => { setConfigResetTimeUTIState(val); saveSetting('config_reset_time_uti', val, 'sva_config_reset_time_uti'); };
   const setConfigPendingTime = (val: string) => { setConfigPendingTimeState(val); saveSetting('config_pending_time', val, 'sva_config_pending_time'); };
+  const setConfigAtbDayLock = (val: boolean) => { setConfigAtbDayLockState(val); saveSetting('config_atb_day_lock', val, 'sva_config_atb_day_lock'); };
+  const setConfigAtbDayChangeTime = (val: string) => { setConfigAtbDayChangeTimeState(val); saveSetting('config_atb_day_change_time', val, 'sva_config_atb_day_change_time'); };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -426,7 +430,7 @@ const App: React.FC = () => {
     checkScheduledTasks();
     const interval = setInterval(checkScheduledTasks, 60000);
     return () => clearInterval(interval);
-  }, [patients, reportEmail, atbCosts, hospitalName, configNotifyReset, configNotifyPending, configResetTime, configPendingTime]);
+  }, [patients, reportEmail, atbCosts, hospitalName, configNotifyReset, configNotifyPending, configResetTime, configResetTimeUTI, configPendingTime]);
 
   useEffect(() => {
     // Only save settings to local storage, NOT patients OR users anymore
@@ -649,6 +653,10 @@ const App: React.FC = () => {
       setConfigResetTimeUTI={setConfigResetTimeUTI}
       configPendingTime={configPendingTime}
       setConfigPendingTime={setConfigPendingTime}
+      configAtbDayLock={configAtbDayLock}
+      setConfigAtbDayLock={setConfigAtbDayLock}
+      configAtbDayChangeTime={configAtbDayChangeTime}
+      setConfigAtbDayChangeTime={setConfigAtbDayChangeTime}
     />
   );
 };

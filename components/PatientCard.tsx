@@ -42,9 +42,11 @@ interface PatientCardProps {
   onDragEnd?: () => void;
   isDragging?: boolean;
   isDragOver?: boolean;
+  configAtbDayLock?: boolean;
+  configAtbDayChangeTime?: string;
 }
 
-const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onUpdate, onDelete, onMoveUp, onMoveDown, canMoveUp, canMoveDown, isDarkMode, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, isDragOver }) => {
+const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onUpdate, onDelete, onMoveUp, onMoveDown, canMoveUp, canMoveDown, isDarkMode, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, isDragOver, configAtbDayLock, configAtbDayChangeTime }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showSectorMenu, setShowSectorMenu] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState<string | null>(null);
@@ -396,15 +398,33 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
 
       <div className="p-2 space-y-2">
         {antibioticsToDisplay.map((atb) => {
+          const changeTime = configAtbDayChangeTime || '00:00';
+          const [h, m] = changeTime.split(':').map(Number);
+
+          const shiftDate = (date: Date) => {
+            const d = new Date(date);
+            d.setHours(h, m, 0, 0);
+            return d;
+          };
+
+          const now = new Date();
+          const automationNow = now.getHours() < h || (now.getHours() === h && now.getMinutes() < m)
+            ? addDays(now, -1)
+            : now;
+
           const start = startOfDay(parseISO(atb.startDate));
-          const today = startOfDay(new Date());
-          const calculatedDay = differenceInDays(today, start) + 1;
+          const adjustedToday = startOfDay(automationNow);
+          const calculatedDay = differenceInDays(adjustedToday, start) + 1;
 
           let displayDay = calculatedDay + (atb.cycleOffset || 0);
 
           // Lógica de "pular uma meia-noite" se houve ajuste manual recente
-          if (atb.lastAdjustmentDate === format(today, 'yyyy-MM-dd')) {
-            // Se ajustou hoje, mantém o valor exato do ajuste
+          const todayStr = format(now, 'yyyy-MM-dd');
+          const lastAdj = atb.lastAdjustmentDate;
+          const shouldLock = configAtbDayLock !== false;
+
+          if (shouldLock && lastAdj === todayStr) {
+            // Se ajustou hoje, mantém o valor exato do ajuste até a próxima "virada"
             displayDay = calculatedDay + (atb.cycleOffset || 0);
           }
 

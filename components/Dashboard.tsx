@@ -63,9 +63,21 @@ interface DashboardProps {
   setConfigResetTimeUTI: (val: string) => void;
   configPendingTime: string;
   setConfigPendingTime: (val: string) => void;
+  configAtbDayLock: boolean;
+  setConfigAtbDayLock: (val: boolean) => void;
+  configAtbDayChangeTime: string;
+  setConfigAtbDayChangeTime: (val: string) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalName, setHospitalName, bgImage, setBgImage, loginBgImage, setLoginBgImage, onLogout, onUpdatePatient, onDeletePatient, onAddPatient, onAddUser, onUpdateUser, onDeleteUser, lastSaved, reportEmail, setReportEmail, atbCosts, setAtbCosts, patientDays, setPatientDays, systemAlert, setSystemAlert, isDarkMode, toggleTheme, configNotifyReset, setConfigNotifyReset, configNotifyPending, setConfigNotifyPending, configNotifyExpired, setConfigNotifyExpired, configResetTime, setConfigResetTime, configResetTimeUTI, setConfigResetTimeUTI, configPendingTime, setConfigPendingTime }) => {
+const Dashboard: React.FC<DashboardProps> = ({
+  user, patients, users, hospitalName, setHospitalName, bgImage, setBgImage, loginBgImage, setLoginBgImage,
+  onLogout, onUpdatePatient, onDeletePatient, onAddPatient, onAddUser, onUpdateUser, onDeleteUser,
+  lastSaved, reportEmail, setReportEmail, atbCosts, setAtbCosts, patientDays, setPatientDays,
+  systemAlert, setSystemAlert, isDarkMode, toggleTheme, configNotifyReset, setConfigNotifyReset,
+  configNotifyPending, setConfigNotifyPending, configNotifyExpired, setConfigNotifyExpired,
+  configResetTime, setConfigResetTime, configResetTimeUTI, setConfigResetTimeUTI, configPendingTime,
+  setConfigPendingTime, configAtbDayLock, setConfigAtbDayLock, configAtbDayChangeTime, setConfigAtbDayChangeTime
+}) => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('sva_active_tab') || 'inicio');
   const [searchTerm, setSearchTerm] = useState('');
   const [infectoSubTab, setInfectoSubTab] = useState<'todos' | 'pendentes' | 'autorizados' | 'nao_autorizados'>(() =>
@@ -483,6 +495,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
               setConfigResetTimeUTI={setConfigResetTimeUTI}
               configPendingTime={configPendingTime}
               setConfigPendingTime={setConfigPendingTime}
+              configAtbDayLock={configAtbDayLock}
+              setConfigAtbDayLock={setConfigAtbDayLock}
+              configAtbDayChangeTime={configAtbDayChangeTime}
+              setConfigAtbDayChangeTime={setConfigAtbDayChangeTime}
               patientDays={patientDays}
               setPatientDays={setPatientDays}
             />
@@ -551,6 +567,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, patients, users, hospitalNa
                     canMoveUp={index > 0}
                     canMoveDown={index < sortedPatients.length - 1}
                     isDarkMode={isDarkMode}
+                    configAtbDayLock={configAtbDayLock}
+                    configAtbDayChangeTime={configAtbDayChangeTime}
                     onDragStart={handleDragStart}
                     onDragOver={(e) => handleDragOver(e, p.id)}
                     onDrop={handleDrop}

@@ -34,9 +34,20 @@ interface UserManagementProps {
     setConfigResetTimeUTI: (val: string) => void;
     configPendingTime: string;
     setConfigPendingTime: (val: string) => void;
+    configAtbDayLock: boolean;
+    setConfigAtbDayLock: (val: boolean) => void;
+    configAtbDayChangeTime: string;
+    setConfigAtbDayChangeTime: (val: string) => void;
 }
 
-const UserManagement: React.FC<UserManagementProps> = ({ users, currentUser, onAddUser, onUpdateUser, onDeleteUser, hospitalName, setHospitalName, bgImage, setBgImage, loginBgImage, setLoginBgImage, reportEmail, setReportEmail, atbCosts, setAtbCosts, patientDays, setPatientDays, configNotifyReset, setConfigNotifyReset, configNotifyPending, setConfigNotifyPending, configNotifyExpired, setConfigNotifyExpired, configResetTime, setConfigResetTime, configPendingTime, setConfigPendingTime }) => {
+const UserManagement: React.FC<UserManagementProps> = ({
+    users, currentUser, onAddUser, onUpdateUser, onDeleteUser, hospitalName, setHospitalName, bgImage,
+    setBgImage, loginBgImage, setLoginBgImage, reportEmail, setReportEmail, atbCosts, setAtbCosts,
+    patientDays, setPatientDays, configNotifyReset, setConfigNotifyReset, configNotifyPending,
+    setConfigNotifyPending, configNotifyExpired, setConfigNotifyExpired, configResetTime,
+    setConfigResetTime, configResetTimeUTI, setConfigResetTimeUTI, configPendingTime, setConfigPendingTime,
+    configAtbDayLock, setConfigAtbDayLock, configAtbDayChangeTime, setConfigAtbDayChangeTime
+}) => {
     const [showForm, setShowForm] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
@@ -308,6 +319,30 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, currentUser, onA
                                     </div>
                                 </div>
                                 <input type="time" className="bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-black outline-none focus:border-emerald-500 text-slate-800 dark:text-white" value={configResetTimeUTI} onChange={e => setConfigResetTimeUTI(e.target.value)} />
+                            </label>
+
+                            <label className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 cursor-pointer group hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-colors">
+                                <div className="flex items-center gap-3">
+                                    <input type="checkbox" className="w-5 h-5 rounded-lg border-slate-300 text-emerald-600 focus:ring-emerald-500" checked={configAtbDayLock} onChange={e => setConfigAtbDayLock(e.target.checked)} />
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-700 dark:text-slate-200 uppercase">Trava de 24h (Dia ATB)</p>
+                                        <p className="text-[8px] font-bold text-slate-400 uppercase">Pula incremento se ajustado manualmente</p>
+                                    </div>
+                                </div>
+                                <span className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${configAtbDayLock ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>{configAtbDayLock ? 'Ativada' : 'Desativada'}</span>
+                            </label>
+
+                            <label className="flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 cursor-pointer group hover:border-emerald-500 transition-all">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-500">
+                                        <Clock size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-700 dark:text-slate-200 uppercase">Virada de Dia (ATB)</p>
+                                        <p className="text-[8px] font-bold text-slate-400 uppercase">Horário do incremento automático</p>
+                                    </div>
+                                </div>
+                                <input type="time" className="bg-slate-50 dark:bg-slate-900 border-2 border-transparent focus:border-emerald-500 rounded-xl px-3 py-1.5 text-xs font-black outline-none text-slate-800 dark:text-white" value={configAtbDayChangeTime} onChange={e => setConfigAtbDayChangeTime(e.target.value)} />
                             </label>
 
                             <label className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 cursor-pointer group hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-colors">
