@@ -347,62 +347,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           setIsMobileMenuOpen={setIsMobileMenuOpen}
         />
 
-        {systemAlert && (
-          <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[99999] w-full max-w-3xl px-4 animate-in slide-in-from-top-4 duration-500">
-            <div
-              onClick={() => {
-                if (systemAlert.message.includes('Pendentes')) {
-                  setActiveTab('inicio');
-                }
-              }}
-              className={`p-6 rounded-[2rem] border-2 flex items-center justify-between shadow-2xl backdrop-blur-md cursor-pointer hover:scale-[1.02] transition-all
-              ${systemAlert.type === 'warning' ? 'bg-red-500/95 border-red-400 text-white' : 'bg-blue-500/95 border-blue-400 text-white'}`}>
-              <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-full ${systemAlert.type === 'warning' ? 'bg-white/20' : 'bg-white/20'}`}>
-                  <ShieldCheck size={32} className="text-white animate-pulse" />
-                </div>
-                <div>
-                  <p className="text-xs md:text-sm font-black uppercase tracking-widest opacity-80 mb-1">Notificação do Sistema</p>
-                  <p className="text-sm md:text-lg font-black uppercase tracking-tight leading-tight">{systemAlert.message}</p>
-                </div>
-              </div>
-              <button
-                onClick={(e) => { e.stopPropagation(); setSystemAlert(null); }}
-                className="p-3 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors"
-              >
-                <X size={24} />
-              </button>
-            </div>
-          </div>
-        )}
 
-        {configNotifyPending && unevaluatedPatients.length > 0 && !dismissedPendingAlert && (
-          <div className="fixed bottom-10 right-10 z-[1000] w-full max-w-md px-4 animate-in slide-in-from-bottom-4 duration-500">
-            <div
-              onClick={() => setActiveTab('inicio')}
-              className="p-6 rounded-[2.5rem] bg-orange-600/95 border-2 border-orange-400 text-white flex items-center justify-between shadow-2xl backdrop-blur-md cursor-pointer hover:scale-[1.05] transition-all"
-            >
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-2xl bg-white/20">
-                  <Bell size={28} className="text-white animate-bounce" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1">Pendências Críticas</p>
-                  <p className="text-sm font-black uppercase tracking-tight leading-tight">
-                    {unevaluatedPatients.length} {unevaluatedPatients.length === 1 ? 'paciente aguarda' : 'pacientes aguardam'} avaliação
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={handleDismissPendingAlert}
-                className="p-2.5 bg-white/20 hover:bg-white/30 rounded-xl text-white transition-colors ml-4"
-                title="Fechar Balão"
-              >
-                <X size={20} />
-              </button>
-            </div>
-          </div>
-        )}
 
         <main className="flex-1 overflow-y-auto p-3 md:p-6 relative custom-scrollbar">
           {activeTab === 'inicio' && (
@@ -581,7 +526,54 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
           )}
         </main>
-        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2 max-w-xs pointer-events-none no-print">
+        <div className="fixed bottom-6 right-6 z-[99999] flex flex-col items-end gap-3 max-w-md pointer-events-none no-print">
+          {systemAlert && (
+            <div
+              onClick={() => { if (systemAlert.message.includes('Pendentes')) setActiveTab('inicio'); }}
+              className={`pointer-events-auto p-5 rounded-[2rem] border-2 flex items-center justify-between shadow-2xl backdrop-blur-md cursor-pointer hover:scale-[1.02] transition-all animate-in slide-in-from-right-4 w-full
+              ${systemAlert.type === 'warning' ? 'bg-red-500/95 border-red-400 text-white' : 'bg-blue-500/95 border-blue-400 text-white'}`}>
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-white/20">
+                  <ShieldCheck size={24} className="text-white animate-pulse" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-0.5">Sistema</p>
+                  <p className="text-xs font-black uppercase tracking-tight leading-tight">{systemAlert.message}</p>
+                </div>
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); setSystemAlert(null); }}
+                className="p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors ml-4"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
+
+          {configNotifyPending && unevaluatedPatients.length > 0 && !dismissedPendingAlert && (
+            <div
+              onClick={() => setActiveTab('inicio')}
+              className="pointer-events-auto p-5 rounded-[2rem] bg-orange-600/95 border-2 border-orange-400 text-white flex items-center justify-between shadow-2xl backdrop-blur-md cursor-pointer hover:scale-[1.05] transition-all animate-in slide-in-from-right-4 w-full"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-white/20">
+                  <Bell size={24} className="text-white animate-bounce" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-0.5">Aviso</p>
+                  <p className="text-xs font-black uppercase tracking-tight leading-tight">
+                    {unevaluatedPatients.length} {unevaluatedPatients.length === 1 ? 'paciente pendente' : 'pacientes pendentes'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleDismissPendingAlert}
+                className="p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors ml-4"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
           {notifications.map((notify) => (
             <div key={notify.id} className="pointer-events-auto bg-slate-900 text-white p-3 rounded-2xl shadow-xl border-l-4 border-l-red-500 animate-in slide-in-from-right-5 flex flex-col gap-2 relative group">
               <button onClick={(e) => { e.stopPropagation(); setDismissedNotifications(prev => [...prev, notify.id]); }} className="absolute top-2 right-2 p-1 bg-white/10 hover:bg-red-500 rounded-full transition-colors"><X size={12} /></button>
