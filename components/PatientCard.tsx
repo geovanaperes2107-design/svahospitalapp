@@ -81,6 +81,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
   }, [editMode, newAtb, patient.id]);
 
   const [tempBed, setTempBed] = useState(patient.bed || ''); // Estado para edição de leito
+  const [tempDiagnosis, setTempDiagnosis] = useState(patient.diagnosis || '');
   const [tempPharmacyNote, setTempPharmacyNote] = useState(patient.pharmacyNote || '');
   const [tempPrescriberNotes, setTempPrescriberNotes] = useState(patient.prescriberNotes || '');
 
@@ -91,8 +92,9 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
   useEffect(() => {
     if (editMode?.type === 'editar') {
       setTempBed(patient.bed || '');
+      setTempDiagnosis(patient.diagnosis || '');
     }
-  }, [editMode, patient.bed]);
+  }, [editMode, patient.bed, patient.diagnosis]);
 
   // Sincroniza notas temporárias quando o menu de detalhes é aberto
   useEffect(() => {
@@ -172,11 +174,19 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
       // If tempBed has changed, update patient bed
       if (tempBed !== patient.bed) {
         updatedPatient.bed = tempBed;
-        updateLog = `Leito alterado para ${tempBed}`;
+        updateLog = `Leito: ${patient.bed} -> ${tempBed}`;
+      }
+
+      // If tempDiagnosis has changed, update patient diagnosis
+      if (tempDiagnosis !== patient.diagnosis) {
+        updatedPatient.diagnosis = tempDiagnosis;
+        const diagLog = `Dx: ${patient.diagnosis} -> ${tempDiagnosis}`;
+        updateLog = updateLog ? `${updateLog} | ${diagLog}` : diagLog;
       }
 
       // If an ATB ID is present, update ATB details
       if (editMode.atbId) {
+        const atbToUpdate = updatedAtbs.find(a => a.id === editMode.atbId);
         updatedAtbs = updatedAtbs.map(a => a.id === editMode.atbId ? {
           ...a,
           dose: newAtb.dose,
@@ -184,13 +194,8 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
           times: newAtb.times.split(',').map(t => t.trim()).filter(t => t !== ''),
           justification: newAtb.justification
         } : a);
-        updateLog = updateLog ? `${updateLog} e ATB ${newAtb.name} editado` : `Editado ATB: ${newAtb.name}`;
-      } else if (!editMode.atbId && tempBed !== patient.bed) {
-        // Only bed was edited, no ATB involved
-        updateLog = `Leito alterado para ${tempBed}`;
-      } else {
-        // No ATB or bed change, this case should ideally not happen if modal is correctly controlled
-        updateLog = 'Nenhuma alteração detectada.';
+        const atbLog = `ATB ${atbToUpdate?.name} editado (Dose/Horário)`;
+        updateLog = updateLog ? `${updateLog} | ${atbLog}` : atbLog;
       }
     } else if (editMode?.type === 'tempo') {
       updatedAtbs = updatedAtbs.map(a => a.id === editMode.atbId ? {
@@ -202,8 +207,8 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
       updateLog = `Tempo alterado para ${newAtb.duration} dias. Motivo: ${newAtb.justification}`;
     }
 
-    // Recalculate patient status if necessary, though simpler to leave as is for now
-    onUpdate({ ...updatedPatient, antibiotics: updatedAtbs, history: addHistory('Ajuste ATB', updateLog) });
+    // Recalculate patient status if necessary
+    onUpdate({ ...updatedPatient, antibiotics: updatedAtbs, history: addHistory('Ajuste Dados', updateLog || 'Alteração manual') });
     setEditMode(null);
     setNewAtb({ ...newAtb, justification: '', name: '', times: '' });
     localStorage.removeItem(`sva_draft_atb_editmode_${patient.id}`); // Limpa rascunho
@@ -350,9 +355,14 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
           )}
 
           {!isInfectoPanel && (
-            <button onClick={() => setEditMode({ type: 'novo' })} className="p-2 bg-emerald-600 text-white rounded-xl shadow hover:scale-105 transition-all" title="Adicionar ATB">
-              <PlusCircle size={18} />
-            </button>
+            <div className="flex gap-1">
+              <button onClick={() => setEditMode({ type: 'editar' })} className="p-2 bg-blue-600 text-white rounded-xl shadow hover:scale-105 transition-all" title="Editar Dados do Paciente">
+                <Edit3 size={18} />
+              </button>
+              <button onClick={() => setEditMode({ type: 'novo' })} className="p-2 bg-emerald-600 text-white rounded-xl shadow hover:scale-105 transition-all" title="Adicionar ATB">
+                <PlusCircle size={18} />
+              </button>
+            </div>
           )}
 
           <button onClick={() => setShowMenu(!showMenu)} className="p-2 bg-white rounded-xl border border-slate-200 text-slate-400 hover:text-slate-800 transition-colors" title="Ver Detalhes">
@@ -688,15 +698,44 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <div className="md:col-span-2 space-y-0.5">
                     <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500">
-                      {editMode.type === 'editar' ? 'Paciente (Leito)' : 'Medicamento'}
+                      {editMode.type === 'editar' ? 'Dados do Paciente' : 'Medicamento'}
                     </label>
                     {editMode.type === 'editar' ? (
-                      <input
-                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl font-bold text-xs outline-none focus:border-blue-500 uppercase text-slate-900 dark:text-white"
-                        value={tempBed}
-                        onChange={e => setTempBed(e.target.value)}
-                        placeholder="Leito do Paciente"
-                      />
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <div className="w-1/4">
+                            <label className="text-[8px] font-black uppercase text-slate-400">Leito</label>
+                            <input
+                              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl font-bold text-xs outline-none focus:border-blue-500 uppercase text-slate-900 dark:text-white"
+                              value={tempBed}
+                              onChange={e => setTempBed(e.target.value)}
+                              placeholder="Leito"
+                            />
+                          </div>
+                          <div className="w-3/4">
+                            <label className="text-[8px] font-black uppercase text-slate-400">Paciente (Ref. Apenas)</label>
+                            <input
+                              disabled
+                              className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl font-bold text-[10px] outline-none text-slate-400 uppercase"
+                              value={patient.name}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-0.5">
+                          <label className="text-[8px] font-black uppercase text-slate-400">Diagnóstico Principal</label>
+                          <textarea
+                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl font-bold text-xs outline-none focus:border-blue-500 text-slate-900 dark:text-white h-16 resize-none"
+                            value={tempDiagnosis}
+                            onChange={e => setTempDiagnosis(e.target.value)}
+                            placeholder="Descreva o quadro clínico..."
+                          />
+                        </div>
+                        {editMode.atbId && (
+                          <div className="pt-2 border-t dark:border-slate-800">
+                            <label className="text-[9px] font-black uppercase text-blue-500">Editando ATB: {newAtb.name}</label>
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <select className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl font-bold text-xs outline-none focus:border-blue-500 text-slate-900 dark:text-white" value={newAtb.name} onChange={e => setNewAtb({ ...newAtb, name: e.target.value })}>
                         <option value="" className="bg-white dark:bg-slate-800">Selecione um ATB...</option>
