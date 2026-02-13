@@ -9,6 +9,8 @@ import {
 import { Patient, AntibioticStatus, IncisionRelation, TreatmentType, InfectoStatus, MedicationCategory } from '../types';
 import { DDD_MAP, SECTORS, ANTIBIOTICS_LIST } from '../constants';
 import { calculateEndDate, getDaysRemaining, getATBDay } from '../utils';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface ReportsProps {
   patients: Patient[];
@@ -294,17 +296,89 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
   }, [filteredPatients, categoryFilter]);
 
   const handlePrint = () => window.print();
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const title = `Relatório SVA - ${activeReportTab.toUpperCase()}`;
+    const date = new Date().toLocaleDateString('pt-BR');
+
+    // Header decorativo
+    doc.setFillColor(30, 41, 59); // slate-800
+    doc.rect(0, 0, 210, 40, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.text("SVA - VIGILÂNCIA DE ATB", 14, 20);
+
+    doc.setFontSize(10);
+    doc.text(`GERADO EM: ${date} | PERÍODO: ${filterMonth} | SETOR: ${sectorFilter}`, 14, 30);
+
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(14);
+    doc.text(title, 14, 50);
+
+    let headers: string[] = [];
+    let rows: any[][] = [];
+
+    // Personaliza dados baseado na aba ativa
+    if (activeReportTab === 'monitoramento' || activeReportTab === 'censo') {
+      headers = ["Paciente", "Leito", "Setor", "ATB/Dose", "Início", "Dia", "Status"];
+      rows = filteredPatients.flatMap(p =>
+        p.antibiotics.filter(a => a.category === categoryFilter).map(a => [
+          p.name, p.bed, p.sector, `${a.name}\n(${a.dose})`, a.startDate, `${getATBDay(a.startDate)}º`, p.infectoStatus
+        ])
+      );
+    } else if (activeReportTab === 'financeiro') {
+      headers = ["Paciente", "Setor", "Antibiótico", "Dias", "Custo (R$)"];
+      rows = filteredPatients.flatMap(p =>
+        p.antibiotics.filter(a => a.category === categoryFilter).map(a => [
+          p.name, p.sector, a.name, a.durationDays, ((atbCosts[a.name.toUpperCase()] || 50) * a.durationDays).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+        ])
+      );
+    } else {
+      headers = ["Paciente", "Setor", "Antibiótico", "Diagnóstico", "Início", "Status"];
+      rows = filteredPatients.flatMap(p =>
+        p.antibiotics.filter(a => a.category === categoryFilter).map(a => [
+          p.name, p.sector, a.name, p.diagnosis, a.startDate, a.status
+        ])
+      );
+    }
+
+    autoTable(doc, {
+      startY: 55,
+      head: [headers],
+      body: rows,
+      theme: 'grid',
+      headStyles: { fillColor: [16, 185, 129], textColor: [255, 255, 255], fontStyle: 'bold' }, // emerald-500
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      styles: { fontSize: 8, cellPadding: 3 },
+    });
+
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text(`Página ${i} de ${pageCount} - SVA Hospitalar`, 14, 285);
+    }
+
+    doc.save(`relatorio_sva_${activeReportTab}_${filterMonth}.pdf`);
+  };
+
   const exportToExcel = () => {
-    const headers = ["Paciente", "Leito", "Setor", "Medicamento", "Dose", "Frequência", "Início", "Dia Ciclo", "Status", "Status Infecto"];
+    const headers = ["Paciente", "Nascimento", "Leito", "Setor", "Medicamento", "Dose", "Frequência", "Início", "Duração", "Dia Ciclo", "Status", "Status Infecto", "Diagnóstico"];
     const rows = filteredPatients.flatMap(p =>
       p.antibiotics.filter(a => a.category === categoryFilter).map(a => [
-        p.name, p.bed, p.sector, a.name, a.dose, a.frequency, a.startDate, getATBDay(a.startDate), a.status, p.infectoStatus
+        p.name, p.birthDate, p.bed, p.sector, a.name, a.dose, a.frequency, a.startDate, a.durationDays, getATBDay(a.startDate), a.status, p.infectoStatus, p.diagnosis
       ])
     );
 
     // Configura o separador para ponto e vírgula (padrão Excel Brasil)
     const csvContent = [headers, ...rows]
-      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(";"))
+      .map(row => row.map(cell => {
+        const content = String(cell || '');
+        return `"${content.replace(/"/g, '""')}"`;
+      }).join(";"))
       .join("\n");
 
     // Adiciona o BOM (Byte Order Mark) para UTF-8 para o Excel abrir com acentos corretos
@@ -313,7 +387,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
 
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `relatorio_atb_${filterMonth}.csv`);
+    link.setAttribute("download", `relatorio_sva_${filterMonth}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -340,8 +414,8 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
               <Shield className="text-emerald-500" size={32} /> Inteligência de Dados
             </h2>
             <div className="flex gap-2">
-              <button onClick={handlePrint} className="flex items-center gap-2 px-5 py-3 bg-white/10 text-white rounded-2xl text-xs font-black uppercase hover:bg-white/20 transition-all"><Printer size={18} /> Imprimir Relatório</button>
-              <button onClick={handlePrint} className="flex items-center gap-2 px-5 py-3 bg-red-600/90 text-white rounded-2xl text-xs font-black uppercase hover:bg-red-700 transition-all"><FileText size={18} /> Exportar PDF</button>
+              <button onClick={handlePrint} className="flex items-center gap-2 px-5 py-3 bg-white/10 text-white rounded-2xl text-xs font-black uppercase hover:bg-white/20 transition-all"><Printer size={18} /> Imprimir</button>
+              <button onClick={exportToPDF} className="flex items-center gap-2 px-5 py-3 bg-red-600/90 text-white rounded-2xl text-xs font-black uppercase hover:bg-red-700 transition-all"><FileText size={18} /> Exportar PDF</button>
               <button onClick={exportToExcel} className="flex items-center gap-2 px-5 py-3 bg-emerald-600/90 text-white rounded-2xl text-xs font-black uppercase hover:bg-emerald-700 transition-all"><FileSpreadsheet size={18} /> Planilha Excel</button>
             </div>
           </div>
