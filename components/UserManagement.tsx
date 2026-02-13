@@ -63,6 +63,12 @@ const UserManagement: React.FC<UserManagementProps> = ({
     const [showEmailToast, setShowEmailToast] = useState<{ name: string, email: string } | null>(null);
     const [activeTab, setActiveTab] = useState<'users' | 'alerts' | 'params'>('users');
     const [visiblePasswordId, setVisiblePasswordId] = useState<string | null>(null);
+
+    const formatCPF = (cpf: string) => {
+        const digits = cpf.replace(/\D/g, '');
+        if (digits.length !== 11) return cpf;
+        return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+    };
     const [showModalPassword, setShowModalPassword] = useState(false);
 
     const bgInputRef = useRef<HTMLInputElement>(null);
@@ -247,17 +253,17 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                             <td className="px-8 py-5 uppercase text-slate-500 dark:text-slate-400">{u.sector}</td>
                                             <td className="px-8 py-5">
                                                 <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${u.role === UserRole.ADMINISTRADOR ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' :
-                                                        u.role === UserRole.VISUALIZADOR ? 'bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500' :
-                                                            u.role === UserRole.INFECTO ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
-                                                                u.role === UserRole.SCIH ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400' :
-                                                                    u.role === UserRole.FARMACEUTICO ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' :
-                                                                        'bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500'
+                                                    u.role === UserRole.VISUALIZADOR ? 'bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500' :
+                                                        u.role === UserRole.INFECTO ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
+                                                            u.role === UserRole.SCIH ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400' :
+                                                                u.role === UserRole.FARMACEUTICO ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' :
+                                                                    'bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500'
                                                     }`}>
                                                     {u.role}
                                                 </span>
                                             </td>
                                             <td className="px-8 py-5 text-slate-400 dark:text-slate-500 font-black">
-                                                {visiblePasswordId === u.id ? u.password : (u.cpf || '***')}
+                                                {visiblePasswordId === u.id ? u.password : (formatCPF(u.cpf) || '***')}
                                             </td>
                                             <td className="px-8 py-5 text-right space-x-2">
                                                 <button onClick={() => { setEditingUser(u); setFormData(u); setShowForm(true); }} className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700" title="Editar"><Edit2 size={16} /></button>
