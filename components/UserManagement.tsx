@@ -594,22 +594,20 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                         <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1">Setor Principal</label>
                                         <select className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 p-4 rounded-2xl font-bold text-sm focus:border-emerald-500 outline-none text-slate-900 dark:text-white transition-all uppercase" value={formData.sector || ''} onChange={e => setFormData({ ...formData, sector: e.target.value })}>
                                             <option value="">Selecione...</option>
-                                            <option value="CLÍNICA MÉDICA">CLÍNICA MÉDICA</option>
-                                            <option value="CLÍNICA CIRÚRGICA">CLÍNICA CIRÚRGICA</option>
-                                            <option value="UTI ADULTO">UTI ADULTO</option>
-                                            <option value="UTI COVID">UTI COVID</option>
-                                            <option value="PRONTO SOCORRO">PRONTO SOCORRO</option>
-                                            <option value="CENTRO CIRÚRGICO">CENTRO CIRÚRGICO</option>
-                                            <option value="INFECTOLOGIA">INFECTOLOGIA</option>
-                                            <option value="DIRETORIA">DIRETORIA</option>
+                                            <option value="FARMÁCIA">FARMÁCIA</option>
+                                            <option value="ENFERMARIAS">ENFERMARIAS</option>
+                                            <option value="UTI">UTI</option>
+                                            <option value="ASSISTENCIAIS">ASSISTENCIAIS</option>
                                         </select>
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1">Perfil de Acesso</label>
                                         <select className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 p-4 rounded-2xl font-bold text-sm focus:border-emerald-500 outline-none text-slate-900 dark:text-white transition-all uppercase" value={formData.role || UserRole.VISUALIZADOR} onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}>
-                                            <option value={UserRole.VISUALIZADOR}>Visualizador</option>
-                                            <option value={UserRole.COLABORADOR}>Colaborador</option>
                                             <option value={UserRole.ADMINISTRADOR}>Administrador</option>
+                                            <option value={UserRole.VISUALIZADOR}>Visualizador</option>
+                                            <option value={UserRole.INFECTO}>Infecto</option>
+                                            <option value={UserRole.SCIH}>SCIH</option>
+                                            <option value={UserRole.FARMACEUTICO}>Farmacêutico</option>
                                         </select>
                                     </div>
                                 </div>
