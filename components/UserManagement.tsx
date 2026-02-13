@@ -247,7 +247,11 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                             <td className="px-8 py-5 uppercase text-slate-500 dark:text-slate-400">{u.sector}</td>
                                             <td className="px-8 py-5">
                                                 <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${u.role === UserRole.ADMINISTRADOR ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' :
-                                                    u.role === UserRole.VISUALIZADOR ? 'bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                                                        u.role === UserRole.VISUALIZADOR ? 'bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500' :
+                                                            u.role === UserRole.INFECTO ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
+                                                                u.role === UserRole.SCIH ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400' :
+                                                                    u.role === UserRole.FARMACEUTICO ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' :
+                                                                        'bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500'
                                                     }`}>
                                                     {u.role}
                                                 </span>
