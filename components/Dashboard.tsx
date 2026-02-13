@@ -425,6 +425,19 @@ const Dashboard: React.FC<DashboardProps> = ({
                     </button>
                   );
                 })}
+                <button
+                  onClick={() => setIsBulkImportOpen(true)}
+                  className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all text-left group"
+                >
+                  <div className="h-18 bg-emerald-600 p-4 flex justify-between items-center transition-all group-hover:h-20">
+                    <div className="bg-white/20 p-2 rounded-2xl text-white">
+                      <FileSpreadsheet size={24} />
+                    </div>
+                  </div>
+                  <div className="p-4 pt-3">
+                    <h3 className="font-black text-slate-800 dark:text-white text-sm uppercase tracking-tighter truncate">Importar Planilha</h3>
+                  </div>
+                </button>
               </div>
             </div>
           )}
@@ -471,18 +484,6 @@ const Dashboard: React.FC<DashboardProps> = ({
           {activeTab === 'cadastro' && <div className="max-w-4xl mx-auto"><PatientRegistration onAdd={(p) => { onAddPatient(p); setActiveTab('inicio'); }} onCancel={() => setActiveTab('inicio')} /></div>}
           {activeTab === 'relatorios' && <Reports patients={patients} initialReportTab={reportInitialTab} atbCosts={atbCosts} setAtbCosts={setAtbCosts} patientDays={patientDays} setPatientDays={setPatientDays} />}
 
-          {activeTab === 'inicio' && (
-            <div className="fixed bottom-24 right-6 z-[50] flex flex-col gap-3 no-print">
-              <button
-                onClick={() => setIsBulkImportOpen(true)}
-                className="p-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl shadow-2xl transition-all transform hover:scale-105 flex items-center gap-3 pointer-events-auto"
-                title="Importar Planilha CSV"
-              >
-                <FileSpreadsheet size={24} />
-                <span className="font-black text-[10px] uppercase tracking-widest hidden md:inline">Importar Planilha</span>
-              </button>
-            </div>
-          )}
 
           {['finalizados', 'Centro Cirúrgico', 'infectologia', ...SECTORS].includes(activeTab) && (
             <div className="max-w-[1200px] mx-auto space-y-3 text-left animate-in fade-in pb-6">
