@@ -85,6 +85,7 @@ export interface Patient {
   antibiotics: Antibiotic[];
   isEvaluated: boolean;
   lastEvaluationDate?: string;
+  observation?: string;
   history: HistoryEntry[];
   order?: number;
 }

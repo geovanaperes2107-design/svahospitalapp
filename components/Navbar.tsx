@@ -21,7 +21,7 @@ const Navbar: React.FC<NavbarProps> = ({
     setIsMobileMenuOpen
 }) => {
     return (
-        <header className="h-20 flex items-center justify-between px-4 md:px-8 border-b border-black/5 bg-white shadow-sm no-print transition-colors duration-300">
+        <header className="h-20 flex items-center justify-between px-4 md:px-8 border-b border-black/5 bg-white dark:bg-slate-900 shadow-sm no-print transition-colors duration-300">
             <div className="flex items-center space-x-3 md:space-x-4">
                 {/* Menu Hambúrguer (Mobile) */}
                 <button
@@ -35,10 +35,10 @@ const Navbar: React.FC<NavbarProps> = ({
                     <Building2 className="text-white" size={24} />
                 </div>
                 <div className="text-left flex-1 min-w-0">
-                    <h1 className="text-xs sm:text-base md:text-xl font-black text-slate-900 leading-none tracking-tight uppercase truncate">
+                    <h1 className="text-xs sm:text-base md:text-xl font-black text-slate-900 dark:text-white leading-none tracking-tight uppercase truncate">
                         SVA <span className="hidden mini:inline sm:inline">• Vigilância</span>
                     </h1>
-                    <p className="text-[7px] sm:text-[9px] md:text-[10px] text-slate-400 font-bold uppercase tracking-tight mt-0.5 truncate max-w-[120px] sm:max-w-none">
+                    <p className="text-[7px] sm:text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tight mt-0.5 truncate max-w-[120px] sm:max-w-none">
                         {hospitalName}
                     </p>
                 </div>
@@ -55,10 +55,10 @@ const Navbar: React.FC<NavbarProps> = ({
 
                 <div className="flex items-center gap-2 md:gap-4">
                     <div className="text-right hidden sm:block">
-                        <p className="font-black text-xs md:text-sm text-slate-900 uppercase tracking-tight">{user.name}</p>
-                        <p className="text-[9px] md:text-[10px] font-black text-emerald-600 uppercase tracking-widest">{user.role}</p>
+                        <p className="font-black text-xs md:text-sm text-slate-900 dark:text-white uppercase tracking-tight">{user.name}</p>
+                        <p className="text-[9px] md:text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest">{user.role}</p>
                     </div>
-                    <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-50 rounded-xl md:rounded-2xl flex items-center justify-center text-slate-400 border border-slate-100 shadow-inner overflow-hidden shrink-0">
+                    <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-50 dark:bg-slate-800 rounded-xl md:rounded-2xl flex items-center justify-center text-slate-400 dark:text-slate-600 border border-slate-100 dark:border-slate-700 shadow-inner overflow-hidden shrink-0">
                         {user.photoURL ? (
                             <img src={user.photoURL} alt={user.name} className="w-full h-full object-cover" />
                         ) : (

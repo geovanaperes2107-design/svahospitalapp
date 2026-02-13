@@ -487,6 +487,30 @@ const App: React.FC = () => {
     }
   };
 
+  const handleUpdatePatientsOrder = async (updates: { id: string, order: number }[]) => {
+    // Optimistic update
+    setPatients(prev => {
+      const newPatients = [...prev];
+      updates.forEach(up => {
+        const idx = newPatients.findIndex(p => p.id === up.id);
+        if (idx !== -1) newPatients[idx] = { ...newPatients[idx], order: up.order };
+      });
+      return newPatients;
+    });
+
+    // Supabase supports bulk upsert/update if we provide the primary key
+    // But here it's easier to just fire them off or use a single RPC if available.
+    // Since there's no custom RPC, we do multiple updates.
+    try {
+      await Promise.all(updates.map(up =>
+        supabase.from('pacientes').update({ order: up.order }).eq('id', up.id)
+      ));
+    } catch (err) {
+      console.error('Error updating patient orders:', err);
+      fetchPatients();
+    }
+  };
+
   const handleDeletePatient = async (id: string) => {
     if (!window.confirm("Confirmar exclusão deste paciente do banco de dados?")) return;
 
@@ -631,6 +655,7 @@ const App: React.FC = () => {
       onUpdatePatient={handleUpdatePatient}
       onDeletePatient={handleDeletePatient}
       onAddPatient={handleAddPatient}
+      onUpdatePatientsOrder={handleUpdatePatientsOrder}
       lastSaved={lastSaved}
       users={users}
       onAddUser={handleAddUser}

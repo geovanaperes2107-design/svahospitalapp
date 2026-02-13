@@ -18,7 +18,8 @@ import {
   CheckCircle2,
   XCircle,
   Trash2,
-  Save
+  Save,
+  GripVertical
 } from 'lucide-react';
 import { Patient, UserRole, AntibioticStatus, InfectoStatus, Antibiotic, HistoryEntry, TreatmentType, IncisionRelation, MedicationCategory } from '../types';
 import { SECTORS, ANTIBIOTICS_LIST, FREQUENCY_OPTIONS, MEDICATION_LISTS } from '../constants';
@@ -307,9 +308,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
       {/* 🔝 HEADER OTIMIZADO */}
       <div className={`px-4 py-3 flex items-start justify-between border-b rounded-t-xl transition-colors ${patient.isEvaluated ? 'border-purple-200 bg-purple-100/50' : 'border-black/5 bg-white/40'}`}>
         <div className="flex gap-4 items-start flex-1 text-left">
-          <div className="bg-white px-2 py-1.5 rounded-xl border border-black/5 shadow-sm min-w-[60px] text-center">
-            <span className="text-2xl font-black block leading-none text-slate-800">{patient.bed}</span>
-            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Leito</span>
+          <div className="bg-white px-2 py-1.5 rounded-xl border border-black/5 shadow-sm min-w-[64px] text-center flex items-center gap-1.5">
+            {!isInfectoPanel && <GripVertical size={16} className="text-slate-300 -ml-1 cursor-grab active:cursor-grabbing" />}
+            <div>
+              <span className="text-2xl font-black block leading-none text-slate-800">{patient.bed}</span>
+              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Leito</span>
+            </div>
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-sm md:text-lg font-black uppercase text-slate-800 tracking-tight leading-none truncate">{patient.name}</h3>
@@ -330,6 +334,11 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
             <p className="text-[8px] md:text-[9px] font-bold text-slate-500 leading-tight mt-1 italic truncate" title={patient.diagnosis}>
               <span className="font-black text-slate-400 uppercase mr-1 not-italic">Dx:</span> {patient.diagnosis}
             </p>
+            {patient.observation && (
+              <p className="text-[8px] md:text-[9px] font-bold text-blue-500 leading-tight mt-0.5 italic truncate" title={patient.observation}>
+                <span className="font-black text-blue-400 uppercase mr-1 not-italic">Obs:</span> {patient.observation}
+              </p>
+            )}
           </div>
         </div>
 

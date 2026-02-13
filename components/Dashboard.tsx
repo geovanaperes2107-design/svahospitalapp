@@ -39,6 +39,7 @@ interface DashboardProps {
   onUpdatePatient: (p: Patient) => void;
   onDeletePatient: (id: string) => void;
   onAddPatient: (p: Patient) => void;
+  onUpdatePatientsOrder: (updatedPatients: { id: string, order: number }[]) => void;
   onBulkAddPatients: (patients: Patient[]) => void;
   onAddUser: (u: User) => void;
   onUpdateUser: (u: User) => void;
@@ -76,7 +77,7 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({
   user, patients, users, hospitalName, setHospitalName, bgImage, setBgImage, loginBgImage, setLoginBgImage,
-  onLogout, onUpdatePatient, onDeletePatient, onAddPatient, onBulkAddPatients, onAddUser, onUpdateUser, onDeleteUser,
+  onLogout, onUpdatePatient, onDeletePatient, onAddPatient, onUpdatePatientsOrder, onBulkAddPatients, onAddUser, onUpdateUser, onDeleteUser,
   lastSaved, reportEmail, setReportEmail, atbCosts, setAtbCosts, patientDays, setPatientDays,
   systemAlert, setSystemAlert, isDarkMode, toggleTheme, configNotifyReset, setConfigNotifyReset,
   configNotifyPending, setConfigNotifyPending, configNotifyExpired, setConfigNotifyExpired,
@@ -251,17 +252,17 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     if (draggedIndex === -1 || targetIndex === -1) return;
 
-    // Reordena atribuindo nova ordem para todos os pacientes afetados
     const newSortedPatients = [...sortedPatients];
     const [draggedPatient] = newSortedPatients.splice(draggedIndex, 1);
     newSortedPatients.splice(targetIndex, 0, draggedPatient);
 
-    // Atualiza a ordem de todos os pacientes reordenados
-    newSortedPatients.forEach((patient, index) => {
-      if (patient.order !== index) {
-        onUpdatePatient({ ...patient, order: index });
-      }
-    });
+    // Mapeia os IDs dos pacientes filtrados para suas novas ordens
+    const updates = newSortedPatients.map((p, index) => ({
+      id: p.id,
+      order: index
+    }));
+
+    onUpdatePatientsOrder(updates);
 
     setDraggedPatientId(null);
     setDragOverPatientId(null);

@@ -19,6 +19,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
       bed: '',
       sector: SECTORS[0],
       diagnosis: '',
+      observation: '',
       treatmentType: TreatmentType.TERAPEUTICO,
       numAtb: 1
     };
@@ -107,15 +108,24 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
       bed: formData.bed || 'S/L',
       sector: formData.sector,
       diagnosis: formData.diagnosis,
+      observation: formData.observation,
       treatmentType: formData.sector === 'Centro Cirúrgico' ? TreatmentType.PROFILATICO : formData.treatmentType,
       infectoStatus: formData.sector === 'Centro Cirúrgico' ? InfectoStatus.AUTORIZADO : InfectoStatus.PENDENTE,
       isEvaluated: false,
-      history: [{
-        date: new Date().toLocaleString('pt-BR'),
-        action: 'Cadastro',
-        user: 'Sistema',
-        details: 'Paciente cadastrado no sistema.'
-      }],
+      history: [
+        {
+          date: new Date().toLocaleString('pt-BR'),
+          action: 'Cadastro',
+          user: 'Sistema',
+          details: 'Paciente cadastrado no sistema.'
+        },
+        ...(formData.observation ? [{
+          date: new Date().toLocaleString('pt-BR'),
+          action: 'Observação',
+          user: 'Sistema',
+          details: formData.observation
+        }] : [])
+      ],
       antibiotics: atbs as Antibiotic[],
       procedureDate: formData.sector === 'Centro Cirúrgico' ? (formData.procedureDate || new Date().toISOString().split('T')[0]) : undefined
     };
@@ -134,6 +144,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
         bed: '',
         sector: SECTORS[0],
         diagnosis: '',
+        observation: '',
         treatmentType: TreatmentType.TERAPEUTICO as TreatmentType,
         numAtb: 1
       };
@@ -226,6 +237,11 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
             <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Diagnóstico Principal</label>
             <textarea className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs focus:ring-4 focus:ring-emerald-50 dark:focus:ring-emerald-900/20 focus:border-emerald-500 outline-none h-20 resize-none leading-relaxed shadow-inner text-slate-900 dark:text-white"
               value={formData.diagnosis} onChange={e => setFormData({ ...formData, diagnosis: e.target.value })} placeholder="Descreva o quadro clínico e diagnóstico..." />
+          </div>
+          <div className="col-span-4 space-y-1.5">
+            <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Observações (Opcional)</label>
+            <textarea className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs focus:ring-4 focus:ring-emerald-50 dark:focus:ring-emerald-900/20 focus:border-emerald-500 outline-none h-20 resize-none leading-relaxed shadow-inner text-slate-900 dark:text-white"
+              value={formData.observation} onChange={e => setFormData({ ...formData, observation: e.target.value })} placeholder="Informações adicionais..." />
           </div>
         </div>
 

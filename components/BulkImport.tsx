@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 import { Upload, X, AlertCircle, CheckCircle2, Info, FileSpreadsheet, Trash2 } from 'lucide-react';
 import { Patient, Antibiotic, AntibioticStatus, InfectoStatus, TreatmentType, MedicationCategory, HistoryEntry } from '../types';
 import { SECTORS } from '../constants';
+import * as XLSX from 'xlsx';
 
 interface BulkImportProps {
     onImport: (patients: Patient[]) => void;
@@ -18,83 +19,110 @@ const BulkImport: React.FC<BulkImportProps> = ({ onImport, onCancel }) => {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
         if (selectedFile) {
-            if (selectedFile.type !== 'text/csv' && !selectedFile.name.endsWith('.csv')) {
-                setError('Por favor, selecione um arquivo CSV.');
+            const fileName = selectedFile.name.toLowerCase();
+            if (!fileName.endsWith('.csv') && !fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+                setError('Por favor, selecione um arquivo Excel (.xlsx) ou CSV.');
                 return;
             }
             setFile(selectedFile);
             setError(null);
-            parseCSV(selectedFile);
+            parseFile(selectedFile);
         }
     };
 
-    const parseCSV = (file: File) => {
+    const parseFile = (file: File) => {
         const reader = new FileReader();
+        const isExcel = file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls');
+
         reader.onload = (e) => {
-            const text = e.target?.result as string;
-            const lines = text.split(/\r?\n/);
-            const patients: Patient[] = [];
+            try {
+                const data = e.target?.result;
+                const patients: Patient[] = [];
+                let rows: any[] = [];
 
-            // Skip header if it exists (assuming first row is header)
-            // Check if first row contains column names
-            const startIdx = lines[0].toLowerCase().includes('nome') ? 1 : 0;
+                if (isExcel) {
+                    const workbook = XLSX.read(data, { type: 'binary' });
+                    const sheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName];
+                    rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                } else {
+                    const text = data as string;
+                    const lines = text.split(/\r?\n/);
+                    rows = lines.map(line => {
+                        const delimiter = line.includes(';') ? ';' : ',';
+                        return line.split(delimiter).map(c => String(c || '').trim().replace(/^["']|["']$/g, ''));
+                    });
+                }
 
-            for (let i = startIdx; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
+                if (!rows || rows.length === 0) {
+                    setError('O arquivo está vazio.');
+                    return;
+                }
 
-                // Detect delimiter (semicolon is common in BR locales)
-                const delimiter = line.includes(';') ? ';' : ',';
-                const cols = line.split(delimiter).map(c => c.trim().replace(/^["']|["']$/g, ''));
+                // Skip header if it exists
+                const headerRow = rows[0]?.map((c: any) => String(c || '').toLowerCase());
+                const startIdx = headerRow?.some((c: string) => c.includes('nome')) ? 1 : 0;
 
-                if (cols.length < 10) continue;
+                for (let i = startIdx; i < rows.length; i++) {
+                    const cols = rows[i];
+                    if (!cols || cols.length < 4) continue; // Minimum required columns
 
-                const [name, birthDate, bed, sector, diagnosis, atbName, dose, frequency, startDate, duration] = cols;
+                    const [name, birthDate, bed, sector, diagnosis, atbName, dose, frequency, startDate, duration] = cols.map((c: any) => String(c || '').trim());
 
-                // Validate sector
-                const validSector = SECTORS.includes(sector) ? sector : SECTORS[0];
+                    if (!name || !sector) continue;
 
-                const newPatient: Patient = {
-                    id: Math.random().toString(36).substr(2, 9),
-                    name: name.toUpperCase(),
-                    birthDate: birthDate, // Expecting DD/MM/YYYY
-                    bed: bed || 'S/L',
-                    sector: validSector,
-                    diagnosis: diagnosis,
-                    treatmentType: validSector === 'Centro Cirúrgico' ? TreatmentType.PROFILATICO : TreatmentType.TERAPEUTICO,
-                    infectoStatus: validSector === 'Centro Cirúrgico' ? InfectoStatus.AUTORIZADO : InfectoStatus.PENDENTE,
-                    isEvaluated: false,
-                    history: [{
-                        date: new Date().toLocaleString('pt-BR'),
-                        action: 'Importação',
-                        user: 'Sistema',
-                        details: 'Paciente importado via planilha CSV.'
-                    }],
-                    antibiotics: [{
+                    // Validate sector
+                    const validSector = SECTORS.includes(sector) ? sector : SECTORS[0];
+
+                    const newPatient: Patient = {
                         id: Math.random().toString(36).substr(2, 9),
-                        category: MedicationCategory.ANTIMICROBIANO,
-                        name: atbName.toUpperCase(),
-                        dose: dose,
-                        frequency: frequency,
-                        startDate: startDate.includes('/') ? startDate.split('/').reverse().join('-') : startDate, // Convert DD/MM/YYYY to YYYY-MM-DD
-                        durationDays: parseInt(duration) || 7,
-                        status: AntibioticStatus.EM_USO,
-                        times: ['08:00'],
-                        route: 'EV'
-                    }]
-                };
+                        name: name.toUpperCase(),
+                        birthDate: birthDate || '',
+                        bed: bed || 'S/L',
+                        sector: validSector,
+                        diagnosis: diagnosis || 'Não informado',
+                        treatmentType: validSector === 'Centro Cirúrgico' ? TreatmentType.PROFILATICO : TreatmentType.TERAPEUTICO,
+                        infectoStatus: validSector === 'Centro Cirúrgico' ? InfectoStatus.AUTORIZADO : InfectoStatus.PENDENTE,
+                        isEvaluated: false,
+                        history: [{
+                            date: new Date().toLocaleString('pt-BR'),
+                            action: 'Importação',
+                            user: 'Sistema',
+                            details: `Paciente importado via planilha ${isExcel ? 'Excel' : 'CSV'}.`
+                        }],
+                        antibiotics: atbName ? [{
+                            id: Math.random().toString(36).substr(2, 9),
+                            category: MedicationCategory.ANTIMICROBIANO,
+                            name: atbName.toUpperCase(),
+                            dose: dose || '',
+                            frequency: frequency || '',
+                            startDate: startDate && String(startDate).includes('/') ? startDate.split('/').reverse().join('-') : (startDate || new Date().toISOString().split('T')[0]),
+                            durationDays: parseInt(duration) || 7,
+                            status: AntibioticStatus.EM_USO,
+                            times: ['08:00'],
+                            route: 'EV'
+                        }] : []
+                    };
 
-                patients.push(newPatient);
-            }
+                    patients.push(newPatient);
+                }
 
-            if (patients.length === 0) {
-                setError('Nenhum dado válido encontrado no arquivo.');
-            } else {
-                setPreviewData(patients);
+                if (patients.length === 0) {
+                    setError('Nenhum dado válido encontrado no arquivo.');
+                } else {
+                    setPreviewData(patients);
+                }
+            } catch (err) {
+                console.error(err);
+                setError('Erro ao processar o arquivo. Verifique a formatação.');
             }
         };
-        reader.onerror = () => setError('Erro ao ler o arquivo.');
-        reader.readAsText(file);
+
+        if (isExcel) {
+            reader.readAsBinaryString(file);
+        } else {
+            reader.readAsText(file);
+        }
     };
 
     const handleRemove = (id: string) => {
@@ -118,7 +146,7 @@ const BulkImport: React.FC<BulkImportProps> = ({ onImport, onCancel }) => {
                         </div>
                         <div className="text-left">
                             <h2 className="text-lg font-black uppercase tracking-tight leading-none">Importação em Massa</h2>
-                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1 text-left">Carregar pacientes via planilha CSV</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1 text-left">Carregar pacientes via planilha Excel ou CSV</p>
                         </div>
                     </div>
                     <button onClick={onCancel} className="p-2 hover:bg-white/10 rounded-xl transition-all">
@@ -137,14 +165,14 @@ const BulkImport: React.FC<BulkImportProps> = ({ onImport, onCancel }) => {
                                 <Upload size={48} />
                             </div>
                             <div className="text-center">
-                                <p className="text-sm font-black text-slate-800 dark:text-white uppercase">Clique ou arraste um arquivo CSV</p>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Formato suportado: .csv</p>
+                                <p className="text-sm font-black text-slate-800 dark:text-white uppercase">Clique ou arraste uma planilha Excel ou CSV</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Formatos suportados: .xlsx, .xls, .csv</p>
                             </div>
                             <input
                                 type="file"
                                 ref={fileInputRef}
                                 onChange={handleFileChange}
-                                accept=".csv"
+                                accept=".csv,.xlsx,.xls"
                                 className="hidden"
                             />
                         </div>
@@ -188,7 +216,7 @@ const BulkImport: React.FC<BulkImportProps> = ({ onImport, onCancel }) => {
                                                 </div>
                                                 <div className="hidden md:flex flex-col border-l border-slate-100 dark:border-slate-700 pl-4 ml-4 text-left">
                                                     <p className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase">Medicamento</p>
-                                                    <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase truncate max-w-[150px]">{p.antibiotics[0].name}</p>
+                                                    <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase truncate max-w-[150px]">{p.antibiotics[0]?.name || 'Nenhum'}</p>
                                                 </div>
                                             </div>
                                             <button onClick={() => handleRemove(p.id)} className="p-2 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
