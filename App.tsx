@@ -664,6 +664,18 @@ const App: React.FC = () => {
       setConfigAtbDayChangeTime={setConfigAtbDayChangeTime}
       configAtbDayChangeTimeUTI={configAtbDayChangeTimeUTI}
       setConfigAtbDayChangeTimeUTI={setConfigAtbDayChangeTimeUTI}
+      onBulkAddPatients={async (newPatients: Patient[]) => {
+        const dbPayloads = newPatients.map(mapPatientToDb);
+        const { error } = await supabase.from('pacientes').insert(dbPayloads);
+        if (error) {
+          console.error('Error bulk adding patients:', error);
+          alert(`Erro ao salvar pacientes em massa: ${error.message}`);
+          fetchPatients();
+        } else {
+          setPatients(prev => [...newPatients, ...prev]);
+          alert(`${newPatients.length} pacientes importados com sucesso!`);
+        }
+      }}
     />
   );
 };

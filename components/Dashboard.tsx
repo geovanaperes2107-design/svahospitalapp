@@ -11,13 +11,15 @@ import {
   ChevronRight,
   ArrowRight,
   ClipboardList,
-  ShieldCheck
+  ShieldCheck,
+  FileSpreadsheet
 } from 'lucide-react';
 import { UserRole, Patient, InfectoStatus, AntibioticStatus, User } from '../types';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import PatientCard from './PatientCard';
 import PatientRegistration from './PatientRegistration';
+import BulkImport from './BulkImport';
 import Reports from './Reports';
 import UserManagement from './UserManagement';
 import { getDaysRemaining, calculateEndDate } from '../utils';
@@ -37,6 +39,7 @@ interface DashboardProps {
   onUpdatePatient: (p: Patient) => void;
   onDeletePatient: (id: string) => void;
   onAddPatient: (p: Patient) => void;
+  onBulkAddPatients: (patients: Patient[]) => void;
   onAddUser: (u: User) => void;
   onUpdateUser: (u: User) => void;
   onDeleteUser: (id: string) => void;
@@ -73,7 +76,7 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({
   user, patients, users, hospitalName, setHospitalName, bgImage, setBgImage, loginBgImage, setLoginBgImage,
-  onLogout, onUpdatePatient, onDeletePatient, onAddPatient, onAddUser, onUpdateUser, onDeleteUser,
+  onLogout, onUpdatePatient, onDeletePatient, onAddPatient, onBulkAddPatients, onAddUser, onUpdateUser, onDeleteUser,
   lastSaved, reportEmail, setReportEmail, atbCosts, setAtbCosts, patientDays, setPatientDays,
   systemAlert, setSystemAlert, isDarkMode, toggleTheme, configNotifyReset, setConfigNotifyReset,
   configNotifyPending, setConfigNotifyPending, configNotifyExpired, setConfigNotifyExpired,
@@ -82,6 +85,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   configAtbDayChangeTimeUTI, setConfigAtbDayChangeTimeUTI
 }) => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('sva_active_tab') || 'inicio');
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [infectoSubTab, setInfectoSubTab] = useState<'todos' | 'pendentes' | 'autorizados' | 'nao_autorizados'>(() =>
     (localStorage.getItem('sva_infecto_subtab') as any) || 'pendentes'
@@ -298,19 +302,30 @@ const Dashboard: React.FC<DashboardProps> = ({
   }, [patients]);
 
   const notifications = useMemo(() => {
-    const list: { id: string, patientName: string, atbName: string }[] = [];
+    const list: { id: string, patientName: string, text: string, type: 'expired' | 'pending' }[] = [];
+
     if (configNotifyExpired) {
       stats.expiredList.forEach(p => {
         p.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0).forEach(a => {
-          const notifyId = `${p.id}-${a.id}`;
+          const notifyId = `expired-${p.id}-${a.id}`;
           if (!dismissedNotifications.includes(notifyId)) {
-            list.push({ id: notifyId, patientName: p.name, atbName: a.name });
+            list.push({ id: notifyId, patientName: p.name, text: `${a.name} venceu.`, type: 'expired' });
           }
         });
       });
     }
+
+    if (configNotifyPending) {
+      unevaluatedPatients.forEach(p => {
+        const notifyId = `pending-${p.id}`;
+        if (!dismissedNotifications.includes(notifyId)) {
+          list.push({ id: notifyId, patientName: p.name, text: 'Aguardando avaliação.', type: 'pending' });
+        }
+      });
+    }
+
     return list;
-  }, [stats.expiredList, dismissedNotifications, configNotifyExpired]);
+  }, [stats.expiredList, unevaluatedPatients, dismissedNotifications, configNotifyExpired, configNotifyPending]);
 
   const handleNotifyClick = () => {
     setReportInitialTab('vencimento');
@@ -456,6 +471,19 @@ const Dashboard: React.FC<DashboardProps> = ({
           {activeTab === 'cadastro' && <div className="max-w-4xl mx-auto"><PatientRegistration onAdd={(p) => { onAddPatient(p); setActiveTab('inicio'); }} onCancel={() => setActiveTab('inicio')} /></div>}
           {activeTab === 'relatorios' && <Reports patients={patients} initialReportTab={reportInitialTab} atbCosts={atbCosts} setAtbCosts={setAtbCosts} patientDays={patientDays} setPatientDays={setPatientDays} />}
 
+          {activeTab === 'inicio' && (
+            <div className="fixed bottom-24 right-6 z-[50] flex flex-col gap-3 no-print">
+              <button
+                onClick={() => setIsBulkImportOpen(true)}
+                className="p-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl shadow-2xl transition-all transform hover:scale-105 flex items-center gap-3 pointer-events-auto"
+                title="Importar Planilha CSV"
+              >
+                <FileSpreadsheet size={24} />
+                <span className="font-black text-[10px] uppercase tracking-widest hidden md:inline">Importar Planilha</span>
+              </button>
+            </div>
+          )}
+
           {['finalizados', 'Centro Cirúrgico', 'infectologia', ...SECTORS].includes(activeTab) && (
             <div className="max-w-[1200px] mx-auto space-y-3 text-left animate-in fade-in pb-6">
               <div className="flex flex-col md:flex-row justify-between items-center no-print bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-md border border-slate-100 dark:border-slate-700 gap-8 transition-colors">
@@ -556,46 +584,44 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
           )}
 
-          {configNotifyPending && unevaluatedPatients.length > 0 && !dismissedPendingAlert && (
-            <div
-              onClick={() => setActiveTab('inicio')}
-              className="pointer-events-auto p-5 rounded-[2rem] bg-orange-600/95 border-2 border-orange-400 text-white flex items-center justify-between shadow-2xl backdrop-blur-md cursor-pointer hover:scale-[1.05] transition-all animate-in slide-in-from-right-4 w-full"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-white/20">
-                  <Bell size={24} className="text-white animate-bounce" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-0.5">Aviso</p>
-                  <p className="text-xs font-black uppercase tracking-tight leading-tight">
-                    {unevaluatedPatients.length} {unevaluatedPatients.length === 1 ? 'paciente pendente' : 'pacientes pendentes'}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={handleDismissPendingAlert}
-                className="p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors ml-4"
-              >
-                <X size={16} />
-              </button>
-            </div>
-          )}
           {notifications.map((notify) => (
-            <div key={notify.id} className="pointer-events-auto bg-slate-900 text-white p-3 rounded-2xl shadow-xl border-l-4 border-l-red-500 animate-in slide-in-from-right-5 flex flex-col gap-2 relative group">
+            <div key={notify.id} className={`pointer-events-auto text-white p-3 rounded-2xl shadow-xl border-l-4 animate-in slide-in-from-right-5 flex flex-col gap-2 relative group w-64
+              ${notify.type === 'expired' ? 'bg-slate-900 border-l-red-500' : 'bg-slate-900 border-l-orange-500'}`}>
               <button onClick={(e) => { e.stopPropagation(); setDismissedNotifications(prev => [...prev, notify.id]); }} className="absolute top-2 right-2 p-1 bg-white/10 hover:bg-red-500 rounded-full transition-colors"><X size={12} /></button>
-              <div className="cursor-pointer" onClick={handleNotifyClick}>
+              <div className="cursor-pointer" onClick={() => {
+                if (notify.type === 'expired') {
+                  setReportInitialTab('vencimento');
+                  setActiveTab('relatorios');
+                } else {
+                  setActiveTab('inicio');
+                }
+              }}>
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="p-1 bg-red-500 rounded-lg"><Bell size={12} /></div>
-                  <span className="text-[8px] font-black uppercase text-red-400">Vencimento</span>
+                  <div className={`p-1 rounded-lg ${notify.type === 'expired' ? 'bg-red-500' : 'bg-orange-500'}`}>
+                    <Bell size={12} />
+                  </div>
+                  <span className={`text-[8px] font-black uppercase ${notify.type === 'expired' ? 'text-red-400' : 'text-orange-400'}`}>
+                    {notify.type === 'expired' ? 'Vencimento' : 'Avaliação Pendente'}
+                  </span>
                 </div>
                 <p className="text-[9px] font-black uppercase leading-tight">{notify.patientName}</p>
-                <p className="text-[8px] font-bold text-slate-400 uppercase italic mt-0.5">{notify.atbName} venceu.</p>
+                <p className="text-[8px] font-bold text-slate-400 uppercase italic mt-0.5">{notify.text}</p>
                 <div className="mt-2 flex items-center gap-1 text-[8px] font-black text-emerald-400 uppercase">Ver <ArrowRight size={10} /></div>
               </div>
             </div>
           ))}
         </div>
       </main>
+
+      {isBulkImportOpen && (
+        <BulkImport
+          onImport={(importedPatients) => {
+            onBulkAddPatients(importedPatients);
+            setIsBulkImportOpen(false);
+          }}
+          onCancel={() => setIsBulkImportOpen(false)}
+        />
+      )}
     </div>
   );
 };
