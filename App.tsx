@@ -42,7 +42,8 @@ const App: React.FC = () => {
   const [configNotifyExpired, setConfigNotifyExpiredState] = useState(() => localStorage.getItem('sva_config_notify_expired') !== 'false');
   const [configResetTime, setConfigResetTimeState] = useState(() => localStorage.getItem('sva_config_reset_time') || '07:30');
   const [configResetTimeUTI, setConfigResetTimeUTIState] = useState(() => localStorage.getItem('sva_config_reset_time_uti') || '22:00');
-  const [configPendingTime, setConfigPendingTimeState] = useState(() => localStorage.getItem('sva_config_pending_time') || '21:30');
+  const [configPendingTimeClinicas, setConfigPendingTimeClinicasState] = useState(() => localStorage.getItem('sva_config_pending_time_clinicas') || '21:30');
+  const [configPendingTimeUTI, setConfigPendingTimeUTIState] = useState(() => localStorage.getItem('sva_config_pending_time_uti_alert') || '13:00');
   const [configAtbDayLock, setConfigAtbDayLockState] = useState(() => localStorage.getItem('sva_config_atb_day_lock') !== 'false');
   const [configAtbDayChangeTime, setConfigAtbDayChangeTimeState] = useState(() => localStorage.getItem('sva_config_atb_day_change_time') || '00:00');
   const [configAtbDayChangeTimeUTI, setConfigAtbDayChangeTimeUTIState] = useState(() => localStorage.getItem('sva_config_atb_day_change_time_uti') || '00:00');
@@ -74,7 +75,8 @@ const App: React.FC = () => {
   const setConfigNotifyExpired = (val: boolean) => { setConfigNotifyExpiredState(val); saveSetting('config_notify_expired', val, 'sva_config_notify_expired'); };
   const setConfigResetTime = (val: string) => { setConfigResetTimeState(val); saveSetting('config_reset_time', val, 'sva_config_reset_time'); };
   const setConfigResetTimeUTI = (val: string) => { setConfigResetTimeUTIState(val); saveSetting('config_reset_time_uti', val, 'sva_config_reset_time_uti'); };
-  const setConfigPendingTime = (val: string) => { setConfigPendingTimeState(val); saveSetting('config_pending_time', val, 'sva_config_pending_time'); };
+  const setConfigPendingTimeClinicas = (val: string) => { setConfigPendingTimeClinicasState(val); saveSetting('config_pending_time_clinicas', val, 'sva_config_pending_time_clinicas'); };
+  const setConfigPendingTimeUTI = (val: string) => { setConfigPendingTimeUTIState(val); saveSetting('config_pending_time_uti_alert', val, 'sva_config_pending_time_uti_alert'); };
   const setConfigAtbDayLock = (val: boolean) => { setConfigAtbDayLockState(val); saveSetting('config_atb_day_lock', val, 'sva_config_atb_day_lock'); };
   const setConfigAtbDayChangeTime = (val: string) => { setConfigAtbDayChangeTimeState(val); saveSetting('config_atb_day_change_time', val, 'sva_config_atb_day_change_time'); };
   const setConfigAtbDayChangeTimeUTI = (val: string) => { setConfigAtbDayChangeTimeUTIState(val); saveSetting('config_atb_day_change_time_uti', val, 'sva_config_atb_day_change_time_uti'); };
@@ -244,7 +246,8 @@ const App: React.FC = () => {
           case 'config_notify_expired': setConfigNotifyExpiredState(s.value); break;
           case 'config_reset_time': setConfigResetTimeState(s.value); break;
           case 'config_reset_time_uti': setConfigResetTimeUTIState(s.value); break;
-          case 'config_pending_time': setConfigPendingTimeState(s.value); break;
+          case 'config_pending_time_clinicas': setConfigPendingTimeClinicasState(s.value); break;
+          case 'config_pending_time_uti_alert': setConfigPendingTimeUTIState(s.value); break;
           case 'config_atb_day_change_time': setConfigAtbDayChangeTimeState(s.value); break;
           case 'config_atb_day_change_time_uti': setConfigAtbDayChangeTimeUTIState(s.value); break;
         }
@@ -397,22 +400,35 @@ const App: React.FC = () => {
 
       // Alerta de Pendentes
       if (configNotifyPending) {
-        const [pendingHour, pendingMin] = configPendingTime.split(':').map(Number);
-        const isPastAlertTime = now.getHours() > pendingHour || (now.getHours() === pendingHour && now.getMinutes() >= pendingMin);
-        const lastAlertDate = localStorage.getItem('sva_last_night_alert');
-        if (lastAlertDate !== todayStr && isPastAlertTime) {
-          const unevaluatedPatients = patients.filter(p => !p.isEvaluated);
-          if (unevaluatedPatients.length > 0) {
-            const names = unevaluatedPatients.map(p => p.name).slice(0, 3).join(', ');
-            const remaining = unevaluatedPatients.length - 3;
-            const messageSuffix = remaining > 0 ? ` e outros ${remaining} pacientes` : '';
+        // --- ALERTA CLÍNICAS / OUTROS (20:00) ---
+        const [hClin, mClin] = configPendingTimeClinicas.split(':').map(Number);
+        const isPastClinTime = now.getHours() > hClin || (now.getHours() === hClin && now.getMinutes() >= mClin);
+        const lastAlertGen = localStorage.getItem('sva_last_night_alert_clinicas');
 
-            setSystemAlert({
-              message: `Atenção (${configPendingTime}): Pendentes de avaliação: ${names}${messageSuffix}`,
-              type: 'warning'
-            });
-            localStorage.setItem('sva_last_night_alert', todayStr);
-            // Removed timeout to persist alert per user request
+        if (lastAlertGen !== todayStr && isPastClinTime) {
+          const pendentesClinicas = patients.filter(p => !p.isEvaluated && !p.sector?.includes('UTI'));
+          if (pendentesClinicas.length > 0) {
+            const names = pendentesClinicas.map(p => p.name).slice(0, 3).join(', ');
+            const remaining = pendentesClinicas.length - 3;
+            const msg = remaining > 0 ? ` e outros ${remaining} pacientes` : '';
+            setSystemAlert({ message: `Pendentes Clínicas (${configPendingTimeClinicas}): ${names}${msg}`, type: 'warning' });
+            localStorage.setItem('sva_last_night_alert_clinicas', todayStr);
+          }
+        }
+
+        // --- ALERTA UTI (08:00) ---
+        const [hUtiAlert, mUtiAlert] = configPendingTimeUTI.split(':').map(Number);
+        const isPastUtiAlertTime = now.getHours() > hUtiAlert || (now.getHours() === hUtiAlert && now.getMinutes() >= mUtiAlert);
+        const lastAlertUti = localStorage.getItem('sva_last_night_alert_uti');
+
+        if (lastAlertUti !== todayStr && isPastUtiAlertTime) {
+          const pendentesUti = patients.filter(p => !p.isEvaluated && p.sector?.includes('UTI'));
+          if (pendentesUti.length > 0) {
+            const names = pendentesUti.map(p => p.name).slice(0, 3).join(', ');
+            const remaining = pendentesUti.length - 3;
+            const msg = remaining > 0 ? ` e outros ${remaining} pacientes` : '';
+            setSystemAlert({ message: `Pendentes UTI (${configPendingTimeUTI}): ${names}${msg}`, type: 'warning' });
+            localStorage.setItem('sva_last_night_alert_uti', todayStr);
           }
         }
       }
@@ -435,7 +451,7 @@ const App: React.FC = () => {
     checkScheduledTasks();
     const interval = setInterval(checkScheduledTasks, 60000);
     return () => clearInterval(interval);
-  }, [patients, reportEmail, atbCosts, hospitalName, configNotifyReset, configNotifyPending, configResetTime, configResetTimeUTI, configPendingTime]);
+  }, [patients, reportEmail, atbCosts, hospitalName, configNotifyReset, configNotifyPending, configResetTime, configResetTimeUTI, configPendingTimeClinicas, configPendingTimeUTI]);
 
   useEffect(() => {
     // Only save settings to local storage, NOT patients OR users anymore
@@ -449,8 +465,9 @@ const App: React.FC = () => {
     localStorage.setItem('sva_config_notify_pending', String(configNotifyPending));
     localStorage.setItem('sva_config_notify_expired', String(configNotifyExpired));
     localStorage.setItem('sva_config_reset_time', configResetTime);
-    localStorage.setItem('sva_config_pending_time', configPendingTime);
-  }, [hospitalName, bgImage, loginBgImage, reportEmail, patientDays, atbCosts, configNotifyReset, configNotifyPending, configNotifyExpired, configResetTime, configPendingTime]);
+    localStorage.setItem('sva_config_pending_time_clinicas', configPendingTimeClinicas);
+    localStorage.setItem('sva_config_pending_time_uti_alert', configPendingTimeUTI);
+  }, [hospitalName, bgImage, loginBgImage, reportEmail, patientDays, atbCosts, configNotifyReset, configNotifyPending, configNotifyExpired, configResetTime, configPendingTimeClinicas, configPendingTimeUTI]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -681,8 +698,10 @@ const App: React.FC = () => {
       setConfigResetTime={setConfigResetTime}
       configResetTimeUTI={configResetTimeUTI}
       setConfigResetTimeUTI={setConfigResetTimeUTI}
-      configPendingTime={configPendingTime}
-      setConfigPendingTime={setConfigPendingTime}
+      configPendingTimeClinicas={configPendingTimeClinicas}
+      configPendingTimeUTI={configPendingTimeUTI}
+      setConfigPendingTimeClinicas={setConfigPendingTimeClinicas}
+      setConfigPendingTimeUTI={setConfigPendingTimeUTI}
       configAtbDayLock={configAtbDayLock}
       setConfigAtbDayLock={setConfigAtbDayLock}
       configAtbDayChangeTime={configAtbDayChangeTime}

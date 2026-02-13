@@ -3,6 +3,7 @@ export enum UserRole {
   INFECTOLOGIA = 'INFECTOLOGIA',
   CONTROLE_INFECCAO = 'CONTROLE DE INFECÇÃO',
   FARMACIA = 'FARMÁCIA',
+  COLABORADOR = 'COLABORADOR',
   ADMINISTRADOR = 'ADMINISTRADOR',
   VISUALIZADOR = 'VISUALIZADOR'
 }
@@ -20,7 +21,8 @@ export enum AntibioticStatus {
   SUSPENSO = 'Suspenso',
   FINALIZADO = 'Finalizado',
   TROCADO = 'Trocado',
-  EVADIDO = 'Evadido'
+  EVADIDO = 'Evadido',
+  OBITO = 'ÓBITO'
 }
 
 export enum InfectoStatus {

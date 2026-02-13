@@ -32,8 +32,10 @@ interface UserManagementProps {
     setConfigResetTime: (val: string) => void;
     configResetTimeUTI: string;
     setConfigResetTimeUTI: (val: string) => void;
-    configPendingTime: string;
-    setConfigPendingTime: (val: string) => void;
+    configPendingTimeClinicas: string;
+    setConfigPendingTimeClinicas: (val: string) => void;
+    configPendingTimeUTI: string;
+    setConfigPendingTimeUTI: (val: string) => void;
     configAtbDayLock: boolean;
     setConfigAtbDayLock: (val: boolean) => void;
     configAtbDayChangeTime: string;
@@ -47,7 +49,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
     setBgImage, loginBgImage, setLoginBgImage, reportEmail, setReportEmail, atbCosts, setAtbCosts,
     patientDays, setPatientDays, configNotifyReset, setConfigNotifyReset, configNotifyPending,
     setConfigNotifyPending, configNotifyExpired, setConfigNotifyExpired, configResetTime,
-    setConfigResetTime, configResetTimeUTI, setConfigResetTimeUTI, configPendingTime, setConfigPendingTime,
+    setConfigResetTime, configResetTimeUTI, setConfigResetTimeUTI, configPendingTimeClinicas, setConfigPendingTimeClinicas,
+    configPendingTimeUTI, setConfigPendingTimeUTI,
     configAtbDayLock, setConfigAtbDayLock, configAtbDayChangeTime, setConfigAtbDayChangeTime,
     configAtbDayChangeTimeUTI, setConfigAtbDayChangeTimeUTI
 }) => {
@@ -361,16 +364,30 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                 <input type="time" className="bg-slate-50 dark:bg-slate-900 border-2 border-transparent focus:border-emerald-500 rounded-xl px-3 py-1.5 text-xs font-black outline-none text-slate-800 dark:text-white" value={configAtbDayChangeTimeUTI} onChange={e => setConfigAtbDayChangeTimeUTI(e.target.value)} />
                             </label>
 
-                            <label className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 cursor-pointer group hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-colors">
-                                <div className="flex items-center gap-3">
-                                    <input type="checkbox" className="w-5 h-5 rounded-lg border-slate-300 text-emerald-600 focus:ring-emerald-500" checked={configNotifyPending} onChange={e => setConfigNotifyPending(e.target.checked)} />
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-700 dark:text-slate-200 uppercase">Alerta Pendentes</p>
-                                        <p className="text-[8px] font-bold text-slate-400 uppercase">Avisar sobre avaliações não feitas</p>
+                            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <input type="checkbox" className="w-5 h-5 rounded-lg border-slate-300 text-emerald-600 focus:ring-emerald-500" checked={configNotifyPending} onChange={e => setConfigNotifyPending(e.target.checked)} />
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-700 dark:text-slate-200 uppercase">Alertas de Pendentes</p>
+                                            <p className="text-[8px] font-bold text-slate-400 uppercase">Notificar avaliações não realizadas</p>
+                                        </div>
                                     </div>
                                 </div>
-                                <input type="time" className="bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-black outline-none focus:border-emerald-500 text-slate-800 dark:text-white" value={configPendingTime} onChange={e => setConfigPendingTime(e.target.value)} />
-                            </label>
+
+                                {configNotifyPending && (
+                                    <div className="grid grid-cols-2 gap-4 pl-8">
+                                        <div className="space-y-1">
+                                            <p className="text-[9px] font-black text-slate-500 uppercase">Clínicas</p>
+                                            <input type="time" className="w-full bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-black outline-none focus:border-emerald-500 text-slate-800 dark:text-white" value={configPendingTimeClinicas} onChange={e => setConfigPendingTimeClinicas(e.target.value)} />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[9px] font-black text-slate-500 uppercase">UTI</p>
+                                            <input type="time" className="w-full bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-black outline-none focus:border-emerald-500 text-slate-800 dark:text-white" value={configPendingTimeUTI} onChange={e => setConfigPendingTimeUTI(e.target.value)} />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
 
                             <label className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 cursor-pointer group hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-colors">
                                 <div className="flex items-center gap-3">
@@ -535,7 +552,128 @@ const UserManagement: React.FC<UserManagementProps> = ({
                     </div>
                 </div>
             )}
+
+            {showForm && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[8000] flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="bg-emerald-600 p-8 text-white">
+                            <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-3 bg-white/20 rounded-2xl">
+                                        <UserPlus size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-black uppercase tracking-tight">{editingUser ? 'Editar Colaborador' : 'Novo Colaborador'}</h3>
+                                        <p className="text-[10px] font-bold uppercase opacity-80">Preencha os dados de acesso</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setShowForm(false)} className="p-2 hover:bg-white/20 rounded-full transition-colors"><X size={20} /></button>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                            <div className="grid grid-cols-1 gap-6">
+                                <div className="space-y-1.5">
+                                    <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1">Nome Completo</label>
+                                    <input required type="text" className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 p-4 rounded-2xl font-bold text-sm focus:border-emerald-500 outline-none text-slate-900 dark:text-white transition-all" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value.toUpperCase() })} placeholder="EX: JOÃO DA SILVA" />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1">E-mail</label>
+                                        <input required type="email" className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 p-4 rounded-2xl font-bold text-sm focus:border-emerald-500 outline-none text-slate-900 dark:text-white transition-all" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value.toLowerCase().replace(/\s/g, '') })} placeholder="contato@hospital.com" />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1">CPF (Apenas Números)</label>
+                                        <input required type="text" maxLength={11} className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 p-4 rounded-2xl font-bold text-sm focus:border-emerald-500 outline-none text-slate-900 dark:text-white transition-all" value={formData.cpf || ''} onChange={e => setFormData({ ...formData, cpf: e.target.value.replace(/\D/g, '') })} placeholder="000.000.000-00" />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1">Setor Principal</label>
+                                        <select className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 p-4 rounded-2xl font-bold text-sm focus:border-emerald-500 outline-none text-slate-900 dark:text-white transition-all uppercase" value={formData.sector || ''} onChange={e => setFormData({ ...formData, sector: e.target.value })}>
+                                            <option value="">Selecione...</option>
+                                            <option value="CLÍNICA MÉDICA">CLÍNICA MÉDICA</option>
+                                            <option value="CLÍNICA CIRÚRGICA">CLÍNICA CIRÚRGICA</option>
+                                            <option value="UTI ADULTO">UTI ADULTO</option>
+                                            <option value="UTI COVID">UTI COVID</option>
+                                            <option value="PRONTO SOCORRO">PRONTO SOCORRO</option>
+                                            <option value="CENTRO CIRÚRGICO">CENTRO CIRÚRGICO</option>
+                                            <option value="INFECTOLOGIA">INFECTOLOGIA</option>
+                                            <option value="DIRETORIA">DIRETORIA</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1">Perfil de Acesso</label>
+                                        <select className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 p-4 rounded-2xl font-bold text-sm focus:border-emerald-500 outline-none text-slate-900 dark:text-white transition-all uppercase" value={formData.role || UserRole.VISUALIZADOR} onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}>
+                                            <option value={UserRole.VISUALIZADOR}>Visualizador</option>
+                                            <option value={UserRole.COLABORADOR}>Colaborador</option>
+                                            <option value={UserRole.ADMINISTRADOR}>Administrador</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {!editingUser && (
+                                    <div className="p-5 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 space-y-3">
+                                        <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500">
+                                            <Key size={16} />
+                                            <p className="text-[10px] font-black uppercase">Senha Chave (Provisória)</p>
+                                        </div>
+                                        <input
+                                            required
+                                            type="text"
+                                            className="w-full bg-white dark:bg-slate-900 border-2 border-amber-200 dark:border-amber-800 p-3 rounded-xl font-black text-center text-lg tracking-[0.5em] focus:border-amber-500 outline-none text-slate-900 dark:text-white transition-all"
+                                            value={formData.password || ''}
+                                            onChange={e => setFormData({ ...formData, password: e.target.value.toUpperCase() })}
+                                            placeholder="8754"
+                                            maxLength={6}
+                                        />
+                                        <p className="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase text-center">Informe esta senha ao colaborador para o primeiro acesso.</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <button type="submit" className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-xs shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 mt-4">
+                                <Save size={18} /> {editingUser ? 'Salvar Alterações' : 'Confirmar Pré-Cadastro'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {resetPasswordUser && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9000] flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-slate-800 w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-8 text-center space-y-4">
+                            <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-500 rounded-2xl flex items-center justify-center mx-auto">
+                                <Key size={32} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase">Resetar Senha</h3>
+                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-1">Colaborador: {resetPasswordUser.name}</p>
+                            </div>
+
+                            <div className="space-y-4 mt-6">
+                                <input
+                                    type="text"
+                                    className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 p-4 rounded-2xl font-black text-center text-lg tracking-[0.5em] focus:border-yellow-500 outline-none text-slate-900 dark:text-white transition-all uppercase"
+                                    placeholder="NOVA SENHA"
+                                    value={newResetPassword}
+                                    onChange={e => setNewResetPassword(e.target.value.toUpperCase())}
+                                    maxLength={8}
+                                />
+                                <div className="flex gap-2">
+                                    <button onClick={() => setResetPasswordUser(null)} className="flex-1 py-4 bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-400 rounded-2xl font-black uppercase text-[10px] hover:bg-slate-200 dark:hover:bg-slate-600 transition-all">Cancelar</button>
+                                    <button onClick={handleResetPassword} disabled={!newResetPassword} className="flex-2 py-4 bg-yellow-500 text-white rounded-2xl font-black uppercase text-[10px] shadow-lg shadow-yellow-500/20 hover:bg-yellow-600 disabled:opacity-50 transition-all">Confirmar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
+
     );
 };
 

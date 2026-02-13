@@ -292,7 +292,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
   };
 
   const antibioticsToDisplay = activeTab === 'finalizados'
-    ? patient.antibiotics.filter(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.EVADIDO].includes(a.status))
+    ? patient.antibiotics.filter(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.EVADIDO, AntibioticStatus.OBITO].includes(a.status))
     : patient.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO);
 
   return (
@@ -465,15 +465,18 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                       disabled={isInfectoPanel}
                       onClick={() => !isInfectoPanel && setShowStatusMenu(showStatusMenu === atb.id ? null : atb.id)}
                       className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase transition-all shadow-sm ${atb.status === AntibioticStatus.EM_USO ? 'bg-emerald-500 text-white' :
-                        atb.status === AntibioticStatus.SUSPENSO ? 'bg-amber-500 text-white' : 'bg-red-500 text-white'
+                        atb.status === AntibioticStatus.SUSPENSO ? 'bg-amber-500 text-white' :
+                          atb.status === AntibioticStatus.OBITO ? 'bg-slate-700 text-white' : 'bg-red-500 text-white'
                         } ${isInfectoPanel ? 'cursor-default' : ''}`}
                     >
                       <div className="w-1 h-1 rounded-full bg-white animate-pulse" /> {atb.status} {!isInfectoPanel && '▾'}
                     </button>
                     {showStatusMenu === atb.id && !isInfectoPanel && (
                       <div className="absolute top-full left-0 mt-1 w-32 bg-white shadow-xl rounded-xl p-1 z-[200] border border-slate-100 flex flex-col gap-0.5">
-                        <button onClick={() => handleStatusChange(atb.id, AntibioticStatus.SUSPENSO)} className="text-left px-3 py-2 text-[9px] font-black uppercase text-amber-600 hover:bg-amber-50 rounded-lg">Suspender</button>
+                        <button onClick={() => handleStatusChange(atb.id, AntibioticStatus.EM_USO)} className="text-left px-3 py-2 text-[9px] font-black uppercase text-emerald-600 hover:bg-emerald-50 rounded-lg">Em Uso</button>
+                        <button onClick={() => handleStatusChange(atb.id, AntibioticStatus.SUSPENSO)} className="text-left px-3 py-2 text-[9px] font-black uppercase text-amber-600 hover:bg-amber-50 rounded-lg">Suspenso</button>
                         <button onClick={() => handleStatusChange(atb.id, AntibioticStatus.FINALIZADO)} className="text-left px-3 py-2 text-[9px] font-black uppercase text-red-600 hover:bg-red-50 rounded-lg">Finalizar</button>
+                        <button onClick={() => handleStatusChange(atb.id, AntibioticStatus.OBITO)} className="text-left px-3 py-2 text-[9px] font-black uppercase text-slate-600 hover:bg-slate-50 rounded-lg">Óbito</button>
                       </div>
                     )}
                   </div>

@@ -65,8 +65,10 @@ interface DashboardProps {
   setConfigResetTime: (val: string) => void;
   configResetTimeUTI: string;
   setConfigResetTimeUTI: (val: string) => void;
-  configPendingTime: string;
-  setConfigPendingTime: (val: string) => void;
+  configPendingTimeClinicas: string;
+  setConfigPendingTimeClinicas: (val: string) => void;
+  configPendingTimeUTI: string;
+  setConfigPendingTimeUTI: (val: string) => void;
   configAtbDayLock: boolean;
   setConfigAtbDayLock: (val: boolean) => void;
   configAtbDayChangeTime: string;
@@ -81,8 +83,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   lastSaved, reportEmail, setReportEmail, atbCosts, setAtbCosts, patientDays, setPatientDays,
   systemAlert, setSystemAlert, isDarkMode, toggleTheme, configNotifyReset, setConfigNotifyReset,
   configNotifyPending, setConfigNotifyPending, configNotifyExpired, setConfigNotifyExpired,
-  configResetTime, setConfigResetTime, configResetTimeUTI, setConfigResetTimeUTI, configPendingTime,
-  setConfigPendingTime, configAtbDayLock, setConfigAtbDayLock, configAtbDayChangeTime, setConfigAtbDayChangeTime,
+  configResetTime, setConfigResetTime, configResetTimeUTI, setConfigResetTimeUTI, configPendingTimeClinicas,
+  setConfigPendingTimeClinicas, configPendingTimeUTI, setConfigPendingTimeUTI, configAtbDayLock, setConfigAtbDayLock, configAtbDayChangeTime, setConfigAtbDayChangeTime,
   configAtbDayChangeTimeUTI, setConfigAtbDayChangeTimeUTI
 }) => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('sva_active_tab') || 'inicio');
@@ -101,8 +103,17 @@ const Dashboard: React.FC<DashboardProps> = ({
     localStorage.getItem('sva_cc_month') || new Date().toISOString().substring(0, 7)
   );
 
-  // Controle de notificações de vencimento
-  const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
+  // Controle de notificações persistentes
+  const [dismissedNotifications, setDismissedNotifications] = useState<string[]>(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const saved = localStorage.getItem('sva_dismissed_notifications');
+    if (!saved) return [];
+    try {
+      const parsed = JSON.parse(saved);
+      if (parsed.date === today) return parsed.ids;
+    } catch (e) { }
+    return [];
+  });
   const [reportInitialTab, setReportInitialTab] = useState<string>(() => localStorage.getItem('sva_report_initial_tab') || 'monitoramento');
 
   // Estados para Sidebar e Responsividade
@@ -145,6 +156,11 @@ const Dashboard: React.FC<DashboardProps> = ({
   }, [ccSubTab]);
 
   useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem('sva_dismissed_notifications', JSON.stringify({ date: today, ids: dismissedNotifications }));
+  }, [dismissedNotifications]);
+
+  useEffect(() => {
     localStorage.setItem('sva_cc_month', ccHistoryMonth);
   }, [ccHistoryMonth]);
 
@@ -158,7 +174,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     if (activeTab === 'finalizados') {
       const isFinishedOrEvaded = p.antibiotics.some(a =>
-        [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.EVADIDO].includes(a.status)
+        [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.EVADIDO, AntibioticStatus.OBITO].includes(a.status)
       );
       return isFinishedOrEvaded && matchesSearch;
     }
@@ -317,7 +333,22 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
 
     if (configNotifyPending) {
+      const now = new Date();
+      const currentH = now.getHours();
+      const currentM = now.getMinutes();
+
+      const [clinH, clinM] = configPendingTimeClinicas.split(':').map(Number);
+      const [utiH, utiM] = configPendingTimeUTI.split(':').map(Number);
+
+      const isClinTime = currentH > clinH || (currentH === clinH && currentM >= clinM);
+      const isUtiTime = currentH > utiH || (currentH === utiH && currentM >= utiM);
+
       unevaluatedPatients.forEach(p => {
+        const isUTI = p.sector?.includes('UTI');
+        const canShow = isUTI ? isUtiTime : isClinTime;
+
+        if (!canShow) return;
+
         const notifyId = `pending-${p.id}`;
         if (!dismissedNotifications.includes(notifyId)) {
           list.push({ id: notifyId, patientName: p.name, text: 'Aguardando avaliação.', type: 'pending' });
@@ -470,8 +501,10 @@ const Dashboard: React.FC<DashboardProps> = ({
               setConfigResetTime={setConfigResetTime}
               configResetTimeUTI={configResetTimeUTI}
               setConfigResetTimeUTI={setConfigResetTimeUTI}
-              configPendingTime={configPendingTime}
-              setConfigPendingTime={setConfigPendingTime}
+              configPendingTimeClinicas={configPendingTimeClinicas}
+              setConfigPendingTimeClinicas={setConfigPendingTimeClinicas}
+              configPendingTimeUTI={configPendingTimeUTI}
+              setConfigPendingTimeUTI={setConfigPendingTimeUTI}
               configAtbDayLock={configAtbDayLock}
               setConfigAtbDayLock={setConfigAtbDayLock}
               configAtbDayChangeTime={configAtbDayChangeTime}
