@@ -213,15 +213,27 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const sortedPatients = useMemo(() => {
     return [...filteredPatients].sort((a, b) => {
-      // Primeiro ordena por order (se definido)
+      // Se for UTI, ordena numericamente pelo leito obrigatoriamente
+      const isUTITab = activeTab?.includes('UTI');
+      if (isUTITab) {
+        const getBedNumber = (bed: string) => {
+          const match = bed.match(/\d+/);
+          return match ? parseInt(match[0], 10) : Infinity;
+        };
+        const bedA = getBedNumber(a.bed);
+        const bedB = getBedNumber(b.bed);
+        if (bedA !== bedB) return bedA - bedB;
+      }
+
+      // Para outros setores, mantém a lógica de order manual e avaliação
       const orderA = a.order ?? Infinity;
       const orderB = b.order ?? Infinity;
       if (orderA !== orderB) return orderA - orderB;
-      // Depois mantém a lógica original de avaliados por último
+
       if (a.isEvaluated === b.isEvaluated) return 0;
       return a.isEvaluated ? 1 : -1;
     });
-  }, [filteredPatients]);
+  }, [filteredPatients, activeTab]);
 
   const handleMovePatient = (patientId: string, direction: 'up' | 'down') => {
     const currentIndex = sortedPatients.findIndex(p => p.id === patientId);

@@ -623,11 +623,6 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
         })}
 
         <div className="flex justify-end items-center gap-2 pt-1 uppercase text-[9px] font-black">
-          {isAdmin && (
-            <button onClick={() => setEditMode({ type: 'editar' })} className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full hover:bg-slate-200 transition-all flex items-center gap-1">
-              <Edit3 size={12} /> Editar Dados
-            </button>
-          )}
           <button onClick={() => onUpdate({ ...patient, isEvaluated: !patient.isEvaluated })} className={`px-4 py-1 rounded-full font-black uppercase shadow transition-all ${patient.isEvaluated ? 'bg-purple-600 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'}`}>
             {patient.isEvaluated ? '✓ AVALIADO' : 'MARCAR COMO AVALIADO'}
           </button>
