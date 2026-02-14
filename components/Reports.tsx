@@ -4,7 +4,7 @@ import {
   Activity, Scissors, CheckCircle2, Clock, Scale, XCircle, TrendingUp, Download, List, AlertTriangle,
   ArrowRightLeft, Shield, Dna, Bug, ChevronDown, User, Timer, CheckSquare, ShieldCheck, FileSpreadsheet,
   FileText, Printer, ChevronRight, Bone, Stethoscope, DollarSign, Pill, ThumbsUp, ThumbsDown, Eye, Calendar,
-  TrendingDown, BarChart3, PieChart, Users, Syringe, Hospital, BadgeCheck, AlertCircle, Search
+  TrendingDown, BarChart3, PieChart, Users, Syringe, Hospital, BadgeCheck, AlertCircle, Search, HelpCircle
 } from 'lucide-react';
 import { Patient, AntibioticStatus, IncisionRelation, TreatmentType, InfectoStatus, MedicationCategory } from '../types';
 import { DDD_MAP, SECTORS, ANTIBIOTICS_LIST } from '../constants';
@@ -425,6 +425,28 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
     </div>
   );
 
+  const MiniChart = ({ value, total, color }: { value: number; total: number; color: string }) => {
+    const percentage = total > 0 ? (value / total) * 100 : 0;
+    return (
+      <div className="w-full bg-slate-100 dark:bg-slate-700/50 h-1.5 rounded-full mt-3 overflow-hidden">
+        <div
+          className={`h-full bg-${color}-500 transition-all duration-1000 ease-out`}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+    );
+  };
+
+  const Tooltip = ({ text }: { text: string }) => (
+    <div className="group relative inline-block ml-1">
+      <HelpCircle size={12} className="text-slate-400 cursor-help hover:text-blue-500 transition-colors" />
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-xl font-medium normal-case tracking-normal">
+        {text}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-800" />
+      </div>
+    </div>
+  );
+
   return (
     <div className="max-w-[1300px] mx-auto space-y-2 animate-in fade-in pb-4 bg-[#f8fafc] dark:bg-slate-900/50 min-h-screen p-2 rounded-lg">
       {/* HEADER */}
@@ -544,35 +566,48 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors">
-                <h4 className="text-sm font-black uppercase text-slate-600 dark:text-slate-400 mb-4 tracking-widest leading-none">Perfil de Tratamento</h4>
+                <h4 className="text-sm font-black uppercase text-slate-600 dark:text-slate-400 mb-4 tracking-widest leading-none flex items-center">
+                  Perfil de Tratamento
+                  <Tooltip text="Divisão entre uso terapêutico (infecção confirmada) e profilático (prevenção cirúrgica/procedimento)." />
+                </h4>
                 <div className="flex gap-3">
                   <div className="flex-1 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl text-center border border-blue-100 dark:border-blue-800">
                     <p className="text-4xl font-black text-blue-700 dark:text-blue-400 leading-none">{stats.therapeutic}</p>
                     <p className="text-[10px] font-black text-blue-500 dark:text-blue-500/80 uppercase leading-none mt-2">Terapêutico</p>
+                    <MiniChart value={stats.therapeutic} total={stats.therapeutic + stats.prophylactic} color="blue" />
                   </div>
                   <div className="flex-1 bg-amber-50 dark:bg-amber-900/20 p-4 rounded-2xl text-center border border-amber-100 dark:border-amber-800">
                     <p className="text-4xl font-black text-amber-700 dark:text-amber-400 leading-none">{stats.prophylactic}</p>
                     <p className="text-[10px] font-black text-amber-500 dark:text-amber-500/80 uppercase leading-none mt-2">Profilático</p>
+                    <MiniChart value={stats.prophylactic} total={stats.therapeutic + stats.prophylactic} color="amber" />
                   </div>
                 </div>
               </div>
 
               <div className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors">
-                <h4 className="text-sm font-black uppercase text-slate-600 dark:text-slate-400 mb-4 tracking-widest leading-none">Via de Administração</h4>
+                <h4 className="text-sm font-black uppercase text-slate-600 dark:text-slate-400 mb-4 tracking-widest leading-none flex items-center">
+                  Via de Administração
+                  <Tooltip text="Comparativo entre medicamentos por via Endovenosa (EV) e via Oral. O switch precoce para oral é um pilar do stewardship." />
+                </h4>
                 <div className="flex gap-3">
                   <div className="flex-1 bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-2xl text-center border border-emerald-100 dark:border-emerald-800">
                     <p className="text-4xl font-black text-emerald-700 dark:text-emerald-400 leading-none">{stats.oral}</p>
                     <p className="text-[10px] font-black text-emerald-500 dark:text-emerald-500/80 uppercase leading-none mt-2">Oral</p>
+                    <MiniChart value={stats.oral} total={stats.oral + stats.iv} color="emerald" />
                   </div>
                   <div className="flex-1 bg-purple-50 dark:bg-purple-900/20 p-4 rounded-2xl text-center border border-purple-100 dark:border-purple-800">
                     <p className="text-4xl font-black text-purple-700 dark:text-purple-400 leading-none">{stats.iv}</p>
                     <p className="text-[10px] font-black text-purple-500 dark:text-purple-500/80 uppercase leading-none mt-2">EV</p>
+                    <MiniChart value={stats.iv} total={stats.oral + stats.iv} color="purple" />
                   </div>
                 </div>
               </div>
 
               <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-3xl border border-red-100 dark:border-red-900 shadow-sm transition-colors">
-                <h4 className="text-sm font-black uppercase text-red-600 dark:text-red-400 mb-4 flex items-center gap-2 tracking-widest leading-none"><AlertTriangle size={14} /> Alertas Críticos</h4>
+                <h4 className="text-sm font-black uppercase text-red-600 dark:text-red-400 mb-4 flex items-center gap-2 tracking-widest leading-none">
+                  <AlertTriangle size={14} /> Alertas Críticos
+                  <Tooltip text="Atenção aos pacientes com tratamento vencido ou uso prolongado sem reavaliação formal." />
+                </h4>
                 <div className="space-y-3">
                   <div className="flex justify-between text-[11px] leading-none uppercase">
                     <span className="font-black text-slate-700 dark:text-slate-300 mb-1">ATB Vencidos</span>

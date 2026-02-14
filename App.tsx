@@ -17,6 +17,7 @@ const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [user, setUser] = useState<User | null>(null);
   const [recoverySession, setRecoverySession] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [hospitalName, setHospitalNameState] = useState(() => localStorage.getItem('sva_hospital_name') || 'Hospital Estadual de São Luis de Montes Belos - HSLMB');
   const [bgImage, setBgImageState] = useState(() => localStorage.getItem('sva_bg_image') || '');
@@ -243,6 +244,7 @@ const App: React.FC = () => {
 
   // --- SUPABASE FETCH & SUBSCRIPTION ---
   const fetchPatients = useCallback(async () => {
+    setIsLoading(true);
     const { data, error } = await supabase.from('pacientes').select('*');
     if (error) {
       console.error('Error fetching patients:', error);
@@ -251,6 +253,7 @@ const App: React.FC = () => {
       setPatients(data.map(mapDbToPatient));
       setLastSaved(new Date());
     }
+    setIsLoading(false);
   }, []);
 
   const fetchSettings = useCallback(async () => {
@@ -708,6 +711,7 @@ const App: React.FC = () => {
       onAddUser={handleAddUser}
       onUpdateUser={handleUpdateUser}
       onDeleteUser={handleDeleteUser}
+      isLoading={isLoading}
       reportEmail={reportEmail}
       setReportEmail={setReportEmail}
       atbCosts={atbCosts}

@@ -75,6 +75,7 @@ interface DashboardProps {
   setConfigAtbDayChangeTime: (val: string) => void;
   configAtbDayChangeTimeUTI: string;
   setConfigAtbDayChangeTimeUTI: (val: string) => void;
+  isLoading?: boolean;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({
@@ -85,7 +86,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   configNotifyPending, setConfigNotifyPending, configNotifyExpired, setConfigNotifyExpired,
   configResetTime, setConfigResetTime, configResetTimeUTI, setConfigResetTimeUTI, configPendingTimeClinicas,
   setConfigPendingTimeClinicas, configPendingTimeUTI, setConfigPendingTimeUTI, configAtbDayLock, setConfigAtbDayLock, configAtbDayChangeTime, setConfigAtbDayChangeTime,
-  configAtbDayChangeTimeUTI, setConfigAtbDayChangeTimeUTI
+  configAtbDayChangeTimeUTI, setConfigAtbDayChangeTimeUTI,
+  isLoading
 }) => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('sva_active_tab') || 'inicio');
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
@@ -126,6 +128,35 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // Controle de alertas persistentes (Baloes)
   const [dismissedPendingAlert, setDismissedPendingAlert] = useState(() => localStorage.getItem('sva_dismissed_pending_alert') === new Date().toISOString().split('T')[0]);
+
+  const SkeletonLine = () => (
+    <div className="flex flex-col gap-4 mb-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-800 animate-pulse max-w-5xl mx-auto w-full">
+      <div className="flex justify-between items-center">
+        <div className="flex gap-4 items-center flex-1">
+          <div className="w-16 h-12 bg-slate-200 dark:bg-slate-700 rounded-lg" />
+          <div className="flex-1 space-y-2">
+            <div className="w-1/3 h-5 bg-slate-200 dark:bg-slate-700 rounded" />
+            <div className="w-1/4 h-3 bg-slate-200 dark:bg-slate-700 rounded" />
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-2">
+        {[...Array(6)].map((_, i) => <div key={i} className="h-10 bg-slate-100 dark:bg-slate-700/50 rounded-lg" />)}
+      </div>
+    </div>
+  );
+
+  const EmptyState = ({ title, message }: { title: string; message: string }) => (
+    <div className="py-20 flex flex-col items-center justify-center text-center space-y-4 animate-in zoom-in-95 duration-500 w-full">
+      <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] flex items-center justify-center text-slate-300 dark:text-slate-600 shadow-inner">
+        <Search size={48} />
+      </div>
+      <div className="space-y-1">
+        <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">{title}</h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400 font-bold max-w-xs mx-auto leading-relaxed">{message}</p>
+      </div>
+    </div>
+  );
 
   const unevaluatedPatients = useMemo(() => patients.filter(p => !p.isEvaluated && p.sector !== 'Centro Cirúrgico'), [patients]);
 
@@ -430,13 +461,13 @@ const Dashboard: React.FC<DashboardProps> = ({
                   { label: 'Adesão', value: `${stats.adesao}%`, icon: <CheckCircle2 size={20} />, color: 'text-indigo-500' },
                   { label: 'Encerrados', value: stats.finalizados, icon: <ClipboardList size={20} />, color: 'text-slate-600' },
                 ].map((s, i) => (
-                  <div key={i} className="bg-white dark:bg-slate-800 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col justify-between h-32 transition-colors">
+                  <div key={i} className="bg-white dark:bg-slate-800 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all flex flex-col justify-between h-32 group">
                     <div className="flex justify-between items-start">
                       <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">{s.label}</p>
-                      <div className={`p-1 rounded-xl bg-slate-50 dark:bg-slate-900/50 ${s.color}`}>{React.cloneElement(s.icon as React.ReactElement, { size: 18 })}</div>
+                      <div className={`p-1.5 rounded-xl bg-slate-50 dark:bg-slate-900/50 ${s.color} group-hover:scale-110 transition-transform`}>{React.cloneElement(s.icon as React.ReactElement, { size: 18 })}</div>
                     </div>
                     <div>
-                      <p className="text-3xl font-black text-slate-900 dark:text-white leading-none">{s.value}</p>
+                      <p className="text-3xl font-black text-slate-900 dark:text-white leading-none tracking-tight">{s.value}</p>
                     </div>
                   </div>
                 ))}
@@ -587,30 +618,39 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </div>
               </div>
               <div className="flex flex-col gap-4">
-                {sortedPatients.map((p, index) => (
-                  <PatientCard
-                    key={p.id}
-                    patient={p}
-                    role={user.role}
-                    activeTab={activeTab}
-                    onUpdate={onUpdatePatient}
-                    onDelete={onDeletePatient}
-                    onMoveUp={() => handleMovePatient(p.id, 'up')}
-                    onMoveDown={() => handleMovePatient(p.id, 'down')}
-                    canMoveUp={index > 0}
-                    canMoveDown={index < sortedPatients.length - 1}
-                    isDarkMode={isDarkMode}
-                    configAtbDayLock={configAtbDayLock}
-                    configAtbDayChangeTime={configAtbDayChangeTime}
-                    configAtbDayChangeTimeUTI={configAtbDayChangeTimeUTI}
-                    onDragStart={handleDragStart}
-                    onDragOver={(e) => handleDragOver(e, p.id)}
-                    onDrop={handleDrop}
-                    onDragEnd={handleDragEnd}
-                    isDragging={draggedPatientId === p.id}
-                    isDragOver={dragOverPatientId === p.id}
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => <SkeletonLine key={i} />)
+                ) : sortedPatients.length === 0 ? (
+                  <EmptyState
+                    title="Nenhum paciente"
+                    message={searchTerm ? `Busca "${searchTerm}" sem resultados.` : "Ainda não há pacientes neste setor."}
                   />
-                ))}
+                ) : (
+                  sortedPatients.map((p, index) => (
+                    <PatientCard
+                      key={p.id}
+                      patient={p}
+                      role={user.role}
+                      activeTab={activeTab}
+                      onUpdate={onUpdatePatient}
+                      onDelete={onDeletePatient}
+                      onMoveUp={() => handleMovePatient(p.id, 'up')}
+                      onMoveDown={() => handleMovePatient(p.id, 'down')}
+                      canMoveUp={index > 0}
+                      canMoveDown={index < sortedPatients.length - 1}
+                      isDarkMode={isDarkMode}
+                      configAtbDayLock={configAtbDayLock}
+                      configAtbDayChangeTime={configAtbDayChangeTime}
+                      configAtbDayChangeTimeUTI={configAtbDayChangeTimeUTI}
+                      onDragStart={handleDragStart}
+                      onDragOver={(e) => handleDragOver(e, p.id)}
+                      onDrop={handleDrop}
+                      onDragEnd={handleDragEnd}
+                      isDragging={draggedPatientId === p.id}
+                      isDragOver={dragOverPatientId === p.id}
+                    />
+                  ))
+                )}
               </div>
             </div>
           )}
