@@ -265,25 +265,27 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                             <td className="px-8 py-5 text-slate-400 dark:text-slate-500 font-black">
                                                 {visiblePasswordId === u.id ? u.password : (formatCPF(u.cpf) || '***')}
                                             </td>
-                                            <td className="px-8 py-5 text-right space-x-2">
-                                                <button onClick={() => { setEditingUser(u); setFormData(u); setShowForm(true); }} className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700" title="Editar"><Edit2 size={16} /></button>
-                                                <button
-                                                    onClick={() => setVisiblePasswordId(visiblePasswordId === u.id ? null : u.id)}
-                                                    className={`p-2.5 rounded-xl transition-all border ${visiblePasswordId === u.id ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
-                                                    title="Ver Senha"
-                                                >
-                                                    {visiblePasswordId === u.id ? <EyeOff size={16} /> : <Eye size={16} />}
-                                                </button>
-                                                <button onClick={() => setResetPasswordUser(u)} className="p-2.5 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-500 rounded-xl hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-all border border-yellow-100 dark:border-yellow-900" title="Alterar Senha"><Key size={16} /></button>
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => handleDelete(e, u)}
-                                                    disabled={u.id === currentUser.id}
-                                                    className={`p-2.5 rounded-xl transition-all border ${u.id === currentUser.id ? 'bg-slate-50 dark:bg-slate-900 text-slate-200 dark:text-slate-700 border-slate-100 dark:border-slate-800 cursor-not-allowed opacity-30' : 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-100 dark:border-red-900 hover:bg-red-100 dark:hover:bg-red-900/50 active:scale-95'}`}
-                                                    title={u.id === currentUser.id ? "Auto-exclusão bloqueada" : "Excluir Registro"}
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
+                                            <td className="px-8 py-5 text-right whitespace-nowrap">
+                                                <div className="flex items-center justify-end gap-2 flex-nowrap">
+                                                    <button onClick={() => { setEditingUser(u); setFormData(u); setShowForm(true); }} className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700" title="Editar"><Edit2 size={16} /></button>
+                                                    <button
+                                                        onClick={() => setVisiblePasswordId(visiblePasswordId === u.id ? null : u.id)}
+                                                        className={`p-2.5 rounded-xl transition-all border ${visiblePasswordId === u.id ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
+                                                        title="Ver Senha"
+                                                    >
+                                                        {visiblePasswordId === u.id ? <EyeOff size={16} /> : <Eye size={16} />}
+                                                    </button>
+                                                    <button onClick={() => setResetPasswordUser(u)} className="p-2.5 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-500 rounded-xl hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-all border border-yellow-100 dark:border-yellow-900" title="Alterar Senha"><Key size={16} /></button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => handleDelete(e, u)}
+                                                        disabled={u.id === currentUser.id}
+                                                        className={`p-2.5 rounded-xl transition-all border ${u.id === currentUser.id ? 'bg-slate-50 dark:bg-slate-900 text-slate-200 dark:text-slate-700 border-slate-100 dark:border-slate-800 cursor-not-allowed opacity-30' : 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-100 dark:border-red-900 hover:bg-red-100 dark:hover:bg-red-900/50 active:scale-95'}`}
+                                                        title={u.id === currentUser.id ? "Auto-exclusão bloqueada" : "Excluir Registro"}
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
