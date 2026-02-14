@@ -65,29 +65,30 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
       const isCpfMatch = cleanInput.length === 11 && /^\d+$/.test(cleanInput);
 
       if (isCpfMatch) {
-        // Normalize the CPF for lookup
-        const formattedCpf = formatCpf(cleanInput);
+        // Normalize the CPF for lookup - Ensure we use trimmed digits-only primarily
+        const digitsOnly = cleanInput;
+        const formattedCpf = formatCpf(digitsOnly);
 
-        console.log('Lookup debug:', { formattedCpf, cleanInput });
+        console.log('Login CPF Lookup debug:', { formattedCpf, digitsOnly });
 
-        // Lookup email by CPF (trying both formatted and unformatted)
-        const { data: profiles, error: profileError } = await supabase
+        // Lookup email by CPF (trying both formatted and unformatted for legacy data)
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('email')
-          .or(`cpf.eq.${formattedCpf},cpf.eq.${cleanInput}`)
+          .or(`cpf.eq.${digitsOnly},cpf.eq.${formattedCpf}`)
           .maybeSingle();
 
         if (profileError) {
-          console.error('Database error during lookup:', profileError);
-          throw new Error(`Erro ao buscar CPF: ${profileError.message}`);
+          console.error('Database error during CPF lookup:', profileError);
+          throw new Error('Erro ao buscar CPF no banco de dados.');
         }
 
-        if (!profiles) {
-          console.warn('CPF not found in profiles table:', formattedCpf);
-          throw new Error('Este CPF não está cadastrado. Solicite seu acesso ao administrador.');
+        if (!profile) {
+          console.warn('CPF not found in profiles:', digitsOnly);
+          throw new Error('CPF não encontrado. Verifique os números ou solicite acesso.');
         }
 
-        emailToLogin = profiles.email;
+        emailToLogin = profile.email;
       }
 
       console.log('Tentando login para:', emailToLogin);

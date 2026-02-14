@@ -15,7 +15,7 @@ export const getDaysRemaining = (endDate: string): number => {
 export const getATBDay = (startDate: string): number => {
   const today = startOfDay(new Date());
   const start = startOfDay(parseISO(startDate));
-  return differenceInDays(today, start) + 1;
+  return Math.max(0, differenceInDays(today, start));
 };
 
 export const getStatusColor = (daysRemaining: number) => {

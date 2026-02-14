@@ -325,7 +325,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
       headers = ["Paciente", "Leito", "Setor", "ATB/Dose", "Início", "Dia", "Status"];
       rows = filteredPatients.flatMap(p =>
         p.antibiotics.filter(a => a.category === categoryFilter).map(a => [
-          p.name, p.bed, p.sector, `${a.name}\n(${a.dose})`, a.startDate, `${getATBDay(a.startDate)}º`, p.infectoStatus
+          p.name, p.bed, p.sector, `${a.name}\n(${a.dose})`, a.startDate, `D${getATBDay(a.startDate)}`, p.infectoStatus
         ])
       );
     } else if (activeReportTab === 'financeiro') {
@@ -369,7 +369,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
     const headers = ["Paciente", "Nascimento", "Leito", "Setor", "Medicamento", "Dose", "Frequência", "Início", "Duração", "Dia Ciclo", "Status", "Status Infecto", "Diagnóstico"];
     const rows = filteredPatients.flatMap(p =>
       p.antibiotics.filter(a => a.category === categoryFilter).map(a => [
-        p.name, p.birthDate, p.bed, p.sector, a.name, a.dose, a.frequency, a.startDate, a.durationDays, getATBDay(a.startDate), a.status, p.infectoStatus, p.diagnosis
+        p.name, p.birthDate, p.bed, p.sector, a.name, a.dose, a.frequency, a.startDate, a.durationDays, `D${getATBDay(a.startDate)}`, a.status, p.infectoStatus, p.diagnosis
       ])
     );
 
@@ -493,7 +493,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                             <span className="text-slate-600 dark:text-slate-400 text-[9px] font-black">{a.times?.join('/')}</span>
                           </td>
                           <td className="px-6 py-4 font-black text-sm text-center text-slate-900 dark:text-white">{a.durationDays}d</td>
-                          <td className="px-6 py-3 text-center"><span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-xl font-black text-[9px]">{getATBDay(a.startDate)}º</span></td>
+                          <td className="px-6 py-3 text-center"><span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-xl font-black text-[9px]">D{getATBDay(a.startDate)}</span></td>
                           <td className="px-6 py-3 text-center"><span className={`px-3 py-1 rounded-xl font-black text-[9px] ${remaining <= 0 ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' : remaining <= 2 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'}`}>{remaining <= 0 ? 'VENC' : `${remaining}d`}</span></td>
                         </tr>
                       );
@@ -812,7 +812,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                           <td className="px-6 py-4 font-black text-slate-900 dark:text-white uppercase text-sm leading-tight">{p.name}</td>
                           <td className="px-6 py-4 text-slate-800 dark:text-slate-300 uppercase font-black text-xs">{p.sector}</td>
                           <td className="px-6 py-4 font-black text-blue-800 dark:text-blue-400 uppercase text-xs">{a.name}</td>
-                          <td className="px-6 py-4 text-center font-black text-slate-800 dark:text-slate-200">{getATBDay(a.startDate)}º Dia</td>
+                          <td className="px-6 py-4 text-center font-black text-slate-800 dark:text-slate-200">D{getATBDay(a.startDate)}</td>
                           <td className="px-6 py-4 font-black text-emerald-700 dark:text-emerald-400 text-right text-base">R$ {((atbCosts[a.name.toUpperCase()] || 50) * a.durationDays).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                         </tr>
                       ))

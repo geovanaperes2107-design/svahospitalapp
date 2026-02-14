@@ -117,6 +117,20 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
   const isCC = patient.sector === 'Centro Cirúrgico';
   const isInfectoPanel = activeTab === 'infectologia';
 
+  // --- ROLE-BASED PERMISSIONS ---
+  const isAdmin = role === UserRole.ADMINISTRADOR;
+  const isInfectoUser = role === UserRole.INFECTO;
+  const isSCIHUser = role === UserRole.SCIH;
+  const isFarmaceutico = role === UserRole.FARMACEUTICO;
+  const isVisualizer = role === UserRole.VISUALIZADOR;
+
+  // Specific Permission Checks
+  const canManageInfecto = isAdmin || isInfectoUser;
+  const canManageCC = isAdmin || isSCIHUser || isFarmaceutico;
+  const canManageFarmaciaIdx = isAdmin || isFarmaceutico;
+  const canManageAssistencia = isAdmin || isVisualizer || isSCIHUser || isInfectoUser || isFarmaceutico;
+  const canModifyATB = isAdmin || !isVisualizer; // Only visualizer is read-only for medication swaps/edits
+
   const addHistory = (action: string, details: string) => {
     const entry: HistoryEntry = {
       date: new Date().toLocaleString('pt-BR'),
@@ -339,6 +353,11 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                 <span className="font-black text-blue-400 uppercase mr-1 not-italic">Obs:</span> {patient.observation}
               </p>
             )}
+            {patient.prescriberNotes && (
+              <p className="text-[8px] md:text-[9px] font-bold text-emerald-600 leading-tight mt-0.5 italic truncate" title={patient.prescriberNotes}>
+                <span className="font-black text-emerald-400 uppercase mr-1 not-italic">Assis:</span> {patient.prescriberNotes}
+              </p>
+            )}
           </div>
         </div>
 
@@ -364,54 +383,33 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
           )}
 
           {!isInfectoPanel && (
-            <div className="flex gap-1">
-              <button onClick={() => setEditMode({ type: 'editar' })} className="p-2 bg-blue-600 text-white rounded-xl shadow hover:scale-105 transition-all" title="Editar Dados do Paciente">
-                <Edit3 size={18} />
-              </button>
-              <button onClick={() => setEditMode({ type: 'novo' })} className="p-2 bg-emerald-600 text-white rounded-xl shadow hover:scale-105 transition-all" title="Adicionar ATB">
-                <PlusCircle size={18} />
-              </button>
+            <div className="flex gap-1.5 ml-auto no-print">
+              {!isInfectoPanel && canModifyATB && (
+                <button onClick={() => setEditMode({ type: 'novo' })} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg text-slate-400 dark:text-slate-500 transition-colors" title="Adicionar ATB">
+                  <PlusCircle size={18} />
+                </button>
+              )}
+              {canManageAssistencia && (
+                <button onClick={() => setShowMenu(!showMenu)} className={`p-2 rounded-lg transition-colors ${showMenu ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30' : 'hover:bg-slate-100 dark:hover:bg-slate-700/50 text-slate-400 dark:text-slate-500'}`} title="Histórico e Notas">
+                  <MoreVertical size={18} />
+                </button>
+              )}
+              {!isInfectoPanel && isAdmin && (
+                <div className="flex flex-col gap-0.5 ml-1">
+                  <button onClick={onMoveUp} disabled={!canMoveUp} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-300 disabled:opacity-30"><ChevronUp size={14} /></button>
+                  <button onClick={onMoveDown} disabled={!canMoveDown} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-300 disabled:opacity-30"><ChevronDown size={14} /></button>
+                </div>
+              )}
+              {!isInfectoPanel && isAdmin && (
+                <button onClick={() => {
+                  if (window.confirm(`Deseja realmente excluir o paciente ${patient.name}? Esta ação não pode ser desfeita.`)) {
+                    onDelete(patient.id);
+                  }
+                }} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg text-slate-300 hover:text-red-600 transition-colors ml-1" title="Excluir Paciente">
+                  <Trash2 size={18} />
+                </button>
+              )}
             </div>
-          )}
-
-          <button onClick={() => setShowMenu(!showMenu)} className="p-2 bg-white rounded-xl border border-slate-200 text-slate-400 hover:text-slate-800 transition-colors" title="Ver Detalhes">
-            <MoreVertical size={18} />
-          </button>
-
-          {/* Botões de mover para cima/baixo */}
-          {!isInfectoPanel && (
-            <div className="flex flex-col gap-0.5">
-              <button
-                onClick={onMoveUp}
-                disabled={!canMoveUp}
-                className={`p-1.5 rounded-lg border transition-all ${canMoveUp ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 hover:scale-105' : 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed'}`}
-                title="Mover para cima"
-              >
-                <ChevronUp size={14} />
-              </button>
-              <button
-                onClick={onMoveDown}
-                disabled={!canMoveDown}
-                className={`p-1.5 rounded-lg border transition-all ${canMoveDown ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 hover:scale-105' : 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed'}`}
-                title="Mover para baixo"
-              >
-                <ChevronDown size={14} />
-              </button>
-            </div>
-          )}
-
-          {!isInfectoPanel && (
-            <button
-              onClick={() => {
-                if (window.confirm(`Deseja realmente excluir o paciente ${patient.name}? Esta ação não pode ser desfeita.`)) {
-                  onDelete(patient.id);
-                }
-              }}
-              className="p-2 bg-red-50 text-red-500 rounded-xl border border-red-100 hover:bg-red-500 hover:text-white transition-all shadow-sm"
-              title="Excluir Paciente"
-            >
-              <Trash2 size={18} />
-            </button>
           )}
         </div>
       </div>
@@ -435,7 +433,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
 
           const start = startOfDay(parseISO(atb.startDate));
           const adjustedToday = startOfDay(automationNow);
-          const calculatedDay = differenceInDays(adjustedToday, start) + 1;
+          const calculatedDay = Math.max(0, differenceInDays(adjustedToday, start));
 
           let displayDay = calculatedDay + (atb.cycleOffset || 0);
 
@@ -556,7 +554,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
 
                 <div className="bg-white p-1 rounded-lg shadow-sm border border-black/5 text-center flex flex-col items-center justify-center">
                   <p className="text-[7px] font-black text-slate-400 uppercase leading-none mb-1">Dia</p>
-                  <input type="number" disabled={isCC || isInfectoPanel} className="w-full bg-slate-50 border border-slate-200 rounded text-center text-[11px] font-black py-0 outline-none focus:border-blue-500 text-slate-800 disabled:opacity-50" value={isCC ? 1 : displayDay} onChange={e => {
+                  <input type="number" disabled={isCC || isInfectoPanel} className="w-full bg-slate-50 border border-slate-200 rounded text-center text-[11px] font-black py-0 outline-none focus:border-blue-500 text-slate-800 disabled:opacity-50" value={isCC ? 0 : displayDay} onChange={e => {
                     const newVal = parseInt(e.target.value) || 1;
                     const offset = newVal - calculatedDay;
                     const todayStr = format(new Date(), 'yyyy-MM-dd');
@@ -602,14 +600,16 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                     </div>
                     <div className="flex flex-col justify-center gap-1 w-24">
                       <button
+                        disabled={!canManageInfecto}
                         onClick={() => handleInfectoEvaluation(atb.id, InfectoStatus.AUTORIZADO)}
-                        className={`flex items-center justify-center gap-1 py-1.5 text-white rounded font-black uppercase text-[8px] shadow transition-all ${atbStatus === InfectoStatus.AUTORIZADO ? 'bg-emerald-700 ring-2 ring-emerald-300' : 'bg-emerald-500 hover:bg-emerald-600 opacity-90'}`}
+                        className={`flex items-center justify-center gap-1 py-1.5 text-white rounded font-black uppercase text-[8px] shadow transition-all ${atbStatus === InfectoStatus.AUTORIZADO ? 'bg-emerald-700 ring-2 ring-emerald-300' : 'bg-emerald-500 hover:bg-emerald-600 opacity-90'} disabled:opacity-30 disabled:grayscale`}
                       >
                         <ThumbsUp size={10} /> Autorizar
                       </button>
                       <button
+                        disabled={!canManageInfecto}
                         onClick={() => handleInfectoEvaluation(atb.id, InfectoStatus.NAO_AUTORIZADO)}
-                        className={`flex items-center justify-center gap-1 py-1.5 text-white rounded font-black uppercase text-[8px] shadow transition-all ${atbStatus === InfectoStatus.NAO_AUTORIZADO ? 'bg-red-700 ring-2 ring-red-300' : 'bg-red-500 hover:bg-red-600 opacity-90'}`}
+                        className={`flex items-center justify-center gap-1 py-1.5 text-white rounded font-black uppercase text-[8px] shadow transition-all ${atbStatus === InfectoStatus.NAO_AUTORIZADO ? 'bg-red-700 ring-2 ring-red-300' : 'bg-red-500 hover:bg-red-600 opacity-90'} disabled:opacity-30 disabled:grayscale`}
                       >
                         <ThumbsDown size={10} /> Não
                       </button>
@@ -622,8 +622,13 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
           );
         })}
 
-        <div className="flex justify-end pt-1">
-          <button onClick={() => onUpdate({ ...patient, isEvaluated: !patient.isEvaluated })} className={`px-4 py-1 rounded-full font-black uppercase text-[9px] shadow transition-all ${patient.isEvaluated ? 'bg-purple-600 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'}`}>
+        <div className="flex justify-end items-center gap-2 pt-1 uppercase text-[9px] font-black">
+          {isAdmin && (
+            <button onClick={() => setEditMode({ type: 'editar' })} className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full hover:bg-slate-200 transition-all flex items-center gap-1">
+              <Edit3 size={12} /> Editar Dados
+            </button>
+          )}
+          <button onClick={() => onUpdate({ ...patient, isEvaluated: !patient.isEvaluated })} className={`px-4 py-1 rounded-full font-black uppercase shadow transition-all ${patient.isEvaluated ? 'bg-purple-600 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'}`}>
             {patient.isEvaluated ? '✓ AVALIADO' : 'MARCAR COMO AVALIADO'}
           </button>
         </div>
@@ -635,11 +640,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                 <label className="text-sm font-black uppercase text-slate-400 flex items-center gap-2"><MessageSquare size={18} className="text-blue-500" /> Notas da Farmácia</label>
                 <textarea className="w-full bg-slate-50 p-4 rounded-xl text-sm font-bold text-slate-600 h-28 border-0 outline-none focus:ring-2 focus:ring-blue-100 placeholder:opacity-50" value={tempPharmacyNote} onChange={e => setTempPharmacyNote(e.target.value)} placeholder="Observações da farmácia..." />
                 <button
+                  disabled={!canManageFarmaciaIdx}
                   onClick={() => {
-                    onUpdate({ ...patient, pharmacyNote: '', history: addHistory('Nota Farmácia', tempPharmacyNote || 'Nota vazia') });
+                    onUpdate({ ...patient, pharmacyNote: tempPharmacyNote, history: addHistory('Nota Farmácia', tempPharmacyNote || 'Nota vazia') });
                     setTempPharmacyNote('');
                   }}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-black uppercase text-xs shadow hover:bg-blue-700 transition-all"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-black uppercase text-xs shadow hover:bg-blue-700 transition-all disabled:opacity-50"
                 >
                   <Save size={14} /> Salvar
                 </button>
@@ -648,10 +654,11 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                 <label className="text-sm font-black uppercase text-emerald-500">Notas da Assistência</label>
                 <textarea className="w-full bg-slate-50 p-4 rounded-xl text-sm font-bold text-slate-600 h-28 border-0 outline-none focus:ring-2 focus:ring-emerald-100 placeholder:opacity-50" value={tempPrescriberNotes} onChange={e => setTempPrescriberNotes(e.target.value)} placeholder="Evolução clínica / Conduta..." />
                 <button
+                  disabled={!canManageAssistencia}
                   onClick={() => {
                     onUpdate({ ...patient, prescriberNotes: tempPrescriberNotes, history: addHistory('Nota Assistência', tempPrescriberNotes || 'Nota vazia') });
                   }}
-                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl font-black uppercase text-xs shadow hover:bg-emerald-700 transition-all"
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl font-black uppercase text-xs shadow hover:bg-emerald-700 transition-all disabled:opacity-50"
                 >
                   <Save size={14} /> Salvar
                 </button>
@@ -670,11 +677,11 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Data do Proc.</p>
-                      <input type="date" className="w-full bg-slate-50 p-3 rounded-xl font-bold text-sm border-0 outline-none focus:ring-2 focus:ring-purple-100 text-slate-800" value={patient.procedureDate || ''} onChange={e => onUpdate({ ...patient, procedureDate: e.target.value })} />
+                      <input disabled={!canManageCC} type="date" className="w-full bg-slate-50 p-3 rounded-xl font-bold text-sm border-0 outline-none focus:ring-2 focus:ring-purple-100 text-slate-800 disabled:opacity-50" value={patient.procedureDate || ''} onChange={e => onUpdate({ ...patient, procedureDate: e.target.value })} />
                     </div>
                     <div className="space-y-1">
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tempo Op.</p>
-                      <input type="text" className="w-full bg-slate-50 p-3 rounded-xl font-bold text-sm border-0 outline-none focus:ring-2 focus:ring-purple-100 text-slate-800" value={patient.operativeTime || ''} onChange={e => onUpdate({ ...patient, operativeTime: e.target.value })} placeholder="Ex: 2h 30min" />
+                      <input disabled={!canManageCC} type="text" className="w-full bg-slate-50 p-3 rounded-xl font-bold text-sm border-0 outline-none focus:ring-2 focus:ring-purple-100 text-slate-800 disabled:opacity-50" value={patient.operativeTime || ''} onChange={e => onUpdate({ ...patient, operativeTime: e.target.value })} placeholder="Ex: 2h 30min" />
                     </div>
                   </div>
                 </div>
