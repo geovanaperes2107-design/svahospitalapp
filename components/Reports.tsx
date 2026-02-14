@@ -168,7 +168,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
       totalPatients: totalPatientsInPeriod.size,
       activePatients: currentActivePatients.size,
       substituted: totalSubstituted, finalized: totalFinalized, suspended: totalSuspended, obitos: totalObitos,
-      prolonged: prolongedCount, avgDuration: medsCount > 0 ? (totalDuration / medsCount).toFixed(2) : '0.00',
+      prolonged: prolongedCount, avgDuration: medsCount > 0 ? (totalDuration / medsCount).toFixed(2).replace('.', ',') : '0,00',
       therapeutic: therapeuticCount, prophylactic: prophylacticCount, oral: oralCount, iv: ivCount, vencidos: vencidosCount
     };
   }, [filteredPatients, categoryFilter]);
@@ -207,7 +207,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
 
         consumoByAtb[a.name] = (consumoByAtb[a.name] || 0) + consumo;
 
-        const dddValue = DDD_OMS_VALUES[a.name.toUpperCase()] || 1;
+        const dddValue = DDD_MAP[a.name.toUpperCase()] || 1;
         const dddCalc = (consumo / dddValue / patientDays) * 1000;
         dddByAtb[a.name] = (dddByAtb[a.name] || 0) + dddCalc;
         totalDDD += dddCalc;
@@ -222,7 +222,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
       pareto.push({ name, ddd, isPareto: cumulative <= totalDDD * 0.8 });
     });
 
-    return { totalDDD: totalDDD.toFixed(2), byAtb: dddByAtb, pareto, patientDays };
+    return { totalDDD: totalDDD.toFixed(2).replace('.', ','), byAtb: dddByAtb, pareto, patientDays };
   }, [filteredPatients, patientDays, categoryFilter]);
 
   // CENTRO CIRURGICO

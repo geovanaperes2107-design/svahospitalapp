@@ -118,8 +118,32 @@ const App: React.FC = () => {
     setIsDarkMode(prev => {
       const newVal = !prev;
       localStorage.setItem('sva_dark_mode', String(newVal));
+      // Dispatch an event so other tabs know immediately
+      window.dispatchEvent(new Event('storage'));
       return newVal;
     });
+  }, []);
+
+  // --- CROSS-TAB SYNC VIA STORAGE EVENT ---
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent | Event) => {
+      // If e is a StorageEvent it triggers on actual changes to localStorage from OTHER tabs
+      // If it's a generic Event (dispatched manually), it triggers on the SAME tab
+      const isDark = localStorage.getItem('sva_dark_mode') === 'true';
+      setIsDarkMode(isDark);
+
+      setHospitalNameState(localStorage.getItem('sva_hospital_name') || 'Hospital Estadual de São Luis de Montes Belos - HSLMB');
+      setBgImageState(localStorage.getItem('sva_bg_image') || '');
+      setLoginBgImageState(localStorage.getItem('sva_login_bg_image') || '');
+      setReportEmailState(localStorage.getItem('sva_report_email') || '');
+      setPatientDaysState(parseInt(localStorage.getItem('sva_patient_days') || '1200'));
+
+      const savedCosts = localStorage.getItem('sva_atb_costs');
+      if (savedCosts) setAtbCostsState(JSON.parse(savedCosts));
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const [systemAlert, setSystemAlert] = useState<{ message: string, type: 'info' | 'warning' | 'success' } | null>(null);
@@ -277,30 +301,30 @@ const App: React.FC = () => {
       fetchSettings();
 
       const channel = supabase
-        .channel('public:data')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'pacientes' }, (payload) => {
-          console.log('Realtime chage received:', payload);
+        .channel('db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'pacientes' }, () => {
           fetchPatients();
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
-          console.log('Realtime profile change:', payload);
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
           fetchUsers();
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'pre_registrations' }, (payload) => {
-          console.log('Realtime pre-reg change:', payload);
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'pre_registrations' }, () => {
           fetchUsers();
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'system_settings' }, (payload) => {
-          console.log('Realtime settings change:', payload);
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'system_settings' }, () => {
           fetchSettings();
         })
-        .subscribe();
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('Successfully subscribed to real-time changes');
+          }
+        });
 
       return () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [session, fetchPatients, fetchUsers]);
+  }, [session, fetchPatients, fetchUsers, fetchSettings]);
 
 
   // --- ROTINA DE TAREFAS AGENDADAS (07:30 E 22:00) ---
@@ -320,7 +344,8 @@ const App: React.FC = () => {
     // Stats
     const activePatients = patients.filter(p => p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)).length;
     doc.text(`Pacientes em Uso de ATB: ${activePatients}`, 14, 45);
-    doc.text(`Custo Total Estimado: R$ ${(Object.values(atbCosts) as any[]).reduce((a: number, b: number) => a + (Number(b) || 0), 0).toFixed(2)}`, 14, 51);
+    const totalCost = (Object.values(atbCosts) as any[]).reduce((a: number, b: number) => a + (Number(b) || 0), 0);
+    doc.text(`Custo Total Estimado: R$ ${totalCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 14, 51);
 
     // Patients Table
     const tableData = patients.map(p => {
