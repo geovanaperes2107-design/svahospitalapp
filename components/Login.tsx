@@ -60,7 +60,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
 
     try {
       // Login Flow
-      let emailToLogin = emailOrCpf.trim();
+      let emailToLogin = emailOrCpf.trim().toLowerCase();
       const cleanInput = emailOrCpf.replace(/\D/g, '');
       const isCpfMatch = cleanInput.length === 11 && /^\d+$/.test(cleanInput);
 
@@ -112,7 +112,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
         try {
           const cleanInput = emailOrCpf.replace(/\D/g, '');
           const isCpfMatch = cleanInput.length === 11 && /^\d+$/.test(cleanInput);
-          let emailForPreReg = emailOrCpf.trim();
+          let emailForPreReg = emailOrCpf.trim().toLowerCase();
 
           // If input was CPF, we need to find the Email associated in pre_registrations
           if (isCpfMatch) {
@@ -133,7 +133,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
             .eq('email', emailForPreReg)
             .maybeSingle();
 
-          if (preReg && preReg.temp_password === password) {
+          if (preReg && (preReg.temp_password === password || preReg.temp_password === password.toUpperCase())) {
             // Found pre-registration and password matches!
             // Execute JIT Sign Up
             console.log('Pre-registration found. Signing up...');
@@ -228,7 +228,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
                   type="email"
                   required
                   value={emailOrCpf}
-                  onChange={(e) => setEmailOrCpf(e.target.value.replace(/\s/g, ''))}
+                  onChange={(e) => setEmailOrCpf(e.target.value.toLowerCase().replace(/\s/g, ''))}
                   className="w-full bg-slate-50 border border-slate-200 pl-12 pr-4 py-4 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300"
                   placeholder="seu@email.com"
                 />
@@ -264,7 +264,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
                     if (/^\d/.test(val)) {
                       handleCpfChange(e);
                     } else {
-                      setEmailOrCpf(val.replace(/\s/g, ''));
+                      setEmailOrCpf(val.toLowerCase().replace(/\s/g, ''));
                     }
                   }}
                   className="w-full bg-slate-50 border border-slate-200 pl-12 pr-4 py-4 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300"
