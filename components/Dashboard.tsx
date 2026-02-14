@@ -173,10 +173,11 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (['inicio', 'cadastro', 'relatorios', 'usuarios'].includes(activeTab)) return false;
 
     if (activeTab === 'finalizados') {
-      const isFinishedOrEvaded = p.antibiotics.some(a =>
+      const hasNoActiveAtb = !p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO);
+      const hasFinishedAtb = p.antibiotics.some(a =>
         [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.EVADIDO, AntibioticStatus.OBITO].includes(a.status)
       );
-      return isFinishedOrEvaded && matchesSearch;
+      return hasNoActiveAtb && hasFinishedAtb && matchesSearch;
     }
 
     if (activeTab === 'Centro Cirúrgico') {
@@ -204,7 +205,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             infectoSubTab === 'autorizados' ? p.infectoStatus === InfectoStatus.AUTORIZADO :
               infectoSubTab === 'nao_autorizados' ? p.infectoStatus === InfectoStatus.NAO_AUTORIZADO : true;
 
-      return hasActiveAtb && matchesStatus && matchesMonth && matchesSearch;
+      return (hasActiveAtb || infectoSubTab === 'autorizados' || infectoSubTab === 'nao_autorizados') && matchesStatus && matchesMonth && matchesSearch;
     }
 
     const hasActiveAtb = p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO);
@@ -303,12 +304,17 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const stats = useMemo(() => {
     const activeAtbPatients = patients.filter(p => p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO));
+    const totalActiveATBs = patients.reduce((acc, p) => acc + p.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO).length, 0);
+
     const expiredPatients = activeAtbPatients.filter(p =>
       !p.sector.includes('Centro Cir') &&
       p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0)
     );
 
-    const finalizedCount = patients.filter(p => p.antibiotics.some(a => a.status === AntibioticStatus.FINALIZADO)).length;
+    const finalizedCount = patients.filter(p =>
+      !p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO) &&
+      p.antibiotics.some(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.OBITO].includes(a.status))
+    ).length;
 
     const sectorCounts: Record<string, number> = {};
     SECTORS.forEach(sector => {
@@ -319,8 +325,9 @@ const Dashboard: React.FC<DashboardProps> = ({
     const newCycles = patients.reduce((acc, p) => acc + p.antibiotics.filter(a => a.startDate === todayStr).length, 0);
 
     return {
-      ativos: patients.length,
+      ativos: activeAtbPatients.length,
       emUso: activeAtbPatients.length,
+      totalATBs: totalActiveATBs,
       vencidos: expiredPatients.length,
       expiredList: expiredPatients,
       novos: newCycles,
@@ -414,21 +421,22 @@ const Dashboard: React.FC<DashboardProps> = ({
         <main className="flex-1 overflow-y-auto p-3 md:p-6 relative custom-scrollbar">
           {activeTab === 'inicio' && (
             <div className="max-w-7xl mx-auto space-y-3 animate-in fade-in text-left">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
                 {[
                   { label: 'Pacientes Ativos', value: stats.ativos, icon: <Users size={20} />, color: 'text-blue-600' },
-                  { label: 'Em Uso de ATB', value: stats.emUso, icon: <AlertTriangle size={20} />, color: 'text-emerald-600' },
+                  { label: 'Total de ATBs', value: stats.totalATBs, icon: <AlertTriangle size={20} />, color: 'text-emerald-600' },
+                  { label: 'Aguardando Aval.', value: unevaluatedPatients.length, icon: <Clock size={20} />, color: 'text-orange-500' },
                   { label: 'Novos Ciclos', value: stats.novos, icon: <Clock size={20} />, color: 'text-blue-500' },
                   { label: 'Adesão', value: `${stats.adesao}%`, icon: <CheckCircle2 size={20} />, color: 'text-indigo-500' },
-                  { label: 'Finalizados', value: stats.finalizados, icon: <ClipboardList size={20} />, color: 'text-slate-600' },
+                  { label: 'Encerrados', value: stats.finalizados, icon: <ClipboardList size={20} />, color: 'text-slate-600' },
                 ].map((s, i) => (
-                  <div key={i} className="bg-white dark:bg-slate-800 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col justify-between h-36 transition-colors">
+                  <div key={i} className="bg-white dark:bg-slate-800 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col justify-between h-32 transition-colors">
                     <div className="flex justify-between items-start">
-                      <p className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">{s.label}</p>
-                      <div className={`p-1.5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 ${s.color}`}>{React.cloneElement(s.icon as React.ReactElement, { size: 22 })}</div>
+                      <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">{s.label}</p>
+                      <div className={`p-1 rounded-xl bg-slate-50 dark:bg-slate-900/50 ${s.color}`}>{React.cloneElement(s.icon as React.ReactElement, { size: 18 })}</div>
                     </div>
                     <div>
-                      <p className="text-4xl font-black text-slate-900 dark:text-white leading-none">{s.value}</p>
+                      <p className="text-3xl font-black text-slate-900 dark:text-white leading-none">{s.value}</p>
                     </div>
                   </div>
                 ))}

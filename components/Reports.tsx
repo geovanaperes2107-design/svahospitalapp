@@ -4,7 +4,7 @@ import {
   Activity, Scissors, CheckCircle2, Clock, Scale, XCircle, TrendingUp, Download, List, AlertTriangle,
   ArrowRightLeft, Shield, Dna, Bug, ChevronDown, User, Timer, CheckSquare, ShieldCheck, FileSpreadsheet,
   FileText, Printer, ChevronRight, Bone, Stethoscope, DollarSign, Pill, ThumbsUp, ThumbsDown, Eye, Calendar,
-  TrendingDown, BarChart3, PieChart, Users, Syringe, Hospital, BadgeCheck, AlertCircle
+  TrendingDown, BarChart3, PieChart, Users, Syringe, Hospital, BadgeCheck, AlertCircle, Search
 } from 'lucide-react';
 import { Patient, AntibioticStatus, IncisionRelation, TreatmentType, InfectoStatus, MedicationCategory } from '../types';
 import { DDD_MAP, SECTORS, ANTIBIOTICS_LIST } from '../constants';
@@ -92,6 +92,8 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
 
   const [activeKeyDiagnostic, setActiveKeyDiagnostic] = useState<string | null>(null);
   const [ccSubTab, setCcSubTab] = useState<'todos' | 'pendentes' | 'pos_op' | 'antes' | 'depois'>(() => (localStorage.getItem('sva_report_cc_subtab') as any) || 'todos');
+  const [searchPatient, setSearchPatient] = useState('');
+  const [searchDiag, setSearchDiag] = useState('');
 
   const updateAtbCost = (name: string, value: number) => {
     setAtbCosts(prev => ({ ...prev, [name]: value }));
@@ -128,30 +130,45 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
 
   // STATS GERAIS
   const stats = useMemo(() => {
-    let totalActive = 0, totalSubstituted = 0, totalFinalized = 0, totalSuspended = 0, prolongedCount = 0, totalDuration = 0, medsCount = 0;
+    let totalPatientsInPeriod = new Set();
+    let currentActivePatients = new Set();
+    let totalSubstituted = 0, totalFinalized = 0, totalSuspended = 0, prolongedCount = 0, totalDuration = 0, medsCount = 0, totalObitos = 0;
     let therapeuticCount = 0, prophylacticCount = 0, oralCount = 0, ivCount = 0;
 
     filteredPatients.forEach(p => {
       if (p.treatmentType === TreatmentType.TERAPEUTICO) therapeuticCount++; else prophylacticCount++;
+      let hasAtbInPeriod = false;
+      let hasActiveAtb = false;
+
       p.antibiotics.forEach(a => {
         if (a.category === categoryFilter) {
+          hasAtbInPeriod = true;
           medsCount++;
-          if (a.status === AntibioticStatus.EM_USO) totalActive++;
+          if (a.status === AntibioticStatus.EM_USO) {
+            hasActiveAtb = true;
+          }
           if (a.status === AntibioticStatus.TROCADO) totalSubstituted++;
           if (a.status === AntibioticStatus.FINALIZADO) totalFinalized++;
           if (a.status === AntibioticStatus.SUSPENSO) totalSuspended++;
+          if (a.status === AntibioticStatus.OBITO) totalObitos++;
+
           if (getATBDay(a.startDate) > 14) prolongedCount++;
           totalDuration += a.durationDays;
           if (a.route === 'ORAL') oralCount++; else ivCount++;
         }
       });
+
+      if (hasAtbInPeriod) totalPatientsInPeriod.add(p.id);
+      if (hasActiveAtb) currentActivePatients.add(p.id);
     });
 
     const vencidosCount = filteredPatients.filter(p => !p.sector.includes('Centro Cir') && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0)).length;
 
     return {
-      active: totalActive, substituted: totalSubstituted, finalized: totalFinalized, suspended: totalSuspended,
-      prolonged: prolongedCount, avgDuration: medsCount > 0 ? (totalDuration / medsCount).toFixed(1) : '0',
+      totalPatients: totalPatientsInPeriod.size,
+      activePatients: currentActivePatients.size,
+      substituted: totalSubstituted, finalized: totalFinalized, suspended: totalSuspended, obitos: totalObitos,
+      prolonged: prolongedCount, avgDuration: medsCount > 0 ? (totalDuration / medsCount).toFixed(2) : '0.00',
       therapeutic: therapeuticCount, prophylactic: prophylacticCount, oral: oralCount, iv: ivCount, vencidos: vencidosCount
     };
   }, [filteredPatients, categoryFilter]);
@@ -508,13 +525,17 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
         {/* ===== STEWARDSHIP ===== */}
         {activeReportTab === 'stewardship' && (
           <div className="space-y-2 animate-in fade-in">
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-1.5">
-              <Card label="Em Uso" value={stats.active} icon={<Pill size={12} />} color="blue" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 mb-2">
+              <Card label="Atd. Geral de Pacientes" value={stats.totalPatients} icon={<Users size={12} />} color="blue" />
+              <Card label="Pacientes com ATB Ativo" value={stats.activePatients} icon={<Pill size={12} />} color="emerald" />
+              <Card label="Prolongados (>14d)" value={stats.prolonged} icon={<AlertTriangle size={12} />} color="red" />
+              <Card label="Média de Dias" value={stats.avgDuration} icon={<Timer size={12} />} color="slate" />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
               <Card label="Finalizados" value={stats.finalized} icon={<CheckCircle2 size={12} />} color="emerald" />
               <Card label="Suspensos" value={stats.suspended} icon={<XCircle size={12} />} color="amber" />
               <Card label="Trocas" value={stats.substituted} icon={<ArrowRightLeft size={12} />} color="purple" />
-              <Card label="Média Dias" value={stats.avgDuration} icon={<Timer size={12} />} color="slate" />
-              <Card label="Prolongados" value={stats.prolonged} icon={<AlertTriangle size={12} />} color="red" />
+              <Card label="Óbitos" value={stats.obitos} icon={<Activity size={12} />} color="slate" />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -574,22 +595,20 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
               <Card label="% Pendentes" value={`${censoStats.pendingRate}%`} icon={<AlertCircle size={12} />} color="slate" />
             </div>
 
-            <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 p-6 shadow-sm transition-colors">
-              <h4 className="text-sm font-black uppercase text-slate-600 dark:text-slate-400 mb-4 tracking-widest leading-none">ATB Iniciados Sem Avaliação</h4>
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                {censoStats.semAvaliacao.map(p => (
-                  <div key={p.id} className="flex justify-between items-center bg-amber-50 dark:bg-amber-900/20 px-4 py-3 rounded-xl text-sm border border-amber-100/50 dark:border-amber-800/50">
-                    <span className="font-black text-slate-800 dark:text-white">{p.name}</span>
-                    <span className="text-slate-500 dark:text-slate-400 uppercase text-[10px] font-black">{p.sector}</span>
-                    <span className="font-black text-amber-600 dark:text-amber-400 truncate max-w-[300px]">{p.antibiotics.map(a => a.name).join(', ')}</span>
-                  </div>
-                ))}
-                {censoStats.semAvaliacao.length === 0 && <p className="text-slate-400 dark:text-slate-500 text-sm font-bold text-center py-6 italic">Todos os pacientes foram avaliados pela Infectologia</p>}
-              </div>
-            </div>
-
             <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 p-6 shadow-sm no-print-break transition-colors">
-              <h4 className="text-sm font-black uppercase text-slate-600 dark:text-slate-400 mb-4 tracking-widest leading-none">Panorama Geral: Pacientes em Terapia Antimicrobiana ({censoStats.todosIniciados.length})</h4>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                <h4 className="text-sm font-black uppercase text-slate-600 dark:text-slate-400 tracking-widest leading-none">Panorama Geral: Pacientes em Terapia Antimicrobiana ({censoStats.todosIniciados.length})</h4>
+                <div className="relative w-full md:w-64">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Search size={14} /></span>
+                  <input
+                    type="text"
+                    placeholder="Pesquisar paciente..."
+                    className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-none focus:border-blue-500 transition-all"
+                    value={searchPatient}
+                    onChange={e => setSearchPatient(e.target.value)}
+                  />
+                </div>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-[10px] font-black uppercase tracking-widest border-b-2 dark:border-slate-700">
@@ -602,29 +621,31 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-[10px]">
-                    {censoStats.todosIniciados.map(p => (
-                      <tr key={p.id} className="hover:bg-slate-100/50 dark:hover:bg-slate-900/50 transition-colors border-b border-slate-100 dark:border-slate-700">
-                        <td className="px-4 py-3 leading-tight">
-                          <span className="font-black text-slate-900 dark:text-white block text-sm">{p.name}</span>
-                          <span className="text-[10px] text-slate-600 dark:text-slate-400 uppercase font-bold">Leito: {p.bed}</span>
-                        </td>
-                        <td className="px-4 py-3 uppercase font-black text-slate-700 dark:text-slate-300 text-[10px]">{p.sector}</td>
-                        <td className="px-4 py-3 font-black text-blue-700 dark:text-blue-400 leading-tight text-[11px]">
-                          {p.antibiotics.filter(a => a.category === MedicationCategory.ANTIMICROBIANO).map(a => a.name).join(', ')}
-                        </td>
-                        <td className="px-4 py-3 text-center text-slate-800 dark:text-slate-200 font-black text-[11px]">
-                          {p.antibiotics[0]?.startDate ? new Date(p.antibiotics[0].startDate).toLocaleDateString('pt-BR') : '-'}
-                        </td>
-                        <td className="px-4 py-2 text-center">
-                          <span className={`px-2 py-1 rounded-lg font-black uppercase text-[8px] ${p.infectoStatus === InfectoStatus.AUTORIZADO ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' :
-                            p.infectoStatus === InfectoStatus.NAO_AUTORIZADO ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
-                              'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                            }`}>
-                            {p.infectoStatus}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {censoStats.todosIniciados
+                      .filter(p => !searchPatient || p.name.toLowerCase().includes(searchPatient.toLowerCase()) || p.bed.toLowerCase().includes(searchPatient.toLowerCase()))
+                      .map(p => (
+                        <tr key={p.id} className="hover:bg-slate-100/50 dark:hover:bg-slate-900/50 transition-colors border-b border-slate-100 dark:border-slate-700">
+                          <td className="px-4 py-3 leading-tight">
+                            <span className="font-black text-slate-900 dark:text-white block text-sm">{p.name}</span>
+                            <span className="text-[10px] text-slate-600 dark:text-slate-400 uppercase font-bold">Leito: {p.bed}</span>
+                          </td>
+                          <td className="px-4 py-3 uppercase font-black text-slate-700 dark:text-slate-300 text-[10px]">{p.sector}</td>
+                          <td className="px-4 py-3 font-black text-blue-700 dark:text-blue-400 leading-tight text-[11px]">
+                            {p.antibiotics.filter(a => a.category === MedicationCategory.ANTIMICROBIANO).map(a => a.name).join(', ')}
+                          </td>
+                          <td className="px-4 py-3 text-center text-slate-800 dark:text-slate-200 font-black text-[11px]">
+                            {p.antibiotics[0]?.startDate ? new Date(p.antibiotics[0].startDate).toLocaleDateString('pt-BR') : '-'}
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            <span className={`px-2 py-1 rounded-lg font-black uppercase text-[8px] ${p.infectoStatus === InfectoStatus.AUTORIZADO ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' :
+                              p.infectoStatus === InfectoStatus.NAO_AUTORIZADO ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                                'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                              }`}>
+                              {p.infectoStatus}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>
@@ -668,25 +689,41 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
 
             {/* PLANILHA DE DIAGNÓSTICOS REGISTRADOS */}
             <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-md overflow-hidden transition-colors">
-              <h4 className="text-sm font-black uppercase text-slate-600 dark:text-slate-400 p-6 border-b dark:border-slate-700 flex items-center gap-3 leading-none tracking-widest bg-slate-100/50 dark:bg-slate-900/50"><Stethoscope size={18} /> Detalhamento de Diagnósticos e Terapias ({epidemiologyStats.allDiagnoses.length})</h4>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-6 border-b dark:border-slate-700 bg-slate-100/50 dark:bg-slate-900/50">
+                <h4 className="text-sm font-black uppercase text-slate-600 dark:text-slate-400 flex items-center gap-3 leading-none tracking-widest">
+                  <Stethoscope size={18} /> Detalhamento de Diagnósticos e Terapias ({epidemiologyStats.allDiagnoses.length})
+                </h4>
+                <div className="relative w-full md:w-64">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Search size={14} /></span>
+                  <input
+                    type="text"
+                    placeholder="Pesquisar diagnóstico ou paciente..."
+                    className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-none focus:border-blue-500 transition-all"
+                    value={searchDiag}
+                    onChange={e => setSearchDiag(e.target.value)}
+                  />
+                </div>
+              </div>
               <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
                 <table className="w-full text-left">
                   <thead className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs font-black uppercase tracking-widest border-b-2 dark:border-slate-700 sticky top-0 z-10">
                     <tr><th className="px-6 py-4">Paciente</th><th className="px-6 py-4 text-center">Setor</th><th className="px-6 py-4">Diagnóstico Principal</th><th className="px-6 py-4">Esquema ATB</th></tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-[13px]">
-                    {epidemiologyStats.allDiagnoses.map((d, i) => (
-                      <tr key={i} className="hover:bg-slate-100/50 dark:hover:bg-slate-900/50 transition-colors border-b border-slate-50 dark:border-slate-700">
-                        <td className="px-6 py-4 font-black text-slate-900 dark:text-white uppercase text-sm leading-tight">{d.patient}</td>
-                        <td className="px-6 py-4 text-slate-700 dark:text-slate-300 uppercase font-black text-center"><span className="bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px]">{d.sector}</span></td>
-                        <td className="px-6 py-4 text-slate-800 dark:text-slate-200 font-black max-w-sm leading-relaxed" title={d.diagnosis}>{d.diagnosis}</td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-wrap gap-2">
-                            {d.atbs.map((atb, j) => (<span key={j} className="bg-blue-600 text-white px-3 py-1.5 rounded-xl text-[10px] font-black uppercase shadow-sm tracking-tight">{atb}</span>))}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {epidemiologyStats.allDiagnoses
+                      .filter(d => !searchDiag || d.patient.toLowerCase().includes(searchDiag.toLowerCase()) || d.diagnosis.toLowerCase().includes(searchDiag.toLowerCase()) || d.atbs.some(a => a.toLowerCase().includes(searchDiag.toLowerCase())))
+                      .map((d, i) => (
+                        <tr key={i} className="hover:bg-slate-100/50 dark:hover:bg-slate-900/50 transition-colors border-b border-slate-50 dark:border-slate-700">
+                          <td className="px-6 py-4 font-black text-slate-900 dark:text-white uppercase text-sm leading-tight">{d.patient}</td>
+                          <td className="px-6 py-4 text-slate-700 dark:text-slate-300 uppercase font-black text-center"><span className="bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px]">{d.sector}</span></td>
+                          <td className="px-6 py-4 text-slate-800 dark:text-slate-200 font-black max-w-sm leading-relaxed" title={d.diagnosis}>{d.diagnosis}</td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-wrap gap-2">
+                              {d.atbs.map((atb, j) => (<span key={j} className="bg-blue-600 text-white px-3 py-1.5 rounded-xl text-[10px] font-black uppercase shadow-sm tracking-tight">{atb}</span>))}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>
@@ -892,23 +929,27 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                 <tbody className="divide-y divide-slate-100 text-sm">
                   {filteredPatients
                     .flatMap(p => p.antibiotics
-                      .filter(a => a.status === AntibioticStatus.FINALIZADO && (atbFilter === 'Todos' || atbFilter === 'Todos os ATBs' || a.name === atbFilter))
+                      .filter(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.OBITO].includes(a.status) && (atbFilter === 'Todos' || atbFilter === 'Todos os ATBs' || a.name === atbFilter))
                       .map(a => ({ patient: p, atb: a }))
                     )
                     .map(({ patient, atb }) => {
                       const endDate = calculateEndDate(atb.startDate, atb.durationDays);
+                      const statusColor = atb.status === AntibioticStatus.FINALIZADO ? 'bg-emerald-100 text-emerald-800' :
+                        atb.status === AntibioticStatus.SUSPENSO ? 'bg-amber-100 text-amber-800' :
+                          atb.status === AntibioticStatus.TROCADO ? 'bg-purple-100 text-purple-800' :
+                            'bg-slate-100 text-slate-800';
                       return (
                         <tr key={`${patient.id}-${atb.id}`} className="hover:bg-emerald-50 border-b border-emerald-50">
                           <td className="px-4 py-3 leading-tight"><span className="font-black text-slate-900 text-sm">{patient.name}</span><br /><span className="text-[10px] text-slate-600 uppercase font-black">Leito {patient.bed}</span></td>
                           <td className="px-4 py-3 text-slate-800 uppercase font-black text-xs">{patient.sector}</td>
                           <td className="px-4 py-3 font-black text-emerald-700 leading-tight text-sm">{atb.name}</td>
                           <td className="px-4 py-3 text-slate-600 text-xs font-bold">{new Date(atb.startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}</td>
-                          <td className="px-4 py-3 text-center"><span className="px-3 py-1 rounded-lg font-black text-xs bg-emerald-100 text-emerald-800">FINALIZADO</span></td>
+                          <td className="px-4 py-3 text-center"><span className={`px-3 py-1 rounded-lg font-black text-[9px] uppercase ${statusColor}`}>{atb.status}</span></td>
                         </tr>
                       );
                     })}
-                  {filteredPatients.flatMap(p => p.antibiotics.filter(a => a.status === AntibioticStatus.FINALIZADO)).length === 0 && (
-                    <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-400 font-black text-sm uppercase italic">Nenhum antibiótico finalizado encontrado neste período</td></tr>
+                  {filteredPatients.flatMap(p => p.antibiotics.filter(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.OBITO].includes(a.status))).length === 0 && (
+                    <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-400 font-black text-sm uppercase italic">Nenhum antibiótico encerrado encontrado neste período</td></tr>
                   )}
                 </tbody>
               </table>
