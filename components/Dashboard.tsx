@@ -319,14 +319,14 @@ const Dashboard: React.FC<DashboardProps> = ({
   }, [patients]);
 
   const notifications = useMemo(() => {
-    const list: { id: string, patientName: string, text: string, type: 'expired' | 'pending' }[] = [];
+    const list: { id: string, patientName: string, text: string, type: 'expired' | 'pending', patientId: string, sector: string }[] = [];
 
     if (configNotifyExpired) {
       stats.expiredList.forEach(p => {
         p.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0).forEach(a => {
           const notifyId = `expired-${p.id}-${a.id}`;
           if (!dismissedNotifications.includes(notifyId)) {
-            list.push({ id: notifyId, patientName: p.name, text: `${a.name} venceu.`, type: 'expired' });
+            list.push({ id: notifyId, patientName: p.name, text: `${a.name} venceu.`, type: 'expired', patientId: p.id, sector: p.sector });
           }
         });
       });
@@ -351,7 +351,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
         const notifyId = `pending-${p.id}`;
         if (!dismissedNotifications.includes(notifyId)) {
-          list.push({ id: notifyId, patientName: p.name, text: 'Aguardando avaliação.', type: 'pending' });
+          list.push({ id: notifyId, patientName: p.name, text: 'Aguardando avaliação.', type: 'pending', patientId: p.id, sector: p.sector });
         }
       });
     }
@@ -624,11 +624,12 @@ const Dashboard: React.FC<DashboardProps> = ({
               ${notify.type === 'expired' ? 'bg-slate-900 border-l-red-500' : 'bg-slate-900 border-l-orange-500'}`}>
               <button onClick={(e) => { e.stopPropagation(); setDismissedNotifications(prev => [...prev, notify.id]); }} className="absolute top-2 right-2 p-1 bg-white/10 hover:bg-red-500 rounded-full transition-colors"><X size={12} /></button>
               <div className="cursor-pointer" onClick={() => {
-                if (notify.type === 'expired') {
-                  setReportInitialTab('vencimento');
-                  setActiveTab('relatorios');
+                setSearchTerm(notify.patientName);
+                if (notify.type === 'expired' && activeTab === 'relatorios') {
+                  // If already in reports, maybe stay there, but user wanted patient card
+                  setActiveTab(notify.sector);
                 } else {
-                  setActiveTab('inicio');
+                  setActiveTab(notify.sector);
                 }
               }}>
                 <div className="flex items-center gap-2 mb-1">
