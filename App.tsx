@@ -5,6 +5,7 @@ import Dashboard from './components/Dashboard';
 import PasswordReset from './components/PasswordReset';
 import { UserRole, Patient, User, AntibioticStatus } from './types';
 import { INITIAL_PATIENTS } from './data/mockData';
+import { SECTORS } from './constants';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
@@ -401,12 +402,16 @@ const App: React.FC = () => {
         if (sectorsToReset.length > 0) {
           let query = supabase.from('pacientes').update({ is_evaluated: false });
 
-          // Se for apenas alguns setores, aplicamos o filtro. 
-          // Se for tudo no mesmo minuto, a query reseta todos.
+          // Divide os setores do sistema entre UTI e Geral baseando-se no nome
+          const utiSectors = SECTORS.filter(s => s.toUpperCase().includes('UTI'));
+          const generalSectors = SECTORS.filter(s => !s.toUpperCase().includes('UTI'));
+
           if (sectorsToReset.includes('GERAL') && sectorsToReset.includes('UTI')) {
-            // Reset global
+            // Reset global - remove filtro para afetar todos
+          } else if (sectorsToReset.includes('UTI')) {
+            query = query.in('sector', utiSectors);
           } else {
-            query = query.in('sector', sectorsToReset.includes('UTI') ? ['UTI ADULTO', 'UTI NEONATAL'] : ['PRONTO SOCORRO', 'ENFERMARIA', 'CIRURGICO']);
+            query = query.in('sector', generalSectors);
           }
 
           query.then(({ error }) => {
