@@ -153,7 +153,9 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
           if (a.status === AntibioticStatus.OBITO) totalObitos++;
 
           if (getATBDay(a.startDate) > 14) prolongedCount++;
-          totalDuration += a.durationDays;
+          // Garante que durationDays seja tratado como número para evitar concatenação de strings
+          const dDays = Number(a.durationDays) || 0;
+          totalDuration += dDays;
           if (a.route === 'ORAL') oralCount++; else ivCount++;
         }
       });
@@ -168,7 +170,8 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
       totalPatients: totalPatientsInPeriod.size,
       activePatients: currentActivePatients.size,
       substituted: totalSubstituted, finalized: totalFinalized, suspended: totalSuspended, obitos: totalObitos,
-      prolonged: prolongedCount, avgDuration: medsCount > 0 ? (totalDuration / medsCount).toFixed(2).replace('.', ',') : '0,00',
+      prolonged: prolongedCount,
+      avgDuration: medsCount > 0 ? (totalDuration / medsCount).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00',
       therapeutic: therapeuticCount, prophylactic: prophylacticCount, oral: oralCount, iv: ivCount, vencidos: vencidosCount
     };
   }, [filteredPatients, categoryFilter]);
@@ -202,7 +205,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
       p.antibiotics.filter(a => a.category === categoryFilter).forEach(a => {
         const doseMg = parseFloat(a.dose.replace(/[^\d.]/g, '')) || 0;
         const doseG = a.dose.toUpperCase().includes('G') && !a.dose.toUpperCase().includes('MG') ? doseMg : doseMg / 1000;
-        const totalDays = a.durationDays;
+        const totalDays = Number(a.durationDays) || 0;
         const consumo = doseG * totalDays;
 
         consumoByAtb[a.name] = (consumoByAtb[a.name] || 0) + consumo;
@@ -258,7 +261,8 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
     filteredPatients.forEach(p => {
       p.antibiotics.filter(a => a.category === categoryFilter).forEach(a => {
         const unitCost = atbCosts[a.name.toUpperCase()] || 50;
-        const cost = unitCost * a.durationDays;
+        const dDays = Number(a.durationDays) || 0;
+        const cost = unitCost * dDays;
         totalCost += cost;
         if (!costByAtb[a.name]) costByAtb[a.name] = { qty: 0, cost: 0 };
         costByAtb[a.name].qty++;
