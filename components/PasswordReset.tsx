@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { Lock, Loader2, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { Lock, Loader2, AlertCircle, CheckCircle2, Eye, EyeOff, LogOut } from 'lucide-react';
 
 interface PasswordResetProps {
     onSuccess: () => void;
@@ -60,6 +60,11 @@ const PasswordReset: React.FC<PasswordResetProps> = ({ onSuccess }) => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        window.location.reload(); // Force full app reset
     };
 
     return (
@@ -133,6 +138,14 @@ const PasswordReset: React.FC<PasswordResetProps> = ({ onSuccess }) => {
                             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase py-4 rounded-2xl shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5 disabled:opacity-70 flex items-center justify-center gap-2 text-sm tracking-wide"
                         >
                             {loading ? <Loader2 className="animate-spin" size={20} /> : 'Atualizar Minha Senha'}
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={handleLogout}
+                            className="w-full text-[10px] font-black text-slate-400 uppercase hover:text-red-500 transition-colors flex items-center justify-center gap-2 mt-2"
+                        >
+                            <LogOut size={14} /> Não é você? Entrar com outra conta
                         </button>
                     </form>
                 )}

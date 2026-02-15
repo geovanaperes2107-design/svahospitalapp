@@ -18,6 +18,7 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [recoverySession, setRecoverySession] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const [hospitalName, setHospitalNameState] = useState(() => localStorage.getItem('sva_hospital_name') || 'Hospital Estadual de São Luis de Montes Belos - HSLMB');
   const [bgImage, setBgImageState] = useState(() => localStorage.getItem('sva_bg_image') || '');
@@ -86,6 +87,7 @@ const App: React.FC = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      setIsInitializing(false);
     });
 
     const {
@@ -685,6 +687,18 @@ const App: React.FC = () => {
       // Force reload user to clear flag
       window.location.reload();
     }} />;
+  }
+
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white gap-6">
+        <div className="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+        <div className="space-y-1 text-center">
+          <h2 className="text-xl font-black uppercase tracking-tighter">SVA Hospital</h2>
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest animate-pulse">Verificando Acesso...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!session) {
