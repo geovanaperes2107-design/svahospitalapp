@@ -34,7 +34,16 @@ const PasswordReset: React.FC<PasswordResetProps> = ({ onSuccess }) => {
                 password: newPassword
             });
 
-            if (error) throw error;
+            if (error) {
+                // Tradução amigável de erros do Supabase
+                if (error.message.includes('New password should be different')) {
+                    throw new Error('A nova senha deve ser diferente da senha temporária que você usou para entrar.');
+                }
+                if (error.message.includes('Password should be at least 6 characters')) {
+                    throw new Error('A senha deve ter pelo menos 6 caracteres.');
+                }
+                throw error;
+            }
 
             // Update profile flag
             const { data: { user } } = await supabase.auth.getUser();
