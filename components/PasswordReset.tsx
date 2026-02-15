@@ -48,7 +48,11 @@ const PasswordReset: React.FC<PasswordResetProps> = ({ onSuccess }) => {
             // Update profile flag
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-                await supabase.from('profiles').update({ needs_password_change: false }).eq('id', user.id);
+                const { error: profileError } = await supabase.from('profiles').update({ needs_password_change: false }).eq('id', user.id);
+                if (profileError) {
+                    console.error('Error updating profile:', profileError);
+                    throw new Error('A senha foi alterada, mas houve um erro ao atualizar seu perfil. Por favor, tente novamente ou contate o suporte.');
+                }
             }
 
             setSuccess(true);
@@ -91,7 +95,7 @@ const PasswordReset: React.FC<PasswordResetProps> = ({ onSuccess }) => {
                             <CheckCircle2 size={24} />
                         </div>
                         <h3 className="text-emerald-800 font-black uppercase text-sm">Senha Alterada!</h3>
-                        <p className="text-[10px] font-bold text-emerald-600 uppercase">Você será redirecionado para o login em instantes...</p>
+                        <p className="text-[10px] font-bold text-emerald-600 uppercase">Você será redirecionado para o sistema em instantes...</p>
                     </div>
                 ) : (
                     <form onSubmit={handleReset} className="space-y-5">
