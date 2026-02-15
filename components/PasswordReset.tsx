@@ -54,7 +54,7 @@ const PasswordReset: React.FC<PasswordResetProps> = ({ onSuccess }) => {
             setSuccess(true);
             setTimeout(() => {
                 onSuccess();
-            }, 3000);
+            }, 1000);
         } catch (err: any) {
             setError(err.message || 'Erro ao atualizar senha.');
         } finally {

@@ -684,8 +684,8 @@ const App: React.FC = () => {
   if (recoverySession || (session && needsPasswordChange)) {
     return <PasswordReset onSuccess={() => {
       setRecoverySession(false);
-      // Force reload user to clear flag
-      window.location.reload();
+      // Refresh users to clear needsPasswordChange without losing session
+      fetchUsers();
     }} />;
   }
 
