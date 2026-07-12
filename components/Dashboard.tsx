@@ -236,7 +236,8 @@ const Dashboard: React.FC<DashboardProps> = ({
             infectoSubTab === 'autorizados' ? p.infectoStatus === InfectoStatus.AUTORIZADO :
               infectoSubTab === 'nao_autorizados' ? p.infectoStatus === InfectoStatus.NAO_AUTORIZADO : true;
 
-      return (hasActiveAtb || infectoSubTab === 'autorizados' || infectoSubTab === 'nao_autorizados') && matchesStatus && matchesMonth && matchesSearch;
+      // Todos os subtabs exigem ao menos 1 ATB ativo; sem ATB ativo = paciente encerrado/deletado
+      return hasActiveAtb && matchesStatus && matchesMonth && matchesSearch;
     }
 
     const hasActiveAtb = p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO);
@@ -371,15 +372,20 @@ const Dashboard: React.FC<DashboardProps> = ({
   const notifications = useMemo(() => {
     const list: { id: string, patientName: string, text: string, type: 'expired' | 'pending', patientId: string, sector: string }[] = [];
 
+    // Conjunto de IDs de pacientes existentes para evitar notificações de pacientes deletados
+    const existingPatientIds = new Set(patients.map(p => p.id));
+
     if (configNotifyExpired) {
-      stats.expiredList.forEach(p => {
-        p.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0).forEach(a => {
-          const notifyId = `expired-${p.id}-${a.id}`;
-          if (!dismissedNotifications.includes(notifyId)) {
-            list.push({ id: notifyId, patientName: p.name, text: `${a.name} venceu.`, type: 'expired', patientId: p.id, sector: p.sector });
-          }
+      stats.expiredList
+        .filter(p => existingPatientIds.has(p.id)) // só pacientes que ainda existem
+        .forEach(p => {
+          p.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0).forEach(a => {
+            const notifyId = `expired-${p.id}-${a.id}`;
+            if (!dismissedNotifications.includes(notifyId)) {
+              list.push({ id: notifyId, patientName: p.name, text: `${a.name} venceu.`, type: 'expired', patientId: p.id, sector: p.sector });
+            }
+          });
         });
-      });
     }
 
     if (configNotifyPending) {
@@ -393,21 +399,23 @@ const Dashboard: React.FC<DashboardProps> = ({
       const isClinTime = currentH > clinH || (currentH === clinH && currentM >= clinM);
       const isUtiTime = currentH > utiH || (currentH === utiH && currentM >= utiM);
 
-      unevaluatedPatients.forEach(p => {
-        const isUTI = p.sector?.includes('UTI');
-        const canShow = isUTI ? isUtiTime : isClinTime;
+      unevaluatedPatients
+        .filter(p => existingPatientIds.has(p.id)) // só pacientes que ainda existem
+        .forEach(p => {
+          const isUTI = p.sector?.includes('UTI');
+          const canShow = isUTI ? isUtiTime : isClinTime;
 
-        if (!canShow) return;
+          if (!canShow) return;
 
-        const notifyId = `pending-${p.id}`;
-        if (!dismissedNotifications.includes(notifyId)) {
-          list.push({ id: notifyId, patientName: p.name, text: 'Aguardando avaliação.', type: 'pending', patientId: p.id, sector: p.sector });
-        }
-      });
+          const notifyId = `pending-${p.id}`;
+          if (!dismissedNotifications.includes(notifyId)) {
+            list.push({ id: notifyId, patientName: p.name, text: 'Aguardando avaliação.', type: 'pending', patientId: p.id, sector: p.sector });
+          }
+        });
     }
 
     return list;
-  }, [stats.expiredList, unevaluatedPatients, dismissedNotifications, configNotifyExpired, configNotifyPending]);
+  }, [patients, stats.expiredList, unevaluatedPatients, dismissedNotifications, configNotifyExpired, configNotifyPending]);
 
   const handleNotifyClick = () => {
     setReportInitialTab('vencimento');
