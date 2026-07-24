@@ -232,7 +232,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
 
   const derivePatientInfectoStatus = (atbs: Antibiotic[]): InfectoStatus => {
     const activeAtbs = atbs.filter(a => a.status === AntibioticStatus.EM_USO);
-    if (activeAtbs.length === 0) return InfectoStatus.PENDENTE;
+    if (activeAtbs.length === 0) return InfectoStatus.AUTORIZADO;
 
     // If any active ATB is NOT_AUTHORIZED, patient is NOT_AUTHORIZED
     if (activeAtbs.some(a => a.infectoStatus === InfectoStatus.NAO_AUTORIZADO)) {
@@ -400,7 +400,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                   <button onClick={onMoveDown} disabled={!canMoveDown} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-300 disabled:opacity-30"><ChevronDown size={14} /></button>
                 </div>
               )}
-              {!isInfectoPanel && isAdmin && (
+              {!isInfectoPanel && role !== UserRole.VISUALIZADOR && (
                 <button onClick={() => {
                   if (window.confirm(`Deseja realmente excluir o paciente ${patient.name}? Esta ação não pode ser desfeita.`)) {
                     onDelete(patient.id);

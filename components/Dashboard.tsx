@@ -158,7 +158,14 @@ const Dashboard: React.FC<DashboardProps> = ({
     </div>
   );
 
-  const unevaluatedPatients = useMemo(() => patients.filter(p => !p.isEvaluated && p.sector !== 'Centro Cirúrgico'), [patients]);
+  const unevaluatedPatients = useMemo(() => 
+    patients.filter(p => 
+      !p.isEvaluated && 
+      p.sector !== 'Centro Cirúrgico' &&
+      p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)
+    ), 
+    [patients]
+  );
 
   const handleDismissPendingAlert = (e: React.MouseEvent) => {
     e.stopPropagation();

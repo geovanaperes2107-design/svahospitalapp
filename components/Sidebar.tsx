@@ -31,8 +31,12 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const isVisualizer = role === UserRole.VISUALIZADOR;
 
-  // Badge da Infectologia deve ignorar CC
-  const infectoPendingCount = patients.filter(p => p.infectoStatus === InfectoStatus.PENDENTE && p.sector !== 'Centro Cirúrgico').length;
+  // Badge da Infectologia deve ignorar CC e exige ao menos 1 ATB em uso
+  const infectoPendingCount = patients.filter(p => 
+    p.infectoStatus === InfectoStatus.PENDENTE && 
+    p.sector !== 'Centro Cirúrgico' &&
+    p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)
+  ).length;
 
   return (
     <div className={`

@@ -180,9 +180,9 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
   const censoStats = useMemo(() => {
     const auth = filteredPatients.filter(p => p.infectoStatus === InfectoStatus.AUTORIZADO).length;
     const notAuth = filteredPatients.filter(p => p.infectoStatus === InfectoStatus.NAO_AUTORIZADO).length;
-    const pending = filteredPatients.filter(p => p.infectoStatus === InfectoStatus.PENDENTE).length;
+    const pending = filteredPatients.filter(p => p.infectoStatus === InfectoStatus.PENDENTE && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)).length;
     const total = filteredPatients.length;
-    const semAvaliacao = filteredPatients.filter(p => p.infectoStatus === InfectoStatus.PENDENTE && p.sector !== 'Centro Cirúrgico');
+    const semAvaliacao = filteredPatients.filter(p => p.infectoStatus === InfectoStatus.PENDENTE && p.sector !== 'Centro Cirúrgico' && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO));
     const todosIniciados = filteredPatients.filter(p =>
       p.antibiotics.some(a => a.category === MedicationCategory.ANTIMICROBIANO)
     ).sort((a, b) => a.name.localeCompare(b.name));
