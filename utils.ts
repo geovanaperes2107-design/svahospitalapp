@@ -30,3 +30,14 @@ export const getStatusText = (daysRemaining: number) => {
   if (daysRemaining === 0) return 'Vence hoje';
   return `Vencido há ${Math.abs(daysRemaining)} dias`;
 };
+
+export const safeJsonParse = <T>(jsonString: string | null, fallback: T): T => {
+  if (!jsonString) return fallback;
+  try {
+    const parsed = JSON.parse(jsonString);
+    return parsed !== undefined && parsed !== null ? parsed : fallback;
+  } catch (e) {
+    console.error('Error parsing JSON from storage:', e);
+    return fallback;
+  }
+};

@@ -10,8 +10,19 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { safeJsonParse } from './utils';
 
-
+const DEFAULT_ATB_COSTS: Record<string, number> = {
+  'MEROPENEM PO P/ SOL INJ 1G': 85.00,
+  'VANCOMICINA PO P/ SOL INJ 500MG': 45.00,
+  'PIPERACILINA + TAZOBACTAM PO P/ SOL INJ 4 + 0,5G': 120.00,
+  'CEFTRIAXONA PO P/ SOL INJ 1G': 15.00,
+  'CIPROFLOXACINO COMP 500MG': 12.00,
+  'CEFEPIME PO P/ SOL INJ 1G': 55.00,
+  'LINEZOLIDA SOL INJ 2MG/ML 300ML': 250.00,
+  'POLIMIXINA B PO P/ SOL INJ 500.000UI': 180.00,
+  'FLUCONAZOL SOL INJ 2MG/ML 100ML': 25.00,
+};
 
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
@@ -25,20 +36,9 @@ const App: React.FC = () => {
   const [loginBgImage, setLoginBgImageState] = useState(() => localStorage.getItem('sva_login_bg_image') || '');
   const [reportEmail, setReportEmailState] = useState(() => localStorage.getItem('sva_report_email') || '');
   const [patientDays, setPatientDaysState] = useState(() => parseInt(localStorage.getItem('sva_patient_days') || '1200'));
-  const [atbCosts, setAtbCostsState] = useState<Record<string, number>>(() => {
-    const saved = localStorage.getItem('sva_atb_costs');
-    return saved ? JSON.parse(saved) : {
-      'MEROPENEM PO P/ SOL INJ 1G': 85.00,
-      'VANCOMICINA PO P/ SOL INJ 500MG': 45.00,
-      'PIPERACILINA + TAZOBACTAM PO P/ SOL INJ 4 + 0,5G': 120.00,
-      'CEFTRIAXONA PO P/ SOL INJ 1G': 15.00,
-      'CIPROFLOXACINO COMP 500MG': 12.00,
-      'CEFEPIME PO P/ SOL INJ 1G': 55.00,
-      'LINEZOLIDA SOL INJ 2MG/ML 300ML': 250.00,
-      'POLIMIXINA B PO P/ SOL INJ 500.000UI': 180.00,
-      'FLUCONAZOL SOL INJ 2MG/ML 100ML': 25.00,
-    };
-  });
+  const [atbCosts, setAtbCostsState] = useState<Record<string, number>>(() =>
+    safeJsonParse(localStorage.getItem('sva_atb_costs'), DEFAULT_ATB_COSTS)
+  );
 
   const [configNotifyReset, setConfigNotifyResetState] = useState(() => localStorage.getItem('sva_config_notify_reset') !== 'false');
   const [configNotifyPending, setConfigNotifyPendingState] = useState(() => localStorage.getItem('sva_config_notify_pending') !== 'false');
@@ -143,7 +143,7 @@ const App: React.FC = () => {
       setPatientDaysState(parseInt(localStorage.getItem('sva_patient_days') || '1200'));
 
       const savedCosts = localStorage.getItem('sva_atb_costs');
-      if (savedCosts) setAtbCostsState(JSON.parse(savedCosts));
+      if (savedCosts) setAtbCostsState(safeJsonParse(savedCosts, DEFAULT_ATB_COSTS));
     };
 
     window.addEventListener('storage', handleStorageChange);
@@ -385,7 +385,7 @@ const App: React.FC = () => {
 
       // Reset evaluations por Setor
       if (configNotifyReset) {
-        const lastResetDateMap = JSON.parse(localStorage.getItem('sva_sector_resets') || '{}');
+        const lastResetDateMap = safeJsonParse(localStorage.getItem('sva_sector_resets'), {} as Record<string, string>);
         const sectorsToReset: string[] = [];
 
         // Verifica Enfermaria (Geral)
