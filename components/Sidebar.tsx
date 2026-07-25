@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { LogOut, Settings, ShieldCheck, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
-import { UserRole, Patient, InfectoStatus } from '../types';
+import { UserRole, Patient, InfectoStatus, AntibioticStatus } from '../types';
 import { MENU_ITEMS } from '../constants';
 
 interface SidebarProps {
