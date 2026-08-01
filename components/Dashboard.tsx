@@ -500,9 +500,16 @@ const Dashboard: React.FC<DashboardProps> = ({
                           <p className="text-base font-black text-slate-800 dark:text-white uppercase leading-none truncate max-w-[200px]">{p.name}</p>
                           <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mt-2.5 uppercase">Setor: <span className="text-slate-600 dark:text-slate-300">{p.sector}</span> | Leito: <span className="text-slate-600 dark:text-slate-300">{p.bed}</span></p>
                         </div>
-                        <button onClick={handleNotifyClick} className="p-3 bg-slate-50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-500 rounded-2xl group-hover:bg-red-50 dark:group-hover:bg-red-900/20 group-hover:text-red-600 transition-colors">
-                          <ChevronRight size={24} />
-                        </button>
+                        <div className="flex gap-2">
+                          {user.role === 'ADMINISTRADOR' && (
+                            <button onClick={(e) => { e.stopPropagation(); if(window.confirm(`Excluir paciente ${p.name}?`)) onDeletePatient(p.id); }} className="p-3 bg-slate-50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-500 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-colors" title="Excluir Paciente">
+                              <X size={24} />
+                            </button>
+                          )}
+                          <button onClick={handleNotifyClick} className="p-3 bg-slate-50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-500 rounded-2xl group-hover:bg-red-50 dark:group-hover:bg-red-900/20 group-hover:text-red-600 transition-colors">
+                            <ChevronRight size={24} />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
