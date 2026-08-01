@@ -252,14 +252,7 @@ const App: React.FC = () => {
       console.error('Error fetching patients:', error);
       setSystemAlert({ message: 'Erro ao carregar pacientes do servidor.', type: 'warning' });
     } else {
-      // ONE-TIME CLEANUP: Deletar TODOS os pacientes
-      if (data && data.length > 0) {
-        const { error: delError } = await supabase.from('pacientes').delete().not('id', 'is', null);
-        if (delError) console.error('Erro ao deletar todos:', delError);
-        setPatients([]);
-      } else {
-        setPatients([]);
-      }
+      setPatients(data.map(mapDbToPatient));
       setLastSaved(new Date());
     }
     setIsLoading(false);
