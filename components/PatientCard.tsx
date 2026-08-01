@@ -22,7 +22,7 @@ import {
   GripVertical
 } from 'lucide-react';
 import { Patient, UserRole, AntibioticStatus, InfectoStatus, Antibiotic, HistoryEntry, TreatmentType, IncisionRelation, MedicationCategory } from '../types';
-import { SECTORS, ANTIBIOTICS_LIST, FREQUENCY_OPTIONS, MEDICATION_LISTS } from '../constants';
+import { DEFAULT_SECTORS, ANTIBIOTICS_LIST, FREQUENCY_OPTIONS, MEDICATION_LISTS } from '../constants';
 import { format, differenceInDays, parseISO, startOfDay, addDays } from 'date-fns';
 
 interface PatientCardProps {
@@ -372,7 +372,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                   <div className="px-3 py-2 border-b border-slate-50 dark:border-slate-700 mb-1">
                     <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Alterar Setor</p>
                   </div>
-                  {SECTORS.map(s => (
+                  {DEFAULT_SECTORS.map(s => (
                     <button key={s} onClick={() => { onUpdate({ ...patient, sector: s }); setShowSectorMenu(false); }} className={`text-left px-4 py-2.5 text-[11px] font-black uppercase hover:bg-slate-50 rounded-xl transition-colors ${patient.sector === s ? 'text-blue-600 bg-blue-50/50' : 'text-slate-600'}`}>
                       {s}
                     </button>

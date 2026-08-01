@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { UserPlus, Shield, Key, Trash2, Edit2, Search, X, CheckCircle2, Building2, Save, Image as ImageIcon, Upload, Monitor, Lock, Unlock, MailCheck, AlertCircle, Eye, EyeOff, Bell, Clock, Users } from 'lucide-react';
+import { UserPlus, Shield, Key, Trash2, Edit2, Search, X, CheckCircle2, Building2, Save, Image as ImageIcon, Upload, Monitor, Lock, Unlock, MailCheck, AlertCircle, Eye, EyeOff, Bell, Clock, Users, LayoutGrid, PlusCircle, Archive } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { User, UserRole } from '../types';
 
@@ -42,6 +42,8 @@ interface UserManagementProps {
     setConfigAtbDayChangeTime: (val: string) => void;
     configAtbDayChangeTimeUTI: string;
     setConfigAtbDayChangeTimeUTI: (val: string) => void;
+    activeSectors: string[];
+    setActiveSectors: (sectors: string[] | ((prev: string[]) => string[])) => void;
 }
 
 const UserManagement: React.FC<UserManagementProps> = ({
@@ -52,7 +54,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
     setConfigResetTime, configResetTimeUTI, setConfigResetTimeUTI, configPendingTimeClinicas, setConfigPendingTimeClinicas,
     configPendingTimeUTI, setConfigPendingTimeUTI,
     configAtbDayLock, setConfigAtbDayLock, configAtbDayChangeTime, setConfigAtbDayChangeTime,
-    configAtbDayChangeTimeUTI, setConfigAtbDayChangeTimeUTI
+    configAtbDayChangeTimeUTI, setConfigAtbDayChangeTimeUTI,
+    activeSectors, setActiveSectors
 }) => {
     const [showForm, setShowForm] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -61,8 +64,9 @@ const UserManagement: React.FC<UserManagementProps> = ({
     const [searchTerm, setSearchTerm] = useState('');
     const [tempHospitalName, setTempHospitalName] = useState(hospitalName);
     const [showEmailToast, setShowEmailToast] = useState<{ name: string, email: string } | null>(null);
-    const [activeTab, setActiveTab] = useState<'users' | 'alerts' | 'params'>('users');
+    const [activeTab, setActiveTab] = useState<'users' | 'alerts' | 'params' | 'paineis'>('users');
     const [visiblePasswordId, setVisiblePasswordId] = useState<string | null>(null);
+    const [newSectorName, setNewSectorName] = useState('');
 
     const formatCPF = (cpf: string) => {
         const digits = cpf.replace(/\D/g, '');
@@ -209,6 +213,15 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             }`}
                     >
                         <Building2 size={14} /> Parâmetros
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('paineis')}
+                        className={`px-6 py-2.5 rounded-[16px] text-[10px] font-black uppercase transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'paineis'
+                            ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-500 shadow-sm'
+                            : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
+                            }`}
+                    >
+                        <LayoutGrid size={14} /> Painéis
                     </button>
                 </div>
             </div>
@@ -648,6 +661,69 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                 <Save size={18} /> {editingUser ? 'Salvar Alterações' : 'Confirmar Pré-Cadastro'}
                             </button>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'paineis' && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-sm space-y-6">
+                        <div>
+                            <h3 className="text-base font-black text-slate-800 dark:text-white uppercase flex items-center gap-2">
+                                <LayoutGrid size={18} className="text-emerald-600" /> Painéis Ativos
+                            </h3>
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-1">
+                                Arquive um painel para removê-lo do menu. Ele poderá ser reativado a qualquer momento.
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {activeSectors.map(sector => (
+                                <div key={sector} className="flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 px-5 py-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                    <span className="font-black text-sm text-slate-700 dark:text-white uppercase">{sector}</span>
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm(`Arquivar o painel "${sector}"? Ele sairá do menu, mas os dados dos pacientes são mantidos.`)) {
+                                                setActiveSectors((prev: string[]) => prev.filter(s => s !== sector));
+                                            }
+                                        }}
+                                        className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 text-slate-400 dark:text-slate-500 rounded-xl font-black text-[10px] uppercase transition-all"
+                                    >
+                                        <Archive size={14} /> Arquivar
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-sm space-y-4">
+                        <div>
+                            <h3 className="text-base font-black text-slate-800 dark:text-white uppercase flex items-center gap-2">
+                                <PlusCircle size={18} className="text-emerald-600" /> Criar Novo Painel
+                            </h3>
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-1">
+                                Digite o nome do novo setor para criar um painel dedicado a ele.
+                            </p>
+                        </div>
+                        <div className="flex gap-3">
+                            <input
+                                type="text"
+                                value={newSectorName}
+                                onChange={e => setNewSectorName(e.target.value)}
+                                placeholder="Ex: Enfermaria B, Nefrologia..."
+                                className="flex-1 bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 focus:border-emerald-500 outline-none p-4 rounded-2xl font-bold text-sm text-slate-900 dark:text-white transition-all"
+                            />
+                            <button
+                                disabled={!newSectorName.trim() || activeSectors.includes(newSectorName.trim())}
+                                onClick={() => {
+                                    const name = newSectorName.trim();
+                                    if (!name || activeSectors.includes(name)) return;
+                                    setActiveSectors((prev: string[]) => [...prev, name]);
+                                    setNewSectorName('');
+                                }}
+                                className="px-6 py-4 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                            >
+                                <PlusCircle size={16} /> Criar
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

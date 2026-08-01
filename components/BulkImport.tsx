@@ -2,7 +2,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X, AlertCircle, CheckCircle2, Info, FileSpreadsheet, Trash2 } from 'lucide-react';
 import { Patient, Antibiotic, AntibioticStatus, InfectoStatus, TreatmentType, MedicationCategory, HistoryEntry } from '../types';
-import { SECTORS } from '../constants';
+import { DEFAULT_SECTORS } from '../constants';
 import * as XLSX from 'xlsx';
 
 interface BulkImportProps {
@@ -72,7 +72,7 @@ const BulkImport: React.FC<BulkImportProps> = ({ onImport, onCancel }) => {
                     if (!name || !sector) continue;
 
                     // Validate sector
-                    const validSector = SECTORS.includes(sector) ? sector : SECTORS[0];
+                    const validSector = DEFAULT_SECTORS.includes(sector) ? sector : DEFAULT_SECTORS[0];
 
                     const newPatient: Patient = {
                         id: Math.random().toString(36).substr(2, 9),

@@ -5,7 +5,7 @@ import Dashboard from './components/Dashboard';
 import PasswordReset from './components/PasswordReset';
 import { UserRole, Patient, User, AntibioticStatus } from './types';
 import { INITIAL_PATIENTS } from './data/mockData';
-import { SECTORS } from './constants';
+import { DEFAULT_SECTORS } from './constants';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
@@ -50,6 +50,9 @@ const App: React.FC = () => {
   const [configAtbDayLock, setConfigAtbDayLockState] = useState(() => localStorage.getItem('sva_config_atb_day_lock') !== 'false');
   const [configAtbDayChangeTime, setConfigAtbDayChangeTimeState] = useState(() => localStorage.getItem('sva_config_atb_day_change_time') || '00:00');
   const [configAtbDayChangeTimeUTI, setConfigAtbDayChangeTimeUTIState] = useState(() => localStorage.getItem('sva_config_atb_day_change_time_uti') || '00:00');
+  const [activeSectors, setActiveSectorsState] = useState<string[]>(() =>
+    safeJsonParse(localStorage.getItem('sva_active_sectors'), DEFAULT_SECTORS)
+  );
 
   // --- HELPER PARA SALVAR CONFIGURAÇÕES NO SUPABASE E LOCALSTORAGE ---
   const saveSetting = async (key: string, value: any, localStorageKey: string) => {
@@ -83,6 +86,13 @@ const App: React.FC = () => {
   const setConfigAtbDayLock = (val: boolean) => { setConfigAtbDayLockState(val); saveSetting('config_atb_day_lock', val, 'sva_config_atb_day_lock'); };
   const setConfigAtbDayChangeTime = (val: string) => { setConfigAtbDayChangeTimeState(val); saveSetting('config_atb_day_change_time', val, 'sva_config_atb_day_change_time'); };
   const setConfigAtbDayChangeTimeUTI = (val: string) => { setConfigAtbDayChangeTimeUTIState(val); saveSetting('config_atb_day_change_time_uti', val, 'sva_config_atb_day_change_time_uti'); };
+  const setActiveSectors = (val: string[] | ((prev: string[]) => string[])) => {
+    setActiveSectorsState(prev => {
+      const newVal = typeof val === 'function' ? val(prev) : val;
+      saveSetting('active_sectors', newVal, 'sva_active_sectors');
+      return newVal;
+    });
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -144,6 +154,9 @@ const App: React.FC = () => {
 
       const savedCosts = localStorage.getItem('sva_atb_costs');
       if (savedCosts) setAtbCostsState(safeJsonParse(savedCosts, DEFAULT_ATB_COSTS));
+
+      const savedSectors = localStorage.getItem('sva_active_sectors');
+      if (savedSectors) setActiveSectorsState(safeJsonParse(savedSectors, DEFAULT_SECTORS));
     };
 
     window.addEventListener('storage', handleStorageChange);
@@ -280,6 +293,7 @@ const App: React.FC = () => {
           case 'config_pending_time_uti_alert': setConfigPendingTimeUTIState(s.value); break;
           case 'config_atb_day_change_time': setConfigAtbDayChangeTimeState(s.value); break;
           case 'config_atb_day_change_time_uti': setConfigAtbDayChangeTimeUTIState(s.value); break;
+          case 'active_sectors': setActiveSectorsState(s.value); break;
         }
         // Sync to localStorage too
         localStorage.setItem(`sva_${s.key}`, typeof s.value === 'string' ? s.value : JSON.stringify(s.value));
@@ -408,8 +422,8 @@ const App: React.FC = () => {
           let query = supabase.from('pacientes').update({ is_evaluated: false });
 
           // Divide os setores do sistema entre UTI e Geral baseando-se no nome
-          const utiSectors = SECTORS.filter(s => s.toUpperCase().includes('UTI'));
-          const generalSectors = SECTORS.filter(s => !s.toUpperCase().includes('UTI'));
+          const utiSectors = activeSectors.filter(s => s.toUpperCase().includes('UTI'));
+          const generalSectors = activeSectors.filter(s => !s.toUpperCase().includes('UTI'));
 
           if (sectorsToReset.includes('GERAL') && sectorsToReset.includes('UTI')) {
             // Reset global - remove filtro para afetar todos
@@ -500,9 +514,9 @@ const App: React.FC = () => {
     localStorage.setItem('sva_config_notify_pending', String(configNotifyPending));
     localStorage.setItem('sva_config_notify_expired', String(configNotifyExpired));
     localStorage.setItem('sva_config_reset_time', configResetTime);
-    localStorage.setItem('sva_config_pending_time_clinicas', configPendingTimeClinicas);
     localStorage.setItem('sva_config_pending_time_uti_alert', configPendingTimeUTI);
-  }, [hospitalName, bgImage, loginBgImage, reportEmail, patientDays, atbCosts, configNotifyReset, configNotifyPending, configNotifyExpired, configResetTime, configPendingTimeClinicas, configPendingTimeUTI]);
+    localStorage.setItem('sva_active_sectors', JSON.stringify(activeSectors));
+  }, [hospitalName, bgImage, loginBgImage, reportEmail, patientDays, atbCosts, configNotifyReset, configNotifyPending, configNotifyExpired, configResetTime, configPendingTimeClinicas, configPendingTimeUTI, activeSectors]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -768,6 +782,8 @@ const App: React.FC = () => {
           alert(`${newPatients.length} pacientes importados com sucesso!`);
         }
       }}
+      activeSectors={activeSectors}
+      setActiveSectors={setActiveSectors}
     />
   );
 };

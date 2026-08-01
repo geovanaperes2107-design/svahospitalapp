@@ -23,7 +23,7 @@ import BulkImport from './BulkImport';
 import Reports from './Reports';
 import UserManagement from './UserManagement';
 import { getDaysRemaining, calculateEndDate } from '../utils';
-import { MENU_ITEMS, SECTORS } from '../constants';
+import { getMenuItems, DEFAULT_SECTORS } from '../constants';
 
 interface DashboardProps {
   user: User;
@@ -76,6 +76,8 @@ interface DashboardProps {
   configAtbDayChangeTimeUTI: string;
   setConfigAtbDayChangeTimeUTI: (val: string) => void;
   isLoading?: boolean;
+  activeSectors: string[];
+  setActiveSectors: (sectors: string[] | ((prev: string[]) => string[])) => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({
@@ -87,7 +89,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   configResetTime, setConfigResetTime, configResetTimeUTI, setConfigResetTimeUTI, configPendingTimeClinicas,
   setConfigPendingTimeClinicas, configPendingTimeUTI, setConfigPendingTimeUTI, configAtbDayLock, setConfigAtbDayLock, configAtbDayChangeTime, setConfigAtbDayChangeTime,
   configAtbDayChangeTimeUTI, setConfigAtbDayChangeTimeUTI,
-  isLoading
+  isLoading, activeSectors, setActiveSectors
 }) => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('sva_active_tab') || 'inicio');
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
@@ -356,7 +358,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     ).length;
 
     const sectorCounts: Record<string, number> = {};
-    SECTORS.forEach(sector => {
+    activeSectors.forEach(sector => {
       sectorCounts[sector] = activeAtbPatients.filter(p => p.sector === sector).length;
     });
 
@@ -450,6 +452,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         setIsCollapsed={setIsSidebarCollapsed}
         isMobileOpen={isMobileMenuOpen}
         setIsMobileOpen={setIsMobileMenuOpen}
+        activeSectors={activeSectors}
       />
 
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
@@ -517,14 +520,13 @@ const Dashboard: React.FC<DashboardProps> = ({
               )}
 
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 pb-12">
-                {MENU_ITEMS.filter(m => m.id !== 'inicio').map((item) => {
-                  const isSector = SECTORS.includes(item.id);
-                  const count = isSector ? stats.sectorCounts[item.id] : 0;
+                {MENU_ITEMS.filter(m => m.id !== 'inicio' && activeSectors.includes(m.id)).map((item) => {
+                  const count = stats.sectorCounts[item.id] || 0;
                   return (
                     <button key={item.id} onClick={() => setActiveTab(item.id)} className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all text-left group">
                       <div className={`h-18 ${item.color} p-4 flex justify-between items-center transition-all group-hover:h-20`}>
                         <div className="bg-white/20 p-2 rounded-2xl text-white">{React.cloneElement(item.icon as React.ReactElement, { size: 24 })}</div>
-                        {isSector && <span className="bg-white/95 dark:bg-slate-900/95 px-2.5 py-1 rounded-full text-[10px] font-black text-slate-800 dark:text-slate-200 shadow-sm">{count} Pct{count !== 1 ? 's' : ''}</span>}
+                        <span className="bg-white/95 dark:bg-slate-900/95 px-2.5 py-1 rounded-full text-[10px] font-black text-slate-800 dark:text-slate-200 shadow-sm">{count} Pct{count !== 1 ? 's' : ''}</span>
                       </div>
                       <div className="p-4 pt-3"><h3 className="font-black text-slate-800 dark:text-white text-sm uppercase tracking-tighter truncate">{item.label}</h3></div>
                     </button>
@@ -586,13 +588,15 @@ const Dashboard: React.FC<DashboardProps> = ({
               setConfigAtbDayChangeTimeUTI={setConfigAtbDayChangeTimeUTI}
               patientDays={patientDays}
               setPatientDays={setPatientDays}
+              activeSectors={activeSectors}
+              setActiveSectors={setActiveSectors}
             />
           )}
           {activeTab === 'cadastro' && <div className="max-w-4xl mx-auto"><PatientRegistration onAdd={(p) => { onAddPatient(p); setActiveTab('inicio'); }} onCancel={() => setActiveTab('inicio')} /></div>}
           {activeTab === 'relatorios' && <Reports patients={patients} initialReportTab={reportInitialTab} atbCosts={atbCosts} setAtbCosts={setAtbCosts} patientDays={patientDays} setPatientDays={setPatientDays} />}
 
 
-          {['finalizados', 'Centro Cirúrgico', 'infectologia', ...SECTORS].includes(activeTab) && (
+          {['finalizados', 'Centro Cirúrgico', 'infectologia', ...activeSectors].includes(activeTab) && (
             <div className="max-w-[1200px] mx-auto space-y-3 text-left animate-in fade-in pb-6">
               <div className="flex flex-col md:flex-row justify-between items-center no-print bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-md border border-slate-100 dark:border-slate-700 gap-8 transition-colors">
                 <div className="flex flex-col gap-4">

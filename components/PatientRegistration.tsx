@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserPlus, Plus, Trash2, Calendar, Save, AlertCircle, Clock, Pill, X } from 'lucide-react';
 import { Patient, Antibiotic, AntibioticStatus, InfectoStatus, TreatmentType, MedicationCategory } from '../types';
-import { SECTORS, MEDICATION_LISTS, FREQUENCY_OPTIONS, DURATION_OPTIONS } from '../constants';
+import { DEFAULT_SECTORS, MEDICATION_LISTS, FREQUENCY_OPTIONS, DURATION_OPTIONS } from '../constants';
 import { calculateEndDate } from '../utils';
 
 interface PatientRegistrationProps {
@@ -17,7 +17,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
       name: '',
       birthDate: '',
       bed: '',
-      sector: SECTORS[0],
+      sector: DEFAULT_SECTORS[0],
       diagnosis: '',
       observation: '',
       treatmentType: TreatmentType.TERAPEUTICO,
@@ -142,7 +142,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
         name: '',
         birthDate: '',
         bed: '',
-        sector: SECTORS[0],
+        sector: DEFAULT_SECTORS[0],
         diagnosis: '',
         observation: '',
         treatmentType: TreatmentType.TERAPEUTICO as TreatmentType,
@@ -203,7 +203,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
             <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Setor / Unidade</label>
             <select className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs focus:ring-4 focus:ring-emerald-50 dark:focus:ring-emerald-900/20 focus:border-emerald-500 outline-none shadow-inner appearance-none text-slate-900 dark:text-white"
               value={formData.sector} onChange={e => setFormData({ ...formData, sector: e.target.value })}>
-              {SECTORS.map(s => <option key={s} value={s} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{s}</option>)}
+              {DEFAULT_SECTORS.map(s => <option key={s} value={s} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{s}</option>)}
             </select>
           </div>
           <div className="col-span-1 space-y-1.5">

@@ -2,7 +2,7 @@
 import React from 'react';
 import { LogOut, Settings, ShieldCheck, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
 import { UserRole, Patient, InfectoStatus, AntibioticStatus } from '../types';
-import { MENU_ITEMS } from '../constants';
+import { getMenuItems } from '../constants';
 
 interface SidebarProps {
   activeTab: string;
@@ -15,6 +15,7 @@ interface SidebarProps {
   setIsCollapsed: (val: boolean) => void;
   isMobileOpen: boolean;
   setIsMobileOpen: (val: boolean) => void;
+  activeSectors: string[];
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -27,7 +28,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   setIsCollapsed,
   isMobileOpen,
-  setIsMobileOpen
+  setIsMobileOpen,
+  activeSectors
 }) => {
   const isVisualizer = role === UserRole.VISUALIZADOR;
 
@@ -37,6 +39,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     p.sector !== 'Centro Cirúrgico' &&
     p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)
   ).length;
+
+  const menuItems = getMenuItems(activeSectors);
 
   return (
     <div className={`
@@ -57,7 +61,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <nav className="flex-1 overflow-y-auto px-2 py-4 custom-scrollbar space-y-1">
-        {MENU_ITEMS.map((item) => {
+        {menuItems.map((item) => {
           const isActive = activeTab === item.id;
 
           return (

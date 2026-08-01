@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { MedicationCategory } from './types';
 
-export const SECTORS = [
+export const DEFAULT_SECTORS = [
   'Clínica Médica',
   'Clínica Cirúrgica',
   'Obstetrícia',
@@ -143,7 +143,7 @@ export const MEDICATION_LISTS: Record<MedicationCategory, string[]> = {
 
 export const ANTIBIOTICS_LIST = Object.keys(DDD_MAP);
 
-export const MENU_ITEMS = [
+export const DEFAULT_MENU_ITEMS = [
   { id: 'inicio', label: 'Início', icon: <Home size={20} />, color: 'bg-[#14b8a6]' },
   { id: 'cadastro', label: 'Cadastrar Paciente', icon: <UserPlus size={20} />, color: 'bg-[#10b981]' },
   { id: 'infectologia', label: 'Infectologia', icon: <ShieldCheck size={20} />, color: 'bg-[#059669]' },
@@ -160,3 +160,25 @@ export const MENU_ITEMS = [
   { id: 'finalizados', label: 'Painel Finalizados', icon: <CheckSquare size={20} />, color: 'bg-[#475569]' },
   { id: 'relatorios', label: 'Relatórios', icon: <FileText size={20} />, color: 'bg-[#3b82f6]' },
 ];
+
+export const getMenuItems = (activeSectors: string[]) => {
+  const baseItems = [
+    { id: 'inicio', label: 'Início', icon: <Home size={20} />, color: 'bg-[#14b8a6]' },
+    { id: 'cadastro', label: 'Cadastrar Paciente', icon: <UserPlus size={20} />, color: 'bg-[#10b981]' },
+    { id: 'infectologia', label: 'Infectologia', icon: <ShieldCheck size={20} />, color: 'bg-[#059669]' }
+  ];
+
+  const sectorItems = activeSectors.map(sector => {
+    const existing = DEFAULT_MENU_ITEMS.find(item => item.id === sector);
+    if (existing) return existing;
+    // Default config for new sectors
+    return { id: sector, label: sector, icon: <Activity size={20} />, color: 'bg-[#3b82f6]' };
+  });
+
+  const footerItems = [
+    { id: 'finalizados', label: 'Painel Finalizados', icon: <CheckSquare size={20} />, color: 'bg-[#475569]' },
+    { id: 'relatorios', label: 'Relatórios', icon: <FileText size={20} />, color: 'bg-[#3b82f6]' },
+  ];
+
+  return [...baseItems, ...sectorItems, ...footerItems];
+};

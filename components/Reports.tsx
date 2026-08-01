@@ -7,7 +7,7 @@ import {
   TrendingDown, BarChart3, PieChart, Users, Syringe, Hospital, BadgeCheck, AlertCircle, Search, HelpCircle
 } from 'lucide-react';
 import { Patient, AntibioticStatus, IncisionRelation, TreatmentType, InfectoStatus, MedicationCategory } from '../types';
-import { DDD_MAP, SECTORS, ANTIBIOTICS_LIST } from '../constants';
+import { DDD_MAP, DEFAULT_SECTORS, ANTIBIOTICS_LIST } from '../constants';
 import { calculateEndDate, getDaysRemaining, getATBDay } from '../utils';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -471,7 +471,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
               <label className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest">Setor</label>
               <select className="w-full bg-slate-800 dark:bg-slate-950 text-white px-5 py-3 rounded-2xl text-sm font-bold outline-none border border-slate-700 dark:border-slate-800 focus:border-blue-500 transition-all appearance-none" value={sectorFilter} onChange={e => setSectorFilter(e.target.value)}>
                 <option>Todos os Setores</option>
-                {SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
+                {DEFAULT_SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div className="space-y-2 text-left">
