@@ -26,7 +26,6 @@ export const SECTORS = [
   'Pronto Socorro',
   'Ambulatório',
   'UTI Adulto',
-  'UTI Neonatal',
   'Centro Cirúrgico'
 ];
 
