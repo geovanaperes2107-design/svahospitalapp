@@ -47,10 +47,18 @@ export const getDaysRemaining = (endDate: string): number => {
   return differenceInDays(end, today);
 };
 
-export const getATBDay = (startDate: string): number => {
+export const getATBDay = (startDate: string, frequency?: string): number => {
   const today = startOfDay(new Date());
   const start = startOfDay(parseAnyDate(startDate));
-  return Math.max(1, differenceInDays(today, start) + 1);
+  const diff = differenceInDays(today, start);
+  const freqUpper = (frequency || '').toUpperCase();
+  const isFractionalFreq = freqUpper.includes('4/4') || freqUpper.includes('6/6') || freqUpper.includes('8/8') || freqUpper.includes('12/12');
+
+  if (isFractionalFreq) {
+    return Math.max(0, diff);
+  } else {
+    return Math.max(1, diff + 1);
+  }
 };
 
 export const getStatusColor = (daysRemaining: number) => {

@@ -434,7 +434,10 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
 
           const start = startOfDay(parseAnyDate(atb.startDate));
           const adjustedToday = startOfDay(automationNow);
-          const calculatedDay = Math.max(1, differenceInDays(adjustedToday, start) + 1);
+          const diff = differenceInDays(adjustedToday, start);
+          const freqUpper = (atb.frequency || '').toUpperCase();
+          const isFractionalFreq = freqUpper.includes('4/4') || freqUpper.includes('6/6') || freqUpper.includes('8/8') || freqUpper.includes('12/12');
+          const calculatedDay = isFractionalFreq ? Math.max(0, diff) : Math.max(1, diff + 1);
 
           let displayDay = calculatedDay + (atb.cycleOffset || 0);
 
