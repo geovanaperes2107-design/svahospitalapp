@@ -294,18 +294,21 @@ const App: React.FC = () => {
     return `${parts[2]}-${parts[1]}-${parts[0]}`;
   };
 
-  // --- SUPABASE FETCH & SUBSCRIPTION ---
   const fetchPatients = useCallback(async () => {
     setIsLoading(true);
-    const { data, error } = await supabase.from('pacientes').select('*');
-    if (error) {
-      console.error('Error fetching patients:', error);
-      setSystemAlert({ message: 'Erro ao carregar pacientes do servidor.', type: 'warning' });
-    } else {
-      setPatients(data.map(mapDbToPatient));
-      setLastSaved(new Date());
+    try {
+      const { data, error } = await supabase.from('pacientes').select('*');
+      if (error) {
+        console.warn('Supabase fetch notice:', error);
+      } else if (data) {
+        setPatients(data.map(mapDbToPatient));
+        setLastSaved(new Date());
+      }
+    } catch (err) {
+      console.warn('Fetch patients exception:', err);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   const fetchSettings = useCallback(async () => {
