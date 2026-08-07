@@ -106,34 +106,32 @@ const Sidebar: React.FC<SidebarProps> = ({
           );
         })}
 
-        {role === UserRole.ADMINISTRADOR && (
-          <div className="pt-4 mt-4 border-t border-white/5">
-            <button
-              onClick={() => {
-                setActiveTab('usuarios');
-                if (window.innerWidth < 768) setIsMobileOpen(false);
-              }}
-              title={isCollapsed ? 'Configurações' : ''}
-              className={`
-                  w-full flex items-center px-3 py-3 rounded-xl text-[11px] font-black transition-all duration-200 group relative
-                  ${activeTab === 'usuarios'
-                  ? 'bg-slate-700 text-white shadow-lg'
-                  : 'text-slate-400 hover:bg-white/5 hover:text-white'}
-                  ${isCollapsed ? 'justify-center' : 'space-x-3'}
-                `}
-            >
-              <div className={`${activeTab === 'usuarios' ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'} transition-colors shrink-0`}>
-                <Settings size={18} />
-              </div>
-              {!isCollapsed && (
-                <span className="tracking-tight uppercase animate-in fade-in slide-in-from-left-2 duration-300">Configurações</span>
-              )}
-              {activeTab === 'usuarios' && isCollapsed && (
-                <div className="absolute right-0 w-1 h-6 bg-white rounded-l-full" />
-              )}
-            </button>
-          </div>
-        )}
+        <div className="pt-4 mt-4 border-t border-white/5">
+          <button
+            onClick={() => {
+              setActiveTab('usuarios');
+              if (window.innerWidth < 768) setIsMobileOpen(false);
+            }}
+            title={isCollapsed ? 'Configurações' : ''}
+            className={`
+                w-full flex items-center px-3 py-3 rounded-xl text-[11px] font-black transition-all duration-200 group relative
+                ${activeTab === 'usuarios'
+                ? 'bg-slate-700 text-white shadow-lg'
+                : 'text-slate-400 hover:bg-white/5 hover:text-white'}
+                ${isCollapsed ? 'justify-center' : 'space-x-3'}
+              `}
+          >
+            <div className={`${activeTab === 'usuarios' ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'} transition-colors shrink-0`}>
+              <Settings size={18} />
+            </div>
+            {!isCollapsed && (
+              <span className="tracking-tight uppercase animate-in fade-in slide-in-from-left-2 duration-300">Configurações</span>
+            )}
+            {activeTab === 'usuarios' && isCollapsed && (
+              <div className="absolute right-0 w-1 h-6 bg-white rounded-l-full" />
+            )}
+          </button>
+        </div>
       </nav>
 
       <div className="p-2 border-t border-white/5 space-y-1">

@@ -220,15 +220,17 @@ const UserManagement: React.FC<UserManagementProps> = ({
             <div className="space-y-2">
                 <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1 tracking-widest opacity-60">Escolha uma seção:</p>
                 <div className="flex gap-1 bg-slate-100 dark:bg-slate-900/50 p-1.5 rounded-[22px] w-fit border border-slate-200 dark:border-slate-800">
-                    <button
-                        onClick={() => setActiveTab('users')}
-                        className={`px-6 py-2.5 rounded-[16px] text-[10px] font-black uppercase transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'users'
-                            ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-500 shadow-sm'
-                            : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
-                            }`}
-                    >
-                        <Shield size={14} /> Usuários
-                    </button>
+                    {currentUser.role === UserRole.ADMINISTRADOR && (
+                        <button
+                            onClick={() => setActiveTab('users')}
+                            className={`px-6 py-2.5 rounded-[16px] text-[10px] font-black uppercase transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'users'
+                                ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-500 shadow-sm'
+                                : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
+                                }`}
+                        >
+                            <Shield size={14} /> Usuários
+                        </button>
+                    )}
                     <button
                         onClick={() => setActiveTab('alerts')}
                         className={`px-6 py-2.5 rounded-[16px] text-[10px] font-black uppercase transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'alerts'
@@ -245,17 +247,19 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
                             }`}
                     >
-                        <Building2 size={14} /> Parâmetros
+                        <Building2 size={14} /> Parâmetros & Fundo
                     </button>
-                    <button
-                        onClick={() => setActiveTab('paineis')}
-                        className={`px-6 py-2.5 rounded-[16px] text-[10px] font-black uppercase transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'paineis'
-                            ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-500 shadow-sm'
-                            : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
-                            }`}
-                    >
-                        <LayoutGrid size={14} /> Painéis
-                    </button>
+                    {currentUser.role === UserRole.ADMINISTRADOR && (
+                        <button
+                            onClick={() => setActiveTab('paineis')}
+                            className={`px-6 py-2.5 rounded-[16px] text-[10px] font-black uppercase transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'paineis'
+                                ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-500 shadow-sm'
+                                : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
+                                }`}
+                        >
+                            <LayoutGrid size={14} /> Painéis
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -460,24 +464,47 @@ const UserManagement: React.FC<UserManagementProps> = ({
                         </div>
                     </div>
 
-                    <div className="bg-slate-900 p-8 rounded-3xl text-white space-y-6 relative overflow-hidden group">
+                    <div className="bg-slate-900 p-6 md:p-8 rounded-3xl text-white space-y-6 relative overflow-hidden group border border-slate-800">
                         <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
-                            <AlertCircle size={120} />
+                            <AlertCircle size={140} />
                         </div>
-                        <div className="space-y-2 relative">
-                            <h3 className="text-xl font-black uppercase leading-tight">Sobre os Alertas</h3>
-                            <p className="text-slate-400 text-xs font-medium leading-relaxed">
-                                As rotinas de notificação ajudam a manter a equipe <span className="text-emerald-400">alinhada em tempo real</span>.
-                                O reset de avaliações acontece diariamente no horário definido, permitindo que novas avaliações sejam registradas para o ciclo de 24h.
+                        <div className="space-y-3 relative">
+                            <div className="flex items-center gap-2 text-emerald-400">
+                                <Info size={22} />
+                                <h3 className="text-lg font-black uppercase tracking-tight">O que significa cada Alerta?</h3>
+                            </div>
+                            <p className="text-slate-300 text-xs font-medium leading-relaxed">
+                                Entenda como funcionam os parâmetros de notificação do sistema:
                             </p>
                         </div>
-                        <div className="flex items-center gap-4 relative">
-                            <div className="flex -space-x-2">
-                                {[1, 2, 3].map(i => (
-                                    <div key={i} className="w-8 h-8 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-[10px] font-black">{i}</div>
-                                ))}
+
+                        <div className="space-y-3 relative text-xs">
+                            <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                                <p className="font-black text-emerald-400 uppercase text-[10px] flex items-center gap-1.5">
+                                    <Clock size={13} /> Reset de Avaliação (Geral & UTI)
+                                </p>
+                                <p className="text-slate-300 text-[11px] leading-relaxed">
+                                    No horário definido (ex: <strong>07:30</strong> nas Clínicas e <strong>22:00</strong> na UTI), o sistema <strong>desmarca automaticamente o botão 'AVALIADO'</strong> de todos os pacientes ativos. Isso obriga a equipe médica e a CCIH a realizar uma nova checagem e reavaliação diária em cada ciclo de 24h.
+                                </p>
                             </div>
-                            <p className="text-[9px] font-black uppercase text-slate-500 tracking-widest">Métricas de Engajamento</p>
+
+                            <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                                <p className="font-black text-purple-400 uppercase text-[10px] flex items-center gap-1.5">
+                                    <ShieldCheck size={13} /> Trava de 24h (Dia ATB)
+                                </p>
+                                <p className="text-slate-300 text-[11px] leading-relaxed">
+                                    Se um profissional alterar manualmente o dia do antibiótico na caixa do paciente (ex: avançar de D1 para D3), a trava impede que o sistema incremente o dia novamente na meia-noite do mesmo dia, evitando pular dias acidentalmente.
+                                </p>
+                            </div>
+
+                            <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                                <p className="font-black text-amber-400 uppercase text-[10px] flex items-center gap-1.5">
+                                    <Bell size={13} /> Alertas de Pendentes & Vencimento
+                                </p>
+                                <p className="text-slate-300 text-[11px] leading-relaxed">
+                                    Notificam em destaque os pacientes em uso de antibiótico que ainda não receberam avaliação no dia ou cujos tratamentos atingiram a duração limite programada (ex: D7 de 7D).
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
