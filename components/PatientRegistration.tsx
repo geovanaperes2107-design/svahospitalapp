@@ -8,16 +8,19 @@ import { calculateEndDate } from '../utils';
 interface PatientRegistrationProps {
   onAdd: (patient: Patient) => void;
   onCancel: () => void;
+  activeSectors?: string[];
 }
 
-const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCancel }) => {
+const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCancel, activeSectors }) => {
+  const sectorsToDisplay = activeSectors && activeSectors.length > 0 ? activeSectors : DEFAULT_SECTORS;
+
   const [formData, setFormData] = useState(() => {
     const draft = localStorage.getItem('sva_patient_registration_draft');
     return draft ? JSON.parse(draft).formData : {
       name: '',
       birthDate: '',
       bed: '',
-      sector: DEFAULT_SECTORS[0],
+      sector: sectorsToDisplay[0],
       diagnosis: '',
       observation: '',
       treatmentType: TreatmentType.TERAPEUTICO,
@@ -142,7 +145,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
         name: '',
         birthDate: '',
         bed: '',
-        sector: DEFAULT_SECTORS[0],
+        sector: sectorsToDisplay[0],
         diagnosis: '',
         observation: '',
         treatmentType: TreatmentType.TERAPEUTICO as TreatmentType,
@@ -203,7 +206,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
             <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Setor / Unidade</label>
             <select className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs focus:ring-4 focus:ring-emerald-50 dark:focus:ring-emerald-900/20 focus:border-emerald-500 outline-none shadow-inner appearance-none text-slate-900 dark:text-white"
               value={formData.sector} onChange={e => setFormData({ ...formData, sector: e.target.value })}>
-              {DEFAULT_SECTORS.map(s => <option key={s} value={s} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{s}</option>)}
+              {sectorsToDisplay.map(s => <option key={s} value={s} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{s}</option>)}
             </select>
           </div>
           <div className="col-span-1 space-y-1.5">
@@ -261,7 +264,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
                     <select required className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs outline-none focus:border-emerald-500 shadow-sm text-slate-900 dark:text-white"
                       value={atb.name} onChange={e => updateAtb(idx, { name: e.target.value })}>
                       <option value="" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Selecione o medicamento...</option>
-                      {atb.category && MEDICATION_LISTS[atb.category].map(a => <option key={a} value={a} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{a}</option>)}
+                      {(MEDICATION_LISTS[atb.category as MedicationCategory] || MEDICATION_LISTS[MedicationCategory.ANTIMICROBIANO]).map(a => <option key={a} value={a} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{a}</option>)}
                     </select>
                   </div>
                   <div className="space-y-1.5">
@@ -279,7 +282,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500">Duração (Dias)</label>
                     <select disabled={formData.sector === 'Centro Cirúrgico'} className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs outline-none disabled:bg-slate-50 dark:disabled:bg-slate-900/50 shadow-sm text-slate-900 dark:text-white"
-                      value={atb.durationDays} onChange={e => updateAtb(idx, { durationDays: e.target.value as any })}>
+                      value={atb.durationDays} onChange={e => updateAtb(idx, { durationDays: parseInt(e.target.value, 10) || 7 })}>
                       {DURATION_OPTIONS.map(d => <option key={d} value={d} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{d}</option>)}
                     </select>
                   </div>

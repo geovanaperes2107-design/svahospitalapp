@@ -594,7 +594,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               setActiveSectors={setActiveSectors}
             />
           )}
-          {activeTab === 'cadastro' && <div className="max-w-4xl mx-auto"><PatientRegistration onAdd={(p) => { onAddPatient(p); setActiveTab('inicio'); }} onCancel={() => setActiveTab('inicio')} /></div>}
+          {activeTab === 'cadastro' && <div className="max-w-4xl mx-auto"><PatientRegistration activeSectors={activeSectors} onAdd={(p) => { onAddPatient(p); setActiveTab('inicio'); }} onCancel={() => setActiveTab('inicio')} /></div>}
           {activeTab === 'relatorios' && <Reports patients={patients} initialReportTab={reportInitialTab} atbCosts={atbCosts} setAtbCosts={setAtbCosts} patientDays={patientDays} setPatientDays={setPatientDays} />}
 
 
