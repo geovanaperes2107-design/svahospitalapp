@@ -510,20 +510,33 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="max-w-7xl mx-auto space-y-3 animate-in fade-in text-left">
               <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
                 {[
-                  { label: 'Pacientes Ativos', value: stats.ativos, icon: <Users size={20} />, color: 'text-blue-600' },
-                  { label: 'Total de ATBs', value: stats.totalATBs, icon: <AlertTriangle size={20} />, color: 'text-emerald-600' },
-                  { label: 'Aguardando Aval.', value: unevaluatedPatients.length, icon: <Clock size={20} />, color: 'text-orange-500' },
-                  { label: 'Novos Ciclos', value: stats.novos, icon: <Clock size={20} />, color: 'text-blue-500' },
-                  { label: 'Adesão', value: `${stats.adesao}%`, icon: <CheckCircle2 size={20} />, color: 'text-indigo-500' },
-                  { label: 'Encerrados', value: stats.finalizados, icon: <ClipboardList size={20} />, color: 'text-slate-600' },
+                  { label: 'Pacientes Ativos', value: stats.ativos, icon: <Users size={20} />, color: 'text-blue-600', tab: null },
+                  { label: 'Total de ATBs', value: stats.totalATBs, icon: <AlertTriangle size={20} />, color: 'text-emerald-600', tab: null },
+                  { label: 'Aguardando Aval.', value: unevaluatedPatients.length, icon: <Clock size={20} />, color: 'text-orange-500', tab: 'pendentes' },
+                  { label: 'Novos Ciclos', value: stats.novos, icon: <Clock size={20} />, color: 'text-blue-500', tab: null },
+                  { label: 'Adesão', value: `${stats.adesao}%`, icon: <CheckCircle2 size={20} />, color: 'text-indigo-500', tab: null },
+                  { label: 'Encerrados', value: stats.finalizados, icon: <ClipboardList size={20} />, color: 'text-slate-600', tab: 'finalizados' },
                 ].map((s, i) => (
-                  <div key={i} className="bg-white dark:bg-slate-800 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all flex flex-col justify-between h-32 group">
+                  <div
+                    key={i}
+                    onClick={() => {
+                      if (s.tab) {
+                        setReportInitialTab(s.tab);
+                        setActiveTab('relatorios');
+                      }
+                    }}
+                    className={`bg-white dark:bg-slate-800 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all flex flex-col justify-between h-32 group ${s.tab ? 'cursor-pointer hover:border-orange-300 dark:hover:border-orange-500/50 hover:scale-[1.02]' : ''}`}
+                    title={s.tab ? `Clique para abrir o relatório de ${s.label}` : ''}
+                  >
                     <div className="flex justify-between items-start">
                       <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">{s.label}</p>
                       <div className={`p-1.5 rounded-xl bg-slate-50 dark:bg-slate-900/50 ${s.color} group-hover:scale-110 transition-transform`}>{React.cloneElement(s.icon as React.ReactElement, { size: 18 })}</div>
                     </div>
-                    <div>
+                    <div className="flex items-center justify-between">
                       <p className="text-3xl font-black text-slate-900 dark:text-white leading-none tracking-tight">{s.value}</p>
+                      {s.tab && (
+                        <span className="text-[8px] font-black uppercase text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">Ver lista ➔</span>
+                      )}
                     </div>
                   </div>
                 ))}
