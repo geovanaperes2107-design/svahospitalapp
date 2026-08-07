@@ -17,8 +17,20 @@ interface UserManagementProps {
     setHospitalName: (name: string) => void;
     bgImage: string;
     setBgImage: (img: string) => void;
+    bgFit?: string;
+    setBgFit?: (val: string) => void;
+    bgPosition?: string;
+    setBgPosition?: (val: string) => void;
+    bgOpacity?: string;
+    setBgOpacity?: (val: string) => void;
     loginBgImage: string;
     setLoginBgImage: (img: string) => void;
+    loginBgFit?: string;
+    setLoginBgFit?: (val: string) => void;
+    loginBgPosition?: string;
+    setLoginBgPosition?: (val: string) => void;
+    loginBgOpacity?: string;
+    setLoginBgOpacity?: (val: string) => void;
     reportEmail: string;
     setReportEmail: (email: string) => void;
     atbCosts: Record<string, number>;
@@ -50,8 +62,10 @@ interface UserManagementProps {
 }
 
 const UserManagement: React.FC<UserManagementProps> = ({
-    users, currentUser, patients = [], onAddUser, onUpdateUser, onDeleteUser, hospitalName, setHospitalName, bgImage,
-    setBgImage, loginBgImage, setLoginBgImage, reportEmail, setReportEmail, atbCosts, setAtbCosts,
+    users, currentUser, patients = [], onAddUser, onUpdateUser, onDeleteUser, hospitalName, setHospitalName,
+    bgImage, setBgImage, bgFit = 'cover', setBgFit, bgPosition = 'center', setBgPosition, bgOpacity = '0.3', setBgOpacity,
+    loginBgImage, setLoginBgImage, loginBgFit = 'cover', setLoginBgFit, loginBgPosition = 'center', setLoginBgPosition, loginBgOpacity = '0.4', setLoginBgOpacity,
+    reportEmail, setReportEmail, atbCosts, setAtbCosts,
     patientDays, setPatientDays, configNotifyReset, setConfigNotifyReset, configNotifyPending,
     setConfigNotifyPending, configNotifyExpired, setConfigNotifyExpired, configResetTime,
     setConfigResetTime, configResetTimeUTI, setConfigResetTimeUTI, configPendingTimeClinicas, setConfigPendingTimeClinicas,
@@ -503,17 +517,34 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                 <ImageIcon size={20} />
                             </div>
                             <div>
-                                <h3 className="text-sm font-black uppercase text-slate-800 dark:text-white">Identidade Visual</h3>
-                                <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Personalize as telas do sistema</p>
+                                <h3 className="text-sm font-black uppercase text-slate-800 dark:text-white">Identidade Visual & Imagens de Fundo</h3>
+                                <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Personalize imagens, enquadramento, alinhamento e opacidade</p>
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1 tracking-widest">Painel de Fundo</label>
-                                <button onClick={() => bgInputRef.current?.click()} className="w-full aspect-[4/3] rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center relative overflow-hidden group hover:border-purple-500 transition-all bg-slate-50 dark:bg-slate-900/50">
-                                    {bgImage ? <img src={bgImage} className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-110 transition-transform duration-500" /> : <Monitor size={24} className="text-slate-300 dark:text-slate-600" />}
-                                    <div className="z-10 bg-white/80 dark:bg-slate-800/80 px-3 py-1 rounded-lg shadow-sm border border-white dark:border-slate-700">
-                                        <span className="text-[8px] font-black uppercase text-slate-600 dark:text-slate-300">Alterar</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Painel de Fundo */}
+                            <div className="space-y-3 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Painel Principal</label>
+                                    {bgImage && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setBgImage('')}
+                                            className="text-[9px] font-black text-red-500 hover:text-red-700 uppercase"
+                                        >
+                                            Remover Imagem
+                                        </button>
+                                    )}
+                                </div>
+                                <button onClick={() => bgInputRef.current?.click()} className="w-full h-32 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center relative overflow-hidden group hover:border-purple-500 transition-all bg-white dark:bg-slate-800">
+                                    {bgImage ? (
+                                        <img src={bgImage} className="absolute inset-0 w-full h-full transition-transform duration-500" style={{ objectFit: bgFit as any, objectPosition: bgPosition }} />
+                                    ) : (
+                                        <Monitor size={24} className="text-slate-300 dark:text-slate-600" />
+                                    )}
+                                    <div className="z-10 bg-white/90 dark:bg-slate-800/90 px-3 py-1.5 rounded-xl shadow-md border border-white dark:border-slate-700 flex items-center gap-1.5">
+                                        <Upload size={12} className="text-purple-600 dark:text-purple-400" />
+                                        <span className="text-[9px] font-black uppercase text-slate-700 dark:text-slate-200">{bgImage ? 'Alterar Imagem' : 'Carregar Imagem'}</span>
                                     </div>
                                     <input type="file" ref={bgInputRef} className="hidden" accept="image/*" onChange={e => {
                                         const file = e.target.files?.[0];
@@ -524,13 +555,76 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                         }
                                     }} />
                                 </button>
+
+                                <div className="grid grid-cols-2 gap-2 text-left">
+                                    <div className="space-y-1">
+                                        <label className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">Enquadramento</label>
+                                        <select
+                                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl text-[10px] font-black outline-none focus:border-purple-500 text-slate-800 dark:text-white"
+                                            value={bgFit}
+                                            onChange={e => setBgFit && setBgFit(e.target.value)}
+                                        >
+                                            <option value="cover">Preencher Tela (Cover)</option>
+                                            <option value="contain">Ajustar Inteira (Contain)</option>
+                                            <option value="fill">Esticar (Fill)</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">Posicionamento</label>
+                                        <select
+                                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl text-[10px] font-black outline-none focus:border-purple-500 text-slate-800 dark:text-white"
+                                            value={bgPosition}
+                                            onChange={e => setBgPosition && setBgPosition(e.target.value)}
+                                        >
+                                            <option value="center">Centro</option>
+                                            <option value="top">Topo</option>
+                                            <option value="bottom">Base</option>
+                                            <option value="left">Esquerda</option>
+                                            <option value="right">Direita</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1 text-left">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">Escurecimento Fundo</label>
+                                        <span className="text-[9px] font-black text-purple-600 dark:text-purple-400">{Math.round(Number(bgOpacity) * 100)}%</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0.05"
+                                        max="0.9"
+                                        step="0.05"
+                                        className="w-full accent-purple-600"
+                                        value={bgOpacity}
+                                        onChange={e => setBgOpacity && setBgOpacity(e.target.value)}
+                                    />
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1 tracking-widest">Tela de Login</label>
-                                <button onClick={() => loginBgInputRef.current?.click()} className="w-full aspect-[4/3] rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center relative overflow-hidden group hover:border-purple-500 transition-all bg-slate-50 dark:bg-slate-900/50">
-                                    {loginBgImage ? <img src={loginBgImage} className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-110 transition-transform duration-500" /> : <Key size={24} className="text-slate-300 dark:text-slate-600" />}
-                                    <div className="z-10 bg-white/80 dark:bg-slate-800/80 px-3 py-1 rounded-lg shadow-sm border border-white dark:border-slate-700">
-                                        <span className="text-[8px] font-black uppercase text-slate-600 dark:text-slate-300">Alterar</span>
+
+                            {/* Tela de Login */}
+                            <div className="space-y-3 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Tela de Login</label>
+                                    {loginBgImage && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setLoginBgImage('')}
+                                            className="text-[9px] font-black text-red-500 hover:text-red-700 uppercase"
+                                        >
+                                            Remover Imagem
+                                        </button>
+                                    )}
+                                </div>
+                                <button onClick={() => loginBgInputRef.current?.click()} className="w-full h-32 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center relative overflow-hidden group hover:border-purple-500 transition-all bg-white dark:bg-slate-800">
+                                    {loginBgImage ? (
+                                        <img src={loginBgImage} className="absolute inset-0 w-full h-full transition-transform duration-500" style={{ objectFit: loginBgFit as any, objectPosition: loginBgPosition }} />
+                                    ) : (
+                                        <Key size={24} className="text-slate-300 dark:text-slate-600" />
+                                    )}
+                                    <div className="z-10 bg-white/90 dark:bg-slate-800/90 px-3 py-1.5 rounded-xl shadow-md border border-white dark:border-slate-700 flex items-center gap-1.5">
+                                        <Upload size={12} className="text-purple-600 dark:text-purple-400" />
+                                        <span className="text-[9px] font-black uppercase text-slate-700 dark:text-slate-200">{loginBgImage ? 'Alterar Imagem' : 'Carregar Imagem'}</span>
                                     </div>
                                     <input type="file" ref={loginBgInputRef} className="hidden" accept="image/*" onChange={e => {
                                         const file = e.target.files?.[0];
@@ -541,6 +635,51 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                         }
                                     }} />
                                 </button>
+
+                                <div className="grid grid-cols-2 gap-2 text-left">
+                                    <div className="space-y-1">
+                                        <label className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">Enquadramento</label>
+                                        <select
+                                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl text-[10px] font-black outline-none focus:border-purple-500 text-slate-800 dark:text-white"
+                                            value={loginBgFit}
+                                            onChange={e => setLoginBgFit && setLoginBgFit(e.target.value)}
+                                        >
+                                            <option value="cover">Preencher Tela (Cover)</option>
+                                            <option value="contain">Ajustar Inteira (Contain)</option>
+                                            <option value="fill">Esticar (Fill)</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">Posicionamento</label>
+                                        <select
+                                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl text-[10px] font-black outline-none focus:border-purple-500 text-slate-800 dark:text-white"
+                                            value={loginBgPosition}
+                                            onChange={e => setLoginBgPosition && setLoginBgPosition(e.target.value)}
+                                        >
+                                            <option value="center">Centro</option>
+                                            <option value="top">Topo</option>
+                                            <option value="bottom">Base</option>
+                                            <option value="left">Esquerda</option>
+                                            <option value="right">Direita</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1 text-left">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">Escurecimento Fundo</label>
+                                        <span className="text-[9px] font-black text-purple-600 dark:text-purple-400">{Math.round(Number(loginBgOpacity) * 100)}%</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0.05"
+                                        max="0.9"
+                                        step="0.05"
+                                        className="w-full accent-purple-600"
+                                        value={loginBgOpacity}
+                                        onChange={e => setLoginBgOpacity && setLoginBgOpacity(e.target.value)}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>

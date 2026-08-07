@@ -33,8 +33,20 @@ interface DashboardProps {
   setHospitalName: (name: string) => void;
   bgImage: string;
   setBgImage: (img: string) => void;
+  bgFit?: string;
+  setBgFit?: (val: string) => void;
+  bgPosition?: string;
+  setBgPosition?: (val: string) => void;
+  bgOpacity?: string;
+  setBgOpacity?: (val: string) => void;
   loginBgImage: string;
   setLoginBgImage: (img: string) => void;
+  loginBgFit?: string;
+  setLoginBgFit?: (val: string) => void;
+  loginBgPosition?: string;
+  setLoginBgPosition?: (val: string) => void;
+  loginBgOpacity?: string;
+  setLoginBgOpacity?: (val: string) => void;
   onLogout: () => void;
   onUpdatePatient: (p: Patient) => void;
   onDeletePatient: (id: string) => void;
@@ -81,7 +93,8 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({
-  user, patients, users, hospitalName, setHospitalName, bgImage, setBgImage, loginBgImage, setLoginBgImage,
+  user, patients, users, hospitalName, setHospitalName, bgImage, setBgImage, bgFit, setBgFit, bgPosition, setBgPosition, bgOpacity, setBgOpacity,
+  loginBgImage, setLoginBgImage, loginBgFit, setLoginBgFit, loginBgPosition, setLoginBgPosition, loginBgOpacity, setLoginBgOpacity,
   onLogout, onUpdatePatient, onDeletePatient, onAddPatient, onUpdatePatientsOrder, onBulkAddPatients, onAddUser, onUpdateUser, onDeleteUser,
   lastSaved, reportEmail, setReportEmail, atbCosts, setAtbCosts, patientDays, setPatientDays,
   systemAlert, setSystemAlert, isDarkMode, toggleTheme, configNotifyReset, setConfigNotifyReset,
@@ -434,7 +447,17 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   return (
-    <div className={`flex h-screen w-full transition-colors duration-300 ${isDarkMode ? 'dark bg-[#0f172a] text-slate-100' : 'bg-slate-50 text-slate-900'} overflow-hidden relative`}>
+    <div
+      className={`flex h-screen w-full transition-all duration-500 ${isDarkMode ? 'dark bg-[#0f172a] text-slate-100' : 'bg-slate-50 text-slate-900'} overflow-hidden relative`}
+      style={bgImage ? {
+        backgroundImage: `url(${bgImage})`,
+        backgroundSize: bgFit || 'cover',
+        backgroundPosition: bgPosition || 'center'
+      } : {}}
+    >
+      {bgImage && (
+        <div className="absolute inset-0 bg-slate-950 pointer-events-none transition-opacity z-0" style={{ opacity: bgOpacity !== undefined ? Number(bgOpacity) : 0.3 }}></div>
+      )}
       {/* Sidebar Overlay para Mobile */}
       {isMobileMenuOpen && (
         <div
@@ -563,8 +586,20 @@ const Dashboard: React.FC<DashboardProps> = ({
               setHospitalName={setHospitalName}
               bgImage={bgImage}
               setBgImage={setBgImage}
+              bgFit={bgFit}
+              setBgFit={setBgFit}
+              bgPosition={bgPosition}
+              setBgPosition={setBgPosition}
+              bgOpacity={bgOpacity}
+              setBgOpacity={setBgOpacity}
               loginBgImage={loginBgImage}
               setLoginBgImage={setLoginBgImage}
+              loginBgFit={loginBgFit}
+              setLoginBgFit={setLoginBgFit}
+              loginBgPosition={loginBgPosition}
+              setLoginBgPosition={setLoginBgPosition}
+              loginBgOpacity={loginBgOpacity}
+              setLoginBgOpacity={setLoginBgOpacity}
               reportEmail={reportEmail}
               setReportEmail={setReportEmail}
               atbCosts={atbCosts}

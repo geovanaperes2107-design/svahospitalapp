@@ -5,9 +5,12 @@ import { Lock, Mail, Loader2, AlertCircle, ArrowLeft, KeyRound, Eye, EyeOff } fr
 interface LoginProps {
   onLoginSuccess: () => void;
   bgImage?: string;
+  bgFit?: string;
+  bgPosition?: string;
+  bgOpacity?: string;
 }
 
-const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
+const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPosition, bgOpacity }) => {
   const [emailOrCpf, setEmailOrCpf] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -210,8 +213,18 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-cover bg-center transition-all duration-1000" style={{ backgroundImage: `url(${bgImage || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'})` }}>
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+    <div
+      className="min-h-screen flex items-center justify-center transition-all duration-700 relative overflow-hidden"
+      style={{
+        backgroundImage: `url(${bgImage || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'})`,
+        backgroundSize: bgFit || 'cover',
+        backgroundPosition: bgPosition || 'center'
+      }}
+    >
+      <div
+        className="absolute inset-0 bg-black backdrop-blur-sm transition-opacity"
+        style={{ opacity: bgOpacity !== undefined ? Number(bgOpacity) : 0.4 }}
+      ></div>
 
       <div className="relative bg-white/95 backdrop-blur-md p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md border border-white/20 animate-in fade-in zoom-in duration-500">
         <div className="text-center mb-8">

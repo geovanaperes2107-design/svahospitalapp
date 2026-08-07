@@ -33,7 +33,14 @@ const App: React.FC = () => {
 
   const [hospitalName, setHospitalNameState] = useState(() => localStorage.getItem('sva_hospital_name') || 'Hospital Estadual de São Luis de Montes Belos - HSLMB');
   const [bgImage, setBgImageState] = useState(() => localStorage.getItem('sva_bg_image') || '');
+  const [bgFit, setBgFitState] = useState(() => localStorage.getItem('sva_bg_fit') || 'cover');
+  const [bgPosition, setBgPositionState] = useState(() => localStorage.getItem('sva_bg_position') || 'center');
+  const [bgOpacity, setBgOpacityState] = useState(() => localStorage.getItem('sva_bg_opacity') || '0.3');
+
   const [loginBgImage, setLoginBgImageState] = useState(() => localStorage.getItem('sva_login_bg_image') || '');
+  const [loginBgFit, setLoginBgFitState] = useState(() => localStorage.getItem('sva_login_bg_fit') || 'cover');
+  const [loginBgPosition, setLoginBgPositionState] = useState(() => localStorage.getItem('sva_login_bg_position') || 'center');
+  const [loginBgOpacity, setLoginBgOpacityState] = useState(() => localStorage.getItem('sva_login_bg_opacity') || '0.4');
   const [reportEmail, setReportEmailState] = useState(() => localStorage.getItem('sva_report_email') || '');
   const [patientDays, setPatientDaysState] = useState(() => parseInt(localStorage.getItem('sva_patient_days') || '1200'));
   const [atbCosts, setAtbCostsState] = useState<Record<string, number>>(() =>
@@ -66,7 +73,14 @@ const App: React.FC = () => {
 
   const setHospitalName = (val: string) => { setHospitalNameState(val); saveSetting('hospital_name', val, 'sva_hospital_name'); };
   const setBgImage = (val: string) => { setBgImageState(val); saveSetting('bg_image', val, 'sva_bg_image'); };
+  const setBgFit = (val: string) => { setBgFitState(val); saveSetting('bg_fit', val, 'sva_bg_fit'); };
+  const setBgPosition = (val: string) => { setBgPositionState(val); saveSetting('bg_position', val, 'sva_bg_position'); };
+  const setBgOpacity = (val: string) => { setBgOpacityState(val); saveSetting('bg_opacity', val, 'sva_bg_opacity'); };
+
   const setLoginBgImage = (val: string) => { setLoginBgImageState(val); saveSetting('login_bg_image', val, 'sva_login_bg_image'); };
+  const setLoginBgFit = (val: string) => { setLoginBgFitState(val); saveSetting('login_bg_fit', val, 'sva_login_bg_fit'); };
+  const setLoginBgPosition = (val: string) => { setLoginBgPositionState(val); saveSetting('login_bg_position', val, 'sva_login_bg_position'); };
+  const setLoginBgOpacity = (val: string) => { setLoginBgOpacityState(val); saveSetting('login_bg_opacity', val, 'sva_login_bg_opacity'); };
   const setReportEmail = (val: string) => { setReportEmailState(val); saveSetting('report_email', val, 'sva_report_email'); };
   const setPatientDays = (val: number) => { setPatientDaysState(val); saveSetting('patient_days', val, 'sva_patient_days'); };
   const setAtbCosts = (val: any) => {
@@ -739,7 +753,7 @@ const App: React.FC = () => {
   }
 
   if (!session) {
-    return <Login onLoginSuccess={fetchPatients} bgImage={loginBgImage} />;
+    return <Login onLoginSuccess={fetchPatients} bgImage={loginBgImage} bgFit={loginBgFit} bgPosition={loginBgPosition} bgOpacity={loginBgOpacity} />;
   }
 
   return (
@@ -750,8 +764,20 @@ const App: React.FC = () => {
       setHospitalName={setHospitalName}
       bgImage={bgImage}
       setBgImage={setBgImage}
+      bgFit={bgFit}
+      setBgFit={setBgFit}
+      bgPosition={bgPosition}
+      setBgPosition={setBgPosition}
+      bgOpacity={bgOpacity}
+      setBgOpacity={setBgOpacity}
       loginBgImage={loginBgImage}
       setLoginBgImage={setLoginBgImage}
+      loginBgFit={loginBgFit}
+      setLoginBgFit={setLoginBgFit}
+      loginBgPosition={loginBgPosition}
+      setLoginBgPosition={setLoginBgPosition}
+      loginBgOpacity={loginBgOpacity}
+      setLoginBgOpacity={setLoginBgOpacity}
       onLogout={handleLogout}
       onUpdatePatient={handleUpdatePatient}
       onDeletePatient={handleDeletePatient}
