@@ -55,8 +55,8 @@ const App: React.FC = () => {
   const [configPendingTimeClinicas, setConfigPendingTimeClinicasState] = useState(() => localStorage.getItem('sva_config_pending_time_clinicas') || '21:30');
   const [configPendingTimeUTI, setConfigPendingTimeUTIState] = useState(() => localStorage.getItem('sva_config_pending_time_uti_alert') || '13:00');
   const [configAtbDayLock, setConfigAtbDayLockState] = useState(() => localStorage.getItem('sva_config_atb_day_lock') !== 'false');
-  const [configAtbDayChangeTime, setConfigAtbDayChangeTimeState] = useState(() => localStorage.getItem('sva_config_atb_day_change_time') || '00:00');
-  const [configAtbDayChangeTimeUTI, setConfigAtbDayChangeTimeUTIState] = useState(() => localStorage.getItem('sva_config_atb_day_change_time_uti') || '00:00');
+  const [configAtbDayChangeTime, setConfigAtbDayChangeTimeState] = useState(() => localStorage.getItem('sva_config_atb_day_change_time') || '07:00');
+  const [configAtbDayChangeTimeUTI, setConfigAtbDayChangeTimeUTIState] = useState(() => localStorage.getItem('sva_config_atb_day_change_time_uti') || '19:00');
   const [activeSectors, setActiveSectorsState] = useState<string[]>(() =>
     safeJsonParse(localStorage.getItem('sva_active_sectors'), DEFAULT_SECTORS)
   );

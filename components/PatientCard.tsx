@@ -418,7 +418,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
       <div className="p-2 space-y-2">
         {antibioticsToDisplay.map((atb) => {
           const isUTI = patient.sector?.includes('UTI');
-          const changeTime = isUTI ? (configAtbDayChangeTimeUTI || '00:00') : (configAtbDayChangeTime || '00:00');
+          const changeTime = isUTI ? (configAtbDayChangeTimeUTI || '19:00') : (configAtbDayChangeTime || '07:00');
           const [h, m] = changeTime.split(':').map(Number);
 
           const shiftDate = (date: Date) => {
