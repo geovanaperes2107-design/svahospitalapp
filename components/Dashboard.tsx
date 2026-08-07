@@ -488,6 +488,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           toggleTheme={toggleTheme}
           isMobileMenuOpen={isMobileMenuOpen}
           setIsMobileMenuOpen={setIsMobileMenuOpen}
+          onOpenSettings={user.role === UserRole.ADMINISTRADOR ? () => setActiveTab('usuarios') : undefined}
         />
 
 

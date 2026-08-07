@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { User as UserIcon, Building2, Moon, Sun, Menu, X } from 'lucide-react';
+import { User as UserIcon, Building2, Moon, Sun, Menu, X, Palette } from 'lucide-react';
 import { User } from '../types';
 
 interface NavbarProps {
@@ -10,6 +10,7 @@ interface NavbarProps {
     toggleTheme: () => void;
     isMobileMenuOpen: boolean;
     setIsMobileMenuOpen: (val: boolean) => void;
+    onOpenSettings?: () => void;
 }
 
 const Navbar: React.FC<NavbarProps> = ({
@@ -18,7 +19,8 @@ const Navbar: React.FC<NavbarProps> = ({
     isDarkMode,
     toggleTheme,
     isMobileMenuOpen,
-    setIsMobileMenuOpen
+    setIsMobileMenuOpen,
+    onOpenSettings
 }) => {
     return (
         <header className="h-20 flex items-center justify-between px-4 md:px-8 border-b border-black/5 bg-white dark:bg-slate-900 shadow-sm no-print transition-colors duration-300">
@@ -45,6 +47,17 @@ const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             <div className="flex items-center space-x-3 md:space-x-6">
+                {onOpenSettings && (
+                    <button
+                        onClick={onOpenSettings}
+                        className="p-2 md:p-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-all flex items-center gap-1"
+                        title="Personalizar Identidade Visual & Fundo"
+                    >
+                        <Palette size={20} />
+                        <span className="hidden lg:inline text-[10px] font-black uppercase">Fundo</span>
+                    </button>
+                )}
+
                 <button
                     onClick={toggleTheme}
                     className={`p-2 md:p-2.5 rounded-xl transition-all ${isDarkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}
