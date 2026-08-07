@@ -71,24 +71,32 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
 
         console.log('Login CPF Lookup debug:', { formattedCpf, digitsOnly });
 
-        // Lookup email by CPF (trying both formatted and unformatted for legacy data)
+        // Lookup email by CPF in profiles first (trying both formatted and unformatted)
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('email')
           .or(`cpf.eq.${digitsOnly},cpf.eq.${formattedCpf}`)
           .maybeSingle();
 
-        if (profileError) {
-          console.error('Database error during CPF lookup:', profileError);
-          throw new Error('Erro ao buscar CPF no banco de dados.');
-        }
+        if (profile) {
+          emailToLogin = profile.email;
+        } else {
+          // If not in profiles, check pre_registrations for pre-registered users doing first-time JIT login
+          const { data: preReg } = await supabase
+            .from('pre_registrations')
+            .select('email')
+            .or(`cpf.eq.${digitsOnly},cpf.eq.${formattedCpf}`)
+            .maybeSingle();
 
-        if (!profile) {
-          console.warn('CPF not found in profiles:', digitsOnly);
-          throw new Error('CPF não encontrado. Verifique os números ou solicite acesso.');
+          if (preReg) {
+            emailToLogin = preReg.email;
+          } else {
+            if (profileError) {
+              console.error('Database error during CPF lookup:', profileError);
+            }
+            throw new Error('CPF não encontrado. Verifique os números digitados ou solicite acesso.');
+          }
         }
-
-        emailToLogin = profile.email;
       }
 
       console.log('Tentando login para:', emailToLogin);
@@ -108,7 +116,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
       console.error('Erro capturado no handleLogin:', err);
 
       // JIT Sign Up Logic for Pre-registered Users
-      if (err.message === 'Invalid login credentials' || err.message.includes('Invalid login')) {
+      if (err.message === 'Invalid login credentials' || err.message?.includes('Invalid login') || err.status === 400) {
         try {
           const cleanInput = emailOrCpf.replace(/\D/g, '');
           const isCpfMatch = cleanInput.length === 11 && /^\d+$/.test(cleanInput);
@@ -171,12 +179,12 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
               await supabase.from('pre_registrations').delete().eq('cpf', preReg.cpf);
 
               if (authData.session) {
-                // Session established (Email Confirmation likely disabled or not required)
+                // Session established
                 onLoginSuccess();
                 return; // Successfully logged in via JIT
               } else {
                 // Session null -> Email confirmation required
-                setError('Cadastro inicial realizado com sucesso! Verifique seu e-mail para ativar a conta antes de entrar.');
+                setError('sucesso: Cadastro inicial realizado! Verifique seu e-mail para ativar a conta.');
                 return;
               }
             }
@@ -186,7 +194,16 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage }) => {
         }
       }
 
-      setError(err.message || 'Erro de autenticação. Tente novamente.');
+      let errorMsg = err.message || 'Erro de autenticação. Tente novamente.';
+      if (errorMsg === 'Invalid login credentials' || errorMsg.includes('Invalid login')) {
+        errorMsg = 'E-mail/CPF ou senha incorretos.';
+      } else if (errorMsg.includes('Email not confirmed')) {
+        errorMsg = 'Seu e-mail ainda não foi confirmado. Verifique sua caixa de entrada para ativar a conta.';
+      } else if (errorMsg.includes('Too many requests')) {
+        errorMsg = 'Muitas tentativas incorretas. Aguarde um momento e tente novamente.';
+      }
+
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }

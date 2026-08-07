@@ -169,6 +169,8 @@ const Dashboard: React.FC<DashboardProps> = ({
     [patients]
   );
 
+  const menuItems = useMemo(() => getMenuItems(activeSectors), [activeSectors]);
+
   const handleDismissPendingAlert = (e: React.MouseEvent) => {
     e.stopPropagation();
     setDismissedPendingAlert(true);
@@ -520,7 +522,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               )}
 
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 pb-12">
-                {MENU_ITEMS.filter(m => m.id !== 'inicio' && activeSectors.includes(m.id)).map((item) => {
+                {menuItems.filter(m => m.id !== 'inicio' && activeSectors.includes(m.id)).map((item) => {
                   const count = stats.sectorCounts[item.id] || 0;
                   return (
                     <button key={item.id} onClick={() => setActiveTab(item.id)} className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all text-left group">
@@ -601,9 +603,9 @@ const Dashboard: React.FC<DashboardProps> = ({
               <div className="flex flex-col md:flex-row justify-between items-center no-print bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-md border border-slate-100 dark:border-slate-700 gap-8 transition-colors">
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center gap-8">
-                    <div className={`p-5 rounded-[1.5rem] text-white shadow-lg ${MENU_ITEMS.find(m => m.id === activeTab)?.color || 'bg-slate-500'}`}>{React.cloneElement(MENU_ITEMS.find(m => m.id === activeTab)?.icon as React.ReactElement, { size: 36 })}</div>
+                    <div className={`p-5 rounded-[1.5rem] text-white shadow-lg ${menuItems.find(m => m.id === activeTab)?.color || 'bg-slate-500'}`}>{React.cloneElement(menuItems.find(m => m.id === activeTab)?.icon as React.ReactElement, { size: 36 })}</div>
                     <div>
-                      <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-none">{MENU_ITEMS.find(m => m.id === activeTab)?.label}</h2>
+                      <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-none">{menuItems.find(m => m.id === activeTab)?.label}</h2>
                       <p className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-2 leading-none">Gestão e Monitoramento</p>
                     </div>
                   </div>

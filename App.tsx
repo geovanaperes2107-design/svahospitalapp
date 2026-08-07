@@ -95,25 +95,48 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setIsInitializing(false);
-    });
+    let mounted = true;
+
+    // Safety timeout to ensure isInitializing doesn't get stuck indefinitely
+    const safetyTimer = setTimeout(() => {
+      if (mounted) setIsInitializing(false);
+    }, 4000);
+
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        if (mounted) {
+          setSession(session);
+          setIsInitializing(false);
+        }
+      })
+      .catch((err) => {
+        console.error('Error getting Supabase session:', err);
+        if (mounted) setIsInitializing(false);
+      })
+      .finally(() => {
+        clearTimeout(safetyTimer);
+      });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state change event:', event, !!session);
-      setSession(session);
-      if (event === 'SIGNED_OUT') {
-        setUser(null);
-      }
-      if (event === 'PASSWORD_RECOVERY') {
-        setRecoverySession(true);
+      if (mounted) {
+        setSession(session);
+        if (event === 'SIGNED_OUT') {
+          setUser(null);
+        }
+        if (event === 'PASSWORD_RECOVERY') {
+          setRecoverySession(true);
+        }
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
   }, []);
 
 

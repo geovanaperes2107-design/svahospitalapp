@@ -810,3 +810,5 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
 };
 
 export default PatientCard;
+
+
