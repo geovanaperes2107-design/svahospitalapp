@@ -24,6 +24,7 @@ import {
 import { Patient, UserRole, AntibioticStatus, InfectoStatus, Antibiotic, HistoryEntry, TreatmentType, IncisionRelation, MedicationCategory } from '../types';
 import { DEFAULT_SECTORS, ANTIBIOTICS_LIST, FREQUENCY_OPTIONS, MEDICATION_LISTS } from '../constants';
 import { format, differenceInDays, parseISO, startOfDay, addDays } from 'date-fns';
+import { calculateEndDate, parseAnyDate } from '../utils';
 
 interface PatientCardProps {
   patient: Patient;
@@ -431,7 +432,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
             ? addDays(now, -1)
             : now;
 
-          const start = startOfDay(parseISO(atb.startDate));
+          const start = startOfDay(parseAnyDate(atb.startDate));
           const adjustedToday = startOfDay(automationNow);
           const calculatedDay = Math.max(0, differenceInDays(adjustedToday, start));
 
@@ -449,7 +450,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
 
           const daysRemaining = atb.durationDays - displayDay;
           const isVencido = daysRemaining <= 0;
-          const endDate = format(addDays(parseISO(atb.startDate), atb.durationDays), 'dd/MM/yyyy');
+          const endDate = calculateEndDate(atb.startDate, atb.durationDays);
 
           // Infecto status fallback for display
           const atbStatus = atb.infectoStatus || InfectoStatus.PENDENTE;
@@ -515,7 +516,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
               <div className={`grid grid-cols-3 ${isCC ? 'md:grid-cols-5' : 'md:grid-cols-6'} gap-2`}>
                 <div className="bg-white p-1.5 rounded-lg shadow-sm border border-black/5 text-center flex flex-col justify-center">
                   <p className="text-[7px] font-black text-slate-400 uppercase leading-none mb-1">Início</p>
-                  <p className="text-[11px] font-black text-slate-800 leading-none">{atb.startDate.split('-').reverse().join('/')}</p>
+                  <p className="text-[11px] font-black text-slate-800 leading-none">{format(parseAnyDate(atb.startDate), 'dd/MM/yyyy')}</p>
                 </div>
 
                 <div className="bg-white p-1.5 rounded-lg shadow-sm border border-black/5 text-center flex flex-col justify-center">
