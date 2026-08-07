@@ -1,8 +1,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { UserPlus, Shield, Key, Trash2, Edit2, Search, X, CheckCircle2, Building2, Save, Image as ImageIcon, Upload, Monitor, Lock, Unlock, MailCheck, AlertCircle, Eye, EyeOff, Bell, Clock, Users, LayoutGrid, PlusCircle, Archive } from 'lucide-react';
+import { UserPlus, Shield, Key, Trash2, Edit2, Search, X, CheckCircle2, Building2, Save, Image as ImageIcon, Upload, Monitor, Lock, Unlock, MailCheck, AlertCircle, Eye, EyeOff, Bell, Clock, Users, LayoutGrid, PlusCircle, Archive, ArchiveRestore } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { User, UserRole } from '../types';
+import { DEFAULT_SECTORS } from '../constants';
+import { safeJsonParse } from '../utils';
 
 interface UserManagementProps {
     users: User[];
@@ -67,6 +69,22 @@ const UserManagement: React.FC<UserManagementProps> = ({
     const [activeTab, setActiveTab] = useState<'users' | 'alerts' | 'params' | 'paineis'>('users');
     const [visiblePasswordId, setVisiblePasswordId] = useState<string | null>(null);
     const [newSectorName, setNewSectorName] = useState('');
+
+    const [allKnownSectors, setAllKnownSectors] = useState<string[]>(() => {
+        const saved = localStorage.getItem('sva_all_known_sectors');
+        const initial = saved ? safeJsonParse(saved, DEFAULT_SECTORS) : DEFAULT_SECTORS;
+        return Array.from(new Set([...initial, ...DEFAULT_SECTORS, ...activeSectors]));
+    });
+
+    useEffect(() => {
+        setAllKnownSectors(prev => {
+            const updated = Array.from(new Set([...prev, ...DEFAULT_SECTORS, ...activeSectors]));
+            localStorage.setItem('sva_all_known_sectors', JSON.stringify(updated));
+            return updated;
+        });
+    }, [activeSectors]);
+
+    const archivedSectors = allKnownSectors.filter(s => !activeSectors.includes(s));
 
     const formatCPF = (cpf: string) => {
         const digits = cpf.replace(/\D/g, '');
@@ -670,10 +688,10 @@ const UserManagement: React.FC<UserManagementProps> = ({
                     <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-sm space-y-6">
                         <div>
                             <h3 className="text-base font-black text-slate-800 dark:text-white uppercase flex items-center gap-2">
-                                <LayoutGrid size={18} className="text-emerald-600" /> Painéis Ativos
+                                <LayoutGrid size={18} className="text-emerald-600" /> Painéis Ativos ({activeSectors.length})
                             </h3>
                             <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-1">
-                                Arquive um painel para removê-lo do menu. Ele poderá ser reativado a qualquer momento.
+                                Arquive um painel para removê-lo do menu. Ele poderá ser desarquivado a qualquer momento.
                             </p>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -694,6 +712,35 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             ))}
                         </div>
                     </div>
+
+                    {archivedSectors.length > 0 && (
+                        <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] border border-amber-100 dark:border-amber-900/30 shadow-sm space-y-6">
+                            <div>
+                                <h3 className="text-base font-black text-slate-800 dark:text-white uppercase flex items-center gap-2">
+                                    <Archive size={18} className="text-amber-500" /> Painéis Arquivados ({archivedSectors.length})
+                                </h3>
+                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-1">
+                                    Clique em "Desarquivar" para reativar o painel no menu principal.
+                                </p>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {archivedSectors.map(sector => (
+                                    <div key={sector} className="flex items-center justify-between bg-amber-50/50 dark:bg-amber-950/20 px-5 py-4 rounded-2xl border border-amber-100 dark:border-amber-900/30">
+                                        <span className="font-black text-sm text-slate-700 dark:text-slate-200 uppercase">{sector}</span>
+                                        <button
+                                            onClick={() => {
+                                                setActiveSectors((prev: string[]) => [...prev, sector]);
+                                            }}
+                                            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-[10px] uppercase shadow-md shadow-emerald-600/20 transition-all"
+                                        >
+                                            <ArchiveRestore size={14} /> Desarquivar
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-sm space-y-4">
                         <div>
                             <h3 className="text-base font-black text-slate-800 dark:text-white uppercase flex items-center gap-2">
@@ -717,6 +764,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                     const name = newSectorName.trim();
                                     if (!name || activeSectors.includes(name)) return;
                                     setActiveSectors((prev: string[]) => [...prev, name]);
+                                    setAllKnownSectors((prev: string[]) => Array.from(new Set([...prev, name])));
                                     setNewSectorName('');
                                 }}
                                 className="px-6 py-4 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2"
