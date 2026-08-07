@@ -34,7 +34,7 @@ const App: React.FC = () => {
   const [hospitalName, setHospitalNameState] = useState(() => localStorage.getItem('sva_hospital_name') || 'Hospital Estadual de São Luis de Montes Belos - HSLMB');
   const [bgImage, setBgImageState] = useState(() => localStorage.getItem('sva_bg_image') || '');
   const [loginBgImage, setLoginBgImageState] = useState(() => localStorage.getItem('sva_login_bg_image') || '');
-  const [reportEmail, setReportEmailState] = useState(() => localStorage.getItem('sva_report_email') || 'geovanaperes2107@gmail.com');
+  const [reportEmail, setReportEmailState] = useState(() => localStorage.getItem('sva_report_email') || '');
   const [patientDays, setPatientDaysState] = useState(() => parseInt(localStorage.getItem('sva_patient_days') || '1200'));
   const [atbCosts, setAtbCostsState] = useState<Record<string, number>>(() =>
     safeJsonParse(localStorage.getItem('sva_atb_costs'), DEFAULT_ATB_COSTS)
