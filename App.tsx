@@ -294,8 +294,8 @@ const App: React.FC = () => {
     return `${parts[2]}-${parts[1]}-${parts[0]}`;
   };
 
-  const fetchPatients = useCallback(async () => {
-    setIsLoading(true);
+  const fetchPatients = useCallback(async (isInitial = false) => {
+    if (isInitial) setIsLoading(true);
     try {
       const { data, error } = await supabase.from('pacientes').select('*');
       if (error) {
@@ -313,7 +313,7 @@ const App: React.FC = () => {
     } catch (err) {
       console.warn('Fetch patients exception:', err);
     } finally {
-      setIsLoading(false);
+      if (isInitial) setIsLoading(false);
     }
   }, []);
 
@@ -362,7 +362,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (session) {
-      fetchPatients();
+      fetchPatients(true);
       fetchUsers();
       fetchSettings();
 
