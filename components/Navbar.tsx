@@ -47,23 +47,26 @@ const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             <div className="flex items-center space-x-3 md:space-x-6">
-                {onOpenSettings && (
-                    <button
-                        onClick={onOpenSettings}
-                        className="p-2 md:p-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-all flex items-center gap-1"
-                        title="Personalizar Identidade Visual & Fundo"
-                    >
-                        <Palette size={20} />
-                        <span className="hidden lg:inline text-[10px] font-black uppercase">Fundo</span>
-                    </button>
-                )}
-
                 <button
                     onClick={toggleTheme}
-                    className={`p-2 md:p-2.5 rounded-xl transition-all ${isDarkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}
-                    title={isDarkMode ? "Modo Claro" : "Modo Noturno (Dark Mode)"}
+                    className={`p-2 md:px-3 md:py-2 rounded-2xl border transition-all flex items-center gap-2 shadow-sm ${
+                        isDarkMode
+                            ? 'bg-slate-800 border-slate-700 text-yellow-400 hover:bg-slate-700 hover:border-yellow-400/50'
+                            : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
+                    }`}
+                    title={isDarkMode ? "Mudar para Modo Claro" : "Mudar para Modo Escuro (Dark Mode)"}
                 >
-                    {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+                    {isDarkMode ? (
+                        <>
+                            <Sun size={20} className="text-yellow-400" />
+                            <span className="hidden sm:inline text-[10px] font-black uppercase text-yellow-400 tracking-wider">Modo Claro</span>
+                        </>
+                    ) : (
+                        <>
+                            <Moon size={20} className="text-indigo-600" />
+                            <span className="hidden sm:inline text-[10px] font-black uppercase text-slate-600 tracking-wider">Modo Escuro</span>
+                        </>
+                    )}
                 </button>
 
                 <div className="flex items-center gap-2 md:gap-4">
