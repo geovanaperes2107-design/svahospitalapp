@@ -128,6 +128,15 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
     });
   }, [patients, filterMonth, sectorFilter, atbFilter]);
 
+  const pendingEvaluationPatients = useMemo(() => {
+    return filteredPatients.filter(p =>
+      !p.isEvaluated &&
+      p.infectoStatus !== InfectoStatus.AUTORIZADO &&
+      p.sector !== 'Centro Cirúrgico' &&
+      p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)
+    );
+  }, [filteredPatients]);
+
   // STATS GERAIS
   const stats = useMemo(() => {
     let totalPatientsInPeriod = new Set();
