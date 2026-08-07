@@ -556,6 +556,40 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                     }} />
                                 </button>
 
+                                <div className="space-y-1 text-left">
+                                    <label className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">Ou Cole a URL da Imagem (Link)</label>
+                                    <input
+                                        type="text"
+                                        placeholder="https://exemplo.com/sua-imagem.jpg"
+                                        className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl text-[10px] font-medium outline-none focus:border-purple-500 text-slate-800 dark:text-white"
+                                        value={bgImage}
+                                        onChange={e => setBgImage(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="space-y-1 text-left">
+                                    <label className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">Sugestões de Fotos Hospitalares</label>
+                                    <div className="flex gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
+                                        {[
+                                            { name: 'Estetoscópio', url: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=2070&q=80' },
+                                            { name: 'Hospital Moderno', url: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=2070&q=80' },
+                                            { name: 'Laboratório', url: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=2070&q=80' },
+                                            { name: 'UTI', url: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=2070&q=80' },
+                                            { name: 'Centro Cirúrgico', url: 'https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&w=2070&q=80' },
+                                        ].map((preset, idx) => (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => setBgImage(preset.url)}
+                                                className={`shrink-0 w-12 h-9 rounded-lg overflow-hidden border-2 relative group hover:scale-105 transition-all ${bgImage === preset.url ? 'border-purple-500 ring-2 ring-purple-400/40' : 'border-slate-200 dark:border-slate-700'}`}
+                                                title={preset.name}
+                                            >
+                                                <img src={preset.url} alt={preset.name} className="w-full h-full object-cover" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
                                 <div className="grid grid-cols-2 gap-2 text-left">
                                     <div className="space-y-1">
                                         <label className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">Enquadramento</label>
@@ -635,6 +669,40 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                         }
                                     }} />
                                 </button>
+
+                                <div className="space-y-1 text-left">
+                                    <label className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">Ou Cole a URL da Imagem (Link)</label>
+                                    <input
+                                        type="text"
+                                        placeholder="https://exemplo.com/sua-imagem.jpg"
+                                        className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl text-[10px] font-medium outline-none focus:border-purple-500 text-slate-800 dark:text-white"
+                                        value={loginBgImage}
+                                        onChange={e => setLoginBgImage(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="space-y-1 text-left">
+                                    <label className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">Sugestões de Fotos Hospitalares</label>
+                                    <div className="flex gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
+                                        {[
+                                            { name: 'Estetoscópio', url: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=2070&q=80' },
+                                            { name: 'Hospital Moderno', url: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=2070&q=80' },
+                                            { name: 'Laboratório', url: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=2070&q=80' },
+                                            { name: 'UTI', url: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=2070&q=80' },
+                                            { name: 'Centro Cirúrgico', url: 'https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&w=2070&q=80' },
+                                        ].map((preset, idx) => (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => setLoginBgImage(preset.url)}
+                                                className={`shrink-0 w-12 h-9 rounded-lg overflow-hidden border-2 relative group hover:scale-105 transition-all ${loginBgImage === preset.url ? 'border-purple-500 ring-2 ring-purple-400/40' : 'border-slate-200 dark:border-slate-700'}`}
+                                                title={preset.name}
+                                            >
+                                                <img src={preset.url} alt={preset.name} className="w-full h-full object-cover" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
 
                                 <div className="grid grid-cols-2 gap-2 text-left">
                                     <div className="space-y-1">
