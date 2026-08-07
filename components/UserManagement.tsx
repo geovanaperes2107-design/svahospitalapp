@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { UserPlus, Shield, Key, Trash2, Edit2, Search, X, CheckCircle2, Building2, Save, Image as ImageIcon, Upload, Monitor, Lock, Unlock, MailCheck, AlertCircle, Eye, EyeOff, Bell, Clock, Users, LayoutGrid, PlusCircle, Archive, ArchiveRestore } from 'lucide-react';
+import { UserPlus, Shield, Key, Trash2, Edit2, Search, X, CheckCircle2, Building2, Save, Image as ImageIcon, Upload, Monitor, Lock, Unlock, MailCheck, AlertCircle, Eye, EyeOff, Bell, Clock, Users, LayoutGrid, PlusCircle, Archive, ArchiveRestore, Info, ShieldCheck } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { User, UserRole, Patient, AntibioticStatus } from '../types';
 import { DEFAULT_SECTORS } from '../constants';
