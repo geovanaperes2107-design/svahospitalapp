@@ -447,16 +447,23 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   return (
-    <div
-      className={`flex h-screen w-full transition-all duration-500 ${isDarkMode ? 'dark bg-[#0f172a] text-slate-100' : 'bg-slate-50 text-slate-900'} overflow-hidden relative`}
-      style={bgImage ? {
-        backgroundImage: `url(${bgImage})`,
-        backgroundSize: bgFit || 'cover',
-        backgroundPosition: bgPosition || 'center'
-      } : {}}
-    >
+    <div className={`flex h-screen w-full transition-all duration-500 ${bgImage ? (isDarkMode ? 'dark text-slate-100' : 'text-slate-900') : (isDarkMode ? 'dark bg-[#0f172a] text-slate-100' : 'bg-slate-50 text-slate-900')} overflow-hidden relative`}>
+      {/* Imagem de Fundo em Camada Fixa */}
       {bgImage && (
-        <div className="absolute inset-0 bg-slate-950 pointer-events-none transition-opacity z-0" style={{ opacity: bgOpacity !== undefined ? Number(bgOpacity) : 0.3 }}></div>
+        <div
+          className="fixed inset-0 pointer-events-none transition-all duration-700 bg-no-repeat"
+          style={{
+            backgroundImage: `url(${bgImage})`,
+            backgroundSize: bgFit || 'cover',
+            backgroundPosition: bgPosition || 'center',
+            zIndex: 0
+          }}
+        >
+          <div
+            className="absolute inset-0 bg-slate-950 transition-opacity"
+            style={{ opacity: bgOpacity !== undefined ? Number(bgOpacity) : 0.3 }}
+          />
+        </div>
       )}
       {/* Sidebar Overlay para Mobile */}
       {isMobileMenuOpen && (
