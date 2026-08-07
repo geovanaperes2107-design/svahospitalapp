@@ -380,6 +380,11 @@ const Dashboard: React.FC<DashboardProps> = ({
     const todayStr = new Date().toISOString().split('T')[0];
     const newCycles = patients.reduce((acc, p) => acc + p.antibiotics.filter(a => a.startDate === todayStr).length, 0);
 
+    const evaluatedCount = activeAtbPatients.filter(p => p.isEvaluated || p.infectoStatus === InfectoStatus.AUTORIZADO).length;
+    const adesaoCalc = activeAtbPatients.length > 0
+      ? parseFloat(((evaluatedCount / activeAtbPatients.length) * 100).toFixed(1))
+      : 0;
+
     return {
       ativos: activeAtbPatients.length,
       emUso: activeAtbPatients.length,
@@ -387,7 +392,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       vencidos: expiredPatients.length,
       expiredList: expiredPatients,
       novos: newCycles,
-      adesao: 94.2,
+      adesao: adesaoCalc,
       finalizados: finalizedCount,
       sectorCounts
     };
