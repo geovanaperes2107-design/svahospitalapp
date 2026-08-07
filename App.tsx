@@ -301,8 +301,14 @@ const App: React.FC = () => {
       if (error) {
         console.warn('Supabase fetch notice:', error);
       } else if (data) {
-        setPatients(data.map(mapDbToPatient));
-        setLastSaved(new Date());
+        const mapped = data.map(mapDbToPatient);
+        setPatients(prev => {
+          if (JSON.stringify(prev) === JSON.stringify(mapped)) {
+            return prev;
+          }
+          setLastSaved(new Date());
+          return mapped;
+        });
       }
     } catch (err) {
       console.warn('Fetch patients exception:', err);
@@ -380,11 +386,10 @@ const App: React.FC = () => {
           }
         });
 
-      // Sincronização automática em tempo real a cada 5 segundos em todos os computadores
+      // Sincronização inteligente com debounce e fallback a cada 15s sem recarregar se os dados forem idênticos
       const autoSyncInterval = setInterval(() => {
         fetchPatients();
-        fetchSettings();
-      }, 5000);
+      }, 15000);
 
       return () => {
         clearInterval(autoSyncInterval);
