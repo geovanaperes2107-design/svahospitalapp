@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { safeJsonParse } from './utils';
+import { safeJsonParse, generateUUID, isValidUUID } from './utils';
 
 const DEFAULT_ATB_COSTS: Record<string, number> = {
   'MEROPENEM PO P/ SOL INJ 1G': 85.00,
@@ -561,27 +561,53 @@ const App: React.FC = () => {
   };
 
   const handleAddPatient = async (p: Patient) => {
-    // Optimistic update
-    setPatients(prev => [p, ...prev]);
+    const validId = isValidUUID(p.id) ? p.id : generateUUID();
+    const patientWithValidId = { ...p, id: validId };
 
-    const dbPayload = mapPatientToDb(p);
+    // Optimistic update
+    setPatients(prev => [patientWithValidId, ...prev]);
+
+    const dbPayload = {
+      id: validId,
+      ...mapPatientToDb(patientWithValidId)
+    };
+
     const { error } = await supabase.from('pacientes').insert([dbPayload]);
 
     if (error) {
       console.error('Error adding patient:', error);
       alert(`Erro ao salvar paciente no servidor: ${error.message} - ${error.details || ''}`);
-      fetchPatients(); // Revert on error
+      fetchPatients();
     }
   };
 
   const handleUpdatePatient = async (p: Patient) => {
+    let targetId = p.id;
+    let isNewGeneratedId = false;
+
+    if (!isValidUUID(targetId)) {
+      targetId = generateUUID();
+      isNewGeneratedId = true;
+    }
+
+    const updatedPatient = { ...p, id: targetId };
+
     // Optimistic
-    setPatients(prev => prev.map(old => old.id === p.id ? p : old));
+    setPatients(prev => prev.map(old => (old.id === p.id || old.id === targetId) ? updatedPatient : old));
 
-    const dbPayload = mapPatientToDb(p);
-    // Don't remove ID, used for matching
+    const dbPayload = mapPatientToDb(updatedPatient);
 
-    const { error } = await supabase.from('pacientes').update(dbPayload).eq('id', p.id);
+    let error: any = null;
+
+    if (isNewGeneratedId) {
+      // If the patient previously had an invalid string ID (like "37uylqbhl"), insert/upsert with valid UUID!
+      const { error: insertErr } = await supabase.from('pacientes').insert([{ id: targetId, ...dbPayload }]);
+      error = insertErr;
+    } else {
+      // Standard update by UUID
+      const { error: updateErr } = await supabase.from('pacientes').update(dbPayload).eq('id', targetId);
+      error = updateErr;
+    }
 
     if (error) {
       console.error('Error updating patient:', error);
@@ -601,11 +627,8 @@ const App: React.FC = () => {
       return newPatients;
     });
 
-    // Supabase supports bulk upsert/update if we provide the primary key
-    // But here it's easier to just fire them off or use a single RPC if available.
-    // Since there's no custom RPC, we do multiple updates.
     try {
-      await Promise.all(updates.map(up =>
+      await Promise.all(updates.filter(up => isValidUUID(up.id)).map(up =>
         supabase.from('pacientes').update({ order: up.order }).eq('id', up.id)
       ));
     } catch (err) {
@@ -620,12 +643,14 @@ const App: React.FC = () => {
     // Optimistic
     setPatients(prev => prev.filter(p => p.id !== id));
 
-    const { error } = await supabase.from('pacientes').delete().eq('id', id);
+    if (isValidUUID(id)) {
+      const { error } = await supabase.from('pacientes').delete().eq('id', id);
 
-    if (error) {
-      console.error('Error deleting patient:', error);
-      alert(`Erro ao excluir paciente: ${error.message} - ${error.details || ''}`);
-      fetchPatients();
+      if (error) {
+        console.error('Error deleting patient:', error);
+        alert(`Erro ao excluir paciente: ${error.message} - ${error.details || ''}`);
+        fetchPatients();
+      }
     }
   };
 

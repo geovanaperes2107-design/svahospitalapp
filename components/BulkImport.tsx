@@ -56,58 +56,111 @@ const BulkImport: React.FC<BulkImportProps> = ({ onImport, onCancel }) => {
 
                 if (!rows || rows.length === 0) {
                     setError('O arquivo está vazio.');
-                    return;
+                    const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonRows = XLSX.utils.sheet_to_json<any>(worksheet, { header: 1 });
+
+                    for (let i = 1; i < jsonRows.length; i++) {
+                        const row = jsonRows[i];
+                        if (!row || row.length === 0) continue;
+
+                        const name = String(row[0] || '').trim();
+                        const birthDate = String(row[1] || '').trim();
+                        const bed = String(row[2] || '').trim();
+                        const sector = String(row[3] || '').trim();
+                        const diagnosis = String(row[4] || '').trim();
+                        const atbName = String(row[5] || '').trim();
+                        const dose = String(row[6] || '').trim();
+                        const frequency = String(row[7] || '').trim();
+                        const startDate = String(row[8] || '').trim();
+                        const duration = String(row[9] || '').trim();
+
+                        if (!name || !sector) continue;
+
+                        const validSector = DEFAULT_SECTORS.includes(sector) ? sector : DEFAULT_SECTORS[0];
+
+                        const newPatient: Patient = {
+                            id: generateUUID(),
+                            name: name.toUpperCase(),
+                            birthDate: birthDate || '',
+                            bed: bed || 'S/L',
+                            sector: validSector,
+                            diagnosis: diagnosis || 'Não informado',
+                            treatmentType: validSector === 'Centro Cirúrgico' ? TreatmentType.PROFILATICO : TreatmentType.TERAPEUTICO,
+                            infectoStatus: validSector === 'Centro Cirúrgico' ? InfectoStatus.AUTORIZADO : InfectoStatus.PENDENTE,
+                            isEvaluated: false,
+                            history: [{
+                                date: new Date().toLocaleString('pt-BR'),
+                                action: 'Importação',
+                                user: 'Sistema',
+                                details: `Paciente importado via planilha Excel.`
+                            }],
+                            antibiotics: atbName ? [{
+                                id: generateUUID(),
+                                category: MedicationCategory.ANTIMICROBIANO,
+                                name: atbName.toUpperCase(),
+                                dose: dose || '',
+                                frequency: frequency || '',
+                                startDate: startDate && String(startDate).includes('/') ? startDate.split('/').reverse().join('-') : (startDate || new Date().toISOString().split('T')[0]),
+                                durationDays: parseInt(duration) || 7,
+                                status: AntibioticStatus.EM_USO,
+                                times: ['08:00'],
+                                route: 'EV'
+                            }] : []
+                        };
+                        parsedPatients.push(newPatient);
+                    }
+                } else {
+                    const text = e.target?.result as string;
+                    const lines = text.split('\n');
+
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+
+                        const cols = line.split(';');
+                        const [name, birthDate, bed, sector, diagnosis, atbName, dose, frequency, startDate, duration] = cols.map((c: any) => String(c || '').trim());
+
+                        if (!name || !sector) continue;
+
+                        const validSector = DEFAULT_SECTORS.includes(sector) ? sector : DEFAULT_SECTORS[0];
+
+                        const newPatient: Patient = {
+                            id: generateUUID(),
+                            name: name.toUpperCase(),
+                            birthDate: birthDate || '',
+                            bed: bed || 'S/L',
+                            sector: validSector,
+                            diagnosis: diagnosis || 'Não informado',
+                            treatmentType: validSector === 'Centro Cirúrgico' ? TreatmentType.PROFILATICO : TreatmentType.TERAPEUTICO,
+                            infectoStatus: validSector === 'Centro Cirúrgico' ? InfectoStatus.AUTORIZADO : InfectoStatus.PENDENTE,
+                            isEvaluated: false,
+                            history: [{
+                                date: new Date().toLocaleString('pt-BR'),
+                                action: 'Importação',
+                                user: 'Sistema',
+                                details: `Paciente importado via planilha CSV.`
+                            }],
+                            antibiotics: atbName ? [{
+                                id: generateUUID(),
+                                category: MedicationCategory.ANTIMICROBIANO,
+                                name: atbName.toUpperCase(),
+                                dose: dose || '',
+                                frequency: frequency || '',
+                                startDate: startDate && String(startDate).includes('/') ? startDate.split('/').reverse().join('-') : (startDate || new Date().toISOString().split('T')[0]),
+                                durationDays: parseInt(duration) || 7,
+                                status: AntibioticStatus.EM_USO,
+                                times: ['08:00'],
+                                route: 'EV'
+                            }] : []
+                        };
+                        parsedPatients.push(newPatient);
+                    }
                 }
 
-                // Skip header if it exists
-                const headerRow = rows[0]?.map((c: any) => String(c || '').toLowerCase());
-                const startIdx = headerRow?.some((c: string) => c.includes('nome')) ? 1 : 0;
-
-                for (let i = startIdx; i < rows.length; i++) {
-                    const cols = rows[i];
-                    if (!cols || cols.length < 4) continue; // Minimum required columns
-
-                    const [name, birthDate, bed, sector, diagnosis, atbName, dose, frequency, startDate, duration] = cols.map((c: any) => String(c || '').trim());
-
-                    if (!name || !sector) continue;
-
-                    // Validate sector
-                    const validSector = DEFAULT_SECTORS.includes(sector) ? sector : DEFAULT_SECTORS[0];
-
-                    const newPatient: Patient = {
-                        id: Math.random().toString(36).substr(2, 9),
-                        name: name.toUpperCase(),
-                        birthDate: birthDate || '',
-                        bed: bed || 'S/L',
-                        sector: validSector,
-                        diagnosis: diagnosis || 'Não informado',
-                        treatmentType: validSector === 'Centro Cirúrgico' ? TreatmentType.PROFILATICO : TreatmentType.TERAPEUTICO,
-                        infectoStatus: validSector === 'Centro Cirúrgico' ? InfectoStatus.AUTORIZADO : InfectoStatus.PENDENTE,
-                        isEvaluated: false,
-                        history: [{
-                            date: new Date().toLocaleString('pt-BR'),
-                            action: 'Importação',
-                            user: 'Sistema',
-                            details: `Paciente importado via planilha ${isExcel ? 'Excel' : 'CSV'}.`
-                        }],
-                        antibiotics: atbName ? [{
-                            id: Math.random().toString(36).substr(2, 9),
-                            category: MedicationCategory.ANTIMICROBIANO,
-                            name: atbName.toUpperCase(),
-                            dose: dose || '',
-                            frequency: frequency || '',
-                            startDate: startDate && String(startDate).includes('/') ? startDate.split('/').reverse().join('-') : (startDate || new Date().toISOString().split('T')[0]),
-                            durationDays: parseInt(duration) || 7,
-                            status: AntibioticStatus.EM_USO,
-                            times: ['08:00'],
-                            route: 'EV'
-                        }] : []
-                    };
-
-                    patients.push(newPatient);
-                }
-
-                if (patients.length === 0) {
+                if (parsedPatients.length === 0) {
                     setError('Nenhum dado válido encontrado no arquivo.');
                 } else {
                     setPreviewData(patients);

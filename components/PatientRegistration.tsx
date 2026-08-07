@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { UserPlus, Plus, Trash2, Calendar, Save, AlertCircle, Clock, Pill, X } from 'lucide-react';
 import { Patient, Antibiotic, AntibioticStatus, InfectoStatus, TreatmentType, MedicationCategory } from '../types';
 import { DEFAULT_SECTORS, MEDICATION_LISTS, FREQUENCY_OPTIONS, DURATION_OPTIONS } from '../constants';
-import { calculateEndDate } from '../utils';
+import { calculateEndDate, generateUUID } from '../utils';
 
 interface PatientRegistrationProps {
   onAdd: (patient: Patient) => void;
@@ -31,7 +30,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
   const [atbs, setAtbs] = useState<Partial<Antibiotic>[]>(() => {
     const draft = localStorage.getItem('sva_patient_registration_draft');
     return draft ? JSON.parse(draft).atbs : [{
-      id: 'atb-init',
+      id: generateUUID(),
       category: MedicationCategory.ANTIMICROBIANO,
       name: '',
       dose: '',
@@ -67,7 +66,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
     if (val > currentAtbs.length) {
       for (let i = currentAtbs.length; i < val; i++) {
         currentAtbs.push({
-          id: Math.random().toString(),
+          id: generateUUID(),
           category: MedicationCategory.ANTIMICROBIANO,
           name: '',
           dose: '',
@@ -105,7 +104,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
     }
 
     const newPatient: Patient = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: generateUUID(),
       name: formData.name.toUpperCase(),
       birthDate: formData.birthDate.split('-').reverse().join('/'),
       bed: formData.bed || 'S/L',
