@@ -83,6 +83,63 @@ const ATB_COSTS: Record<string, number> = {
   'CIPROFLOXACINO': 12.00,
 };
 
+export const getCategoryForDiagnosis = (diagText: string): string => {
+  if (!diagText) return 'OUTROS';
+  const norm = diagText
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+
+  // 1. SEPSE / SEPSIS / SÉPTICA / CHOQUE SÉPTICO / FOCO SÉPTICO / SEPTICEMIA
+  if (
+    norm.includes('SEPSE') ||
+    norm.includes('SEPSIS') ||
+    norm.includes('SEPTIC') ||
+    norm.includes('SEPTICO') ||
+    norm.includes('SEPTICA')
+  ) {
+    return 'SEPSE';
+  }
+
+  // 2. ITU / INFECÇÃO URINÁRIA / PIELONEFRITE / TRATO URINÁRIO / CISTITE
+  if (
+    norm.includes('ITU') ||
+    norm.includes('URINARI') ||
+    norm.includes('PIELONEFRITE') ||
+    norm.includes('PYELONEFRITE') ||
+    norm.includes('CISTITE')
+  ) {
+    return 'ITU';
+  }
+
+  // 3. PNEUMONIA / PAV / PAC / PULMONAR
+  if (
+    norm.includes('PNEUMONIA') ||
+    norm.includes('PNEUMO') ||
+    norm.includes('PAV') ||
+    norm.includes('PAC')
+  ) {
+    return 'PNEUMONIA';
+  }
+
+  // 4. DPOC
+  if (norm.includes('DPOC')) {
+    return 'DPOC';
+  }
+
+  // 5. APENDICITE
+  if (norm.includes('APENDICITE')) {
+    return 'APENDICITE';
+  }
+
+  // 6. FRATURA
+  if (norm.includes('FRATURA')) {
+    return 'FRATURA';
+  }
+
+  return 'OUTROS';
+};
+
 const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts, setAtbCosts, patientDays, setPatientDays }) => {
   const [activeReportTab, setActiveReportTab] = useState<ReportTab>((initialReportTab as ReportTab) || 'monitoramento');
 
@@ -289,36 +346,24 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
     const keyDiagnosticStats: Record<string, { count: number; meds: Record<string, number>; sectors: Record<string, number> }> = {};
     keywords.forEach(k => keyDiagnosticStats[k] = { count: 0, meds: {}, sectors: {} });
 
-    filteredPatients.forEach(p => {
-      const diagUpper = p.diagnosis.toUpperCase();
-      let matched = false;
-      keywords.slice(0, -1).forEach(key => {
-        if (diagUpper.includes(key)) {
-          matched = true;
-          keyDiagnosticStats[key].count++;
-          keyDiagnosticStats[key].sectors[p.sector] = (keyDiagnosticStats[key].sectors[p.sector] || 0) + 1;
-          p.antibiotics.filter(a => a.category === categoryFilter).forEach(atb => {
-            keyDiagnosticStats[key].meds[atb.name] = (keyDiagnosticStats[key].meds[atb.name] || 0) + 1;
-          });
-        }
-      });
-      if (!matched) {
-        keyDiagnosticStats['OUTROS'].count++;
-        keyDiagnosticStats['OUTROS'].sectors[p.sector] = (keyDiagnosticStats['OUTROS'].sectors[p.sector] || 0) + 1;
-        p.antibiotics.filter(a => a.category === categoryFilter).forEach(atb => {
-          keyDiagnosticStats['OUTROS'].meds[atb.name] = (keyDiagnosticStats['OUTROS'].meds[atb.name] || 0) + 1;
-        });
-      }
-    });
+    const allDiagnoses: Array<{ patient: string; sector: string; diagnosis: string; category: string; atbs: string[] }> = [];
 
-    // Lista completa de diagnósticos
-    const allDiagnoses: Array<{ patient: string; sector: string; diagnosis: string; atbs: string[] }> = [];
     filteredPatients.forEach(p => {
+      const category = getCategoryForDiagnosis(p.diagnosis);
+      keyDiagnosticStats[category].count++;
+      keyDiagnosticStats[category].sectors[p.sector] = (keyDiagnosticStats[category].sectors[p.sector] || 0) + 1;
+
+      const atbNames = p.antibiotics.filter(a => a.category === categoryFilter).map(a => a.name);
+      atbNames.forEach(atbName => {
+        keyDiagnosticStats[category].meds[atbName] = (keyDiagnosticStats[category].meds[atbName] || 0) + 1;
+      });
+
       allDiagnoses.push({
         patient: p.name,
         sector: p.sector,
         diagnosis: p.diagnosis || 'Não informado',
-        atbs: p.antibiotics.filter(a => a.category === categoryFilter).map(a => a.name)
+        category,
+        atbs: atbNames
       });
     });
 
@@ -843,7 +888,14 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-[13px]">
                     {epidemiologyStats.allDiagnoses
-                      .filter(d => !searchDiag || d.patient.toLowerCase().includes(searchDiag.toLowerCase()) || d.diagnosis.toLowerCase().includes(searchDiag.toLowerCase()) || d.atbs.some(a => a.toLowerCase().includes(searchDiag.toLowerCase())))
+                      .filter(d => {
+                        const matchesSearch = !searchDiag ||
+                          d.patient.toLowerCase().includes(searchDiag.toLowerCase()) ||
+                          d.diagnosis.toLowerCase().includes(searchDiag.toLowerCase()) ||
+                          d.atbs.some(a => a.toLowerCase().includes(searchDiag.toLowerCase()));
+                        const matchesKeyDiag = !activeKeyDiagnostic || d.category === activeKeyDiagnostic;
+                        return matchesSearch && matchesKeyDiag;
+                      })
                       .map((d, i) => (
                         <tr key={i} className="hover:bg-slate-100/50 dark:hover:bg-slate-900/50 transition-colors border-b border-slate-50 dark:border-slate-700">
                           <td className="px-6 py-4 font-black text-slate-900 dark:text-white uppercase text-sm leading-tight">{d.patient}</td>
