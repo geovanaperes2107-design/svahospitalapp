@@ -780,15 +780,17 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                 <input type="number" className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 rounded-2xl font-black text-xl outline-none focus:border-blue-500 transition-all text-center text-slate-900 dark:text-white"
                   value={patientDays} onChange={e => setPatientDays(parseInt(e.target.value) || 1)} />
                 {(() => {
-                  const activeAtbCount = (patients || []).filter(p => p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)).length;
-                  const computedPatientDays = (activeAtbCount || (patients || []).length || 1) * 30;
+                  const activeAtbCount = (filteredPatients || []).filter(p => p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)).length;
+                  const computedPatientDays = (activeAtbCount || (filteredPatients || []).length || 1) * 30;
+                  const currentSectorLabel = sectorFilter && !['Todos', 'Todos os Setores'].includes(sectorFilter) ? sectorFilter : 'Geral';
                   return (
                     <button
                       type="button"
                       onClick={() => setPatientDays(computedPatientDays)}
                       className="w-full mt-2 py-1.5 px-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 rounded-xl font-black text-[8px] uppercase transition-all border border-blue-200 dark:border-blue-800"
+                      title={`Calcular Pacientes-Dia para o setor ${currentSectorLabel}`}
                     >
-                      ⚡ Usar Tempo Real ({activeAtbCount} Pcts × 30d = {computedPatientDays})
+                      ⚡ Tempo Real ({currentSectorLabel}: {activeAtbCount} Pcts = {computedPatientDays})
                     </button>
                   );
                 })()}
