@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { Patient, AntibioticStatus, IncisionRelation, TreatmentType, InfectoStatus, MedicationCategory } from '../types';
 import { DDD_MAP, DEFAULT_SECTORS, ANTIBIOTICS_LIST } from '../constants';
-import { calculateEndDate, getDaysRemaining, getATBDay } from '../utils';
+import { calculateEndDate, getDaysRemaining, getATBDay, parseAnyDate } from '../utils';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -20,7 +20,7 @@ interface ReportsProps {
   patientDays: number;
   setPatientDays: (days: number) => void;
 }
-type ReportTab = 'monitoramento' | 'stewardship' | 'epidemiologia' | 'censo' | 'ddd' | 'vencimento' | 'finalizados' | 'cc' | 'financeiro';
+type ReportTab = 'monitoramento' | 'pendentes' | 'stewardship' | 'epidemiologia' | 'censo' | 'ddd' | 'vencimento' | 'finalizados' | 'cc' | 'financeiro';
 
 // Tabela DDD OMS (editável por admin)
 const DDD_OMS_VALUES: Record<string, number> = {
@@ -331,18 +331,25 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
     doc.setFontSize(22);
     doc.text("SVA - VIGILÂNCIA DE ATB", 14, 20);
 
-    doc.setFontSize(10);
-    doc.text(`GERADO EM: ${date} | PERÍODO: ${filterMonth} | SETOR: ${sectorFilter}`, 14, 30);
+    const todayStr = new Date().toLocaleDateString('pt-BR');
 
-    doc.setTextColor(30, 41, 59);
-    doc.setFontSize(14);
-    doc.text(title, 14, 50);
+    doc.setFontSize(16);
+    doc.text(`Relatório SVA - ${activeReportTab.toUpperCase()}`, 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Período: ${filterMonth} | Setor: ${sectorFilter} | Gerado em: ${todayStr}`, 14, 28);
 
     let headers: string[] = [];
     let rows: any[][] = [];
 
     // Personaliza dados baseado na aba ativa
-    if (activeReportTab === 'monitoramento' || activeReportTab === 'censo') {
+    if (activeReportTab === 'pendentes') {
+      headers = ["Paciente", "Leito", "Setor", "Diagnóstico", "ATB em Uso", "Início", "Dia", "Status"];
+      rows = pendingEvaluationPatients.map(p => {
+        const activeAtbs = p.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO);
+        const atbStr = activeAtbs.map(a => `${a.name} (${a.dose})`).join(', ');
+        return [p.name, p.bed || 'S/L', p.sector, p.diagnosis || 'Não informado', atbStr, activeAtbs[0]?.startDate || '-', activeAtbs[0] ? `D${getATBDay(activeAtbs[0].startDate)}` : 'D1', 'PENDENTE'];
+      });
+    } else if (activeReportTab === 'monitoramento' || activeReportTab === 'censo') {
       headers = ["Paciente", "Leito", "Setor", "ATB/Dose", "Início", "Dia", "Status"];
       rows = filteredPatients.flatMap(p =>
         p.antibiotics.filter(a => a.category === categoryFilter).map(a => [
@@ -353,7 +360,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
       headers = ["Paciente", "Setor", "Antibiótico", "Dias", "Custo (R$)"];
       rows = filteredPatients.flatMap(p =>
         p.antibiotics.filter(a => a.category === categoryFilter).map(a => [
-          p.name, p.sector, a.name, a.durationDays, ((atbCosts[a.name.toUpperCase()] || 50) * a.durationDays).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+          p.name, p.sector, a.name, a.durationDays, ((atbCosts[a.name.toUpperCase()] || 50) * Number(a.durationDays)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
         ])
       );
     } else {
@@ -366,11 +373,11 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
     }
 
     autoTable(doc, {
-      startY: 55,
+      startY: 35,
       head: [headers],
       body: rows,
       theme: 'grid',
-      headStyles: { fillColor: [16, 185, 129], textColor: [255, 255, 255], fontStyle: 'bold' }, // emerald-500
+      headStyles: { fillColor: [16, 185, 129], textColor: [255, 255, 255], fontStyle: 'bold' },
       alternateRowStyles: { fillColor: [248, 250, 252] },
       styles: { fontSize: 8, cellPadding: 3 },
     });
@@ -388,13 +395,13 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
 
   const exportToExcel = () => {
     const headers = ["Paciente", "Nascimento", "Leito", "Setor", "Medicamento", "Dose", "Frequência", "Início", "Duração", "Dia Ciclo", "Status", "Status Infecto", "Diagnóstico"];
-    const rows = filteredPatients.flatMap(p =>
+    const sourcePatients = activeReportTab === 'pendentes' ? pendingEvaluationPatients : filteredPatients;
+    const rows = sourcePatients.flatMap(p =>
       p.antibiotics.filter(a => a.category === categoryFilter).map(a => [
         p.name, p.birthDate, p.bed, p.sector, a.name, a.dose, a.frequency, a.startDate, a.durationDays, `D${getATBDay(a.startDate)}`, a.status, p.infectoStatus, p.diagnosis
       ])
     );
 
-    // Configura o separador para ponto e vírgula (padrão Excel Brasil)
     const csvContent = [headers, ...rows]
       .map(row => row.map(cell => {
         const content = String(cell || '');
@@ -402,13 +409,12 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
       }).join(";"))
       .join("\n");
 
-    // Adiciona o BOM (Byte Order Mark) para UTF-8 para o Excel abrir com acentos corretos
     const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
 
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `relatorio_sva_${filterMonth}.csv`);
+    link.setAttribute("download", `relatorio_sva_${activeReportTab}_${filterMonth}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -489,6 +495,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
       <div className="flex overflow-x-auto gap-2 bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 no-print custom-scrollbar transition-colors">
         {[
           { id: 'monitoramento', label: 'Monitoramento', icon: <Eye size={18} /> },
+          { id: 'pendentes', label: 'Pendentes de Avaliação', icon: <AlertCircle size={18} /> },
           { id: 'stewardship', label: 'Stewardship', icon: <CheckSquare size={18} /> },
           { id: 'censo', label: 'Censo Infecto', icon: <ShieldCheck size={18} /> },
           { id: 'epidemiologia', label: 'Matriz Epid.', icon: <Dna size={18} /> },
@@ -507,6 +514,83 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
 
       {/* CONTENT */}
       <div className="space-y-3 text-left">
+
+        {/* ===== PACIENTES PENDENTES DE AVALIAÇÃO ===== */}
+        {activeReportTab === 'pendentes' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-orange-50 dark:bg-orange-900/20 p-6 rounded-3xl border border-orange-200 dark:border-orange-800 transition-colors">
+              <div className="space-y-1">
+                <h3 className="text-base font-black uppercase text-orange-900 dark:text-orange-200 flex items-center gap-2">
+                  <AlertCircle className="text-orange-600 dark:text-orange-400" size={22} />
+                  Pacientes Pendentes de Avaliação ({pendingEvaluationPatients.length})
+                </h3>
+                <p className="text-xs text-orange-700 dark:text-orange-300 font-medium">
+                  Lista em tempo real dos pacientes ativamente internados em uso de ATB que ainda não receberam validação/parecer no ciclo diário.
+                </p>
+              </div>
+              <div className="bg-white dark:bg-slate-800 px-5 py-3 rounded-2xl shadow-sm border border-orange-200 dark:border-orange-800 shrink-0">
+                <p className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500">Total Pendentes</p>
+                <p className="text-3xl font-black text-orange-600 dark:text-orange-400 leading-none mt-0.5">{pendingEvaluationPatients.length}</p>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-md overflow-hidden transition-colors">
+              <table className="w-full text-left">
+                <thead className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-[11px] font-black uppercase tracking-widest border-b-2 border-slate-200 dark:border-slate-700">
+                  <tr>
+                    <th className="px-6 py-4">Paciente</th>
+                    <th className="px-6 py-4">Leito</th>
+                    <th className="px-6 py-4">Setor</th>
+                    <th className="px-6 py-4">Diagnóstico</th>
+                    <th className="px-6 py-4">Antibiótico(s) em Uso</th>
+                    <th className="px-6 py-4 text-center">Início</th>
+                    <th className="px-6 py-4 text-center">Dia ATB</th>
+                    <th className="px-6 py-4 text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-[10px]">
+                  {pendingEvaluationPatients.map(p => (
+                    <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                      <td className="px-6 py-4 font-black text-slate-900 dark:text-white uppercase text-[11px]">{p.name}</td>
+                      <td className="px-6 py-4 font-bold text-slate-500">{p.bed || 'S/L'}</td>
+                      <td className="px-6 py-4 font-black text-slate-700 dark:text-slate-300 uppercase">{p.sector}</td>
+                      <td className="px-6 py-4 font-medium text-slate-500 max-w-[160px] truncate">{p.diagnosis || 'Não informado'}</td>
+                      <td className="px-6 py-4">
+                        <div className="space-y-1">
+                          {p.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO).map(a => (
+                            <div key={a.id} className="font-bold text-blue-700 dark:text-blue-400 text-[11px]">
+                              {a.name} <span className="text-slate-400 font-normal">({a.dose} - {a.frequency})</span>
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center font-bold text-slate-600 dark:text-slate-400">
+                        {p.antibiotics[0]?.startDate ? format(parseAnyDate(p.antibiotics[0].startDate), 'dd/MM/yyyy') : '-'}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-3 py-1 rounded-lg font-black text-[10px]">
+                          D{p.antibiotics[0] ? getATBDay(p.antibiotics[0].startDate) : 1}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-3 py-1 rounded-xl font-black uppercase text-[9px] border border-red-200 dark:border-red-800">
+                          PENDENTE
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {pendingEvaluationPatients.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="py-16 text-center text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
+                        🎉 Nenhum paciente pendente de avaliação no momento!
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* ===== MONITORAMENTO ATIVO ===== */}
         {activeReportTab === 'monitoramento' && (
