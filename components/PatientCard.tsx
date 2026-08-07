@@ -558,8 +558,10 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
 
                 <div className="bg-white p-1 rounded-lg shadow-sm border border-black/5 text-center flex flex-col items-center justify-center">
                   <p className="text-[7px] font-black text-slate-400 uppercase leading-none mb-1">Dia</p>
-                  <input type="number" disabled={isCC || isInfectoPanel} className="w-full bg-slate-50 border border-slate-200 rounded text-center text-[11px] font-black py-0 outline-none focus:border-blue-500 text-slate-800 disabled:opacity-50" value={isCC ? 0 : displayDay} onChange={e => {
-                    const newVal = parseInt(e.target.value) || 1;
+                  <input type="number" min={0} disabled={isCC || isInfectoPanel} className="w-full bg-slate-50 border border-slate-200 rounded text-center text-[11px] font-black py-0 outline-none focus:border-blue-500 text-slate-800 disabled:opacity-50" value={isCC ? 0 : displayDay} onChange={e => {
+                    const rawVal = e.target.value;
+                    const parsedVal = parseInt(rawVal);
+                    const newVal = isNaN(parsedVal) ? 0 : Math.max(0, parsedVal);
                     const offset = newVal - calculatedDay;
                     const todayStr = format(new Date(), 'yyyy-MM-dd');
                     onUpdate({ ...patient, antibiotics: patient.antibiotics.map(a => a.id === atb.id ? { ...a, cycleOffset: offset, lastAdjustmentDate: todayStr } : a) });
