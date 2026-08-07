@@ -434,7 +434,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
 
           const start = startOfDay(parseAnyDate(atb.startDate));
           const adjustedToday = startOfDay(automationNow);
-          const calculatedDay = Math.max(0, differenceInDays(adjustedToday, start));
+          const calculatedDay = Math.max(1, differenceInDays(adjustedToday, start) + 1);
 
           let displayDay = calculatedDay + (atb.cycleOffset || 0);
 
