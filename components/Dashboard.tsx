@@ -452,7 +452,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   return (
-    <div className={`flex h-screen w-full transition-all duration-500 ${bgImage ? (isDarkMode ? 'dark text-slate-100' : 'text-slate-900') : (isDarkMode ? 'dark bg-[#0f172a] text-slate-100' : 'bg-slate-50 text-slate-900')} overflow-hidden relative`}>
+    <div className={`flex h-screen w-full transition-colors duration-500 ${isDarkMode ? 'dark bg-[#0f172a] text-slate-100' : 'bg-slate-50 text-slate-900'} overflow-hidden relative`}>
       {/* Imagem de Fundo em Camada Fixa */}
       {bgImage && (
         <div
