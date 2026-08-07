@@ -361,7 +361,7 @@ const App: React.FC = () => {
       fetchSettings();
 
       const channel = supabase
-        .channel('db-changes')
+        .channel('sva-realtime-global')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'pacientes' }, () => {
           fetchPatients();
         })
@@ -376,11 +376,18 @@ const App: React.FC = () => {
         })
         .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
-            console.log('Successfully subscribed to real-time changes');
+            console.log('⚡ Conectado ao Supabase Realtime com sucesso!');
           }
         });
 
+      // Sincronização automática em tempo real a cada 5 segundos em todos os computadores
+      const autoSyncInterval = setInterval(() => {
+        fetchPatients();
+        fetchSettings();
+      }, 5000);
+
       return () => {
+        clearInterval(autoSyncInterval);
         supabase.removeChannel(channel);
       };
     }
