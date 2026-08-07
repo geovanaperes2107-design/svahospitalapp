@@ -555,6 +555,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             <UserManagement
               users={users}
               currentUser={user}
+              patients={patients}
               onAddUser={onAddUser}
               onUpdateUser={onUpdateUser}
               onDeleteUser={onDeleteUser}

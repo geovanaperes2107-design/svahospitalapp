@@ -2,13 +2,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserPlus, Shield, Key, Trash2, Edit2, Search, X, CheckCircle2, Building2, Save, Image as ImageIcon, Upload, Monitor, Lock, Unlock, MailCheck, AlertCircle, Eye, EyeOff, Bell, Clock, Users, LayoutGrid, PlusCircle, Archive, ArchiveRestore } from 'lucide-react';
 import { supabase } from '../supabaseClient';
-import { User, UserRole } from '../types';
+import { User, UserRole, Patient, AntibioticStatus } from '../types';
 import { DEFAULT_SECTORS } from '../constants';
 import { safeJsonParse } from '../utils';
 
 interface UserManagementProps {
     users: User[];
     currentUser: User;
+    patients?: Patient[];
     onAddUser: (user: User) => void;
     onUpdateUser: (user: User) => void;
     onDeleteUser: (id: string) => void;
@@ -49,7 +50,7 @@ interface UserManagementProps {
 }
 
 const UserManagement: React.FC<UserManagementProps> = ({
-    users, currentUser, onAddUser, onUpdateUser, onDeleteUser, hospitalName, setHospitalName, bgImage,
+    users, currentUser, patients = [], onAddUser, onUpdateUser, onDeleteUser, hospitalName, setHospitalName, bgImage,
     setBgImage, loginBgImage, setLoginBgImage, reportEmail, setReportEmail, atbCosts, setAtbCosts,
     patientDays, setPatientDays, configNotifyReset, setConfigNotifyReset, configNotifyPending,
     setConfigNotifyPending, configNotifyExpired, setConfigNotifyExpired, configResetTime,
@@ -566,6 +567,20 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                         onChange={e => setPatientDays(parseInt(e.target.value) || 0)}
                                     />
                                     <p className="text-[8px] font-bold text-slate-400 uppercase mt-2 leading-tight">Valor usado para o cálculo de demanda nas compras.</p>
+                                    
+                                    {(() => {
+                                        const activeAtbCount = (patients || []).filter(p => p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)).length;
+                                        const computedPatientDays = (activeAtbCount || (patients || []).length || 1) * 30;
+                                        return (
+                                            <button
+                                                type="button"
+                                                onClick={() => setPatientDays(computedPatientDays)}
+                                                className="w-full mt-3 py-2.5 px-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-xl font-black text-[9px] uppercase transition-all border border-emerald-200 dark:border-emerald-800 flex items-center justify-center gap-1.5 shadow-sm"
+                                            >
+                                                ⚡ Usar Tempo Real ({activeAtbCount} Pcts em ATB × 30d = {computedPatientDays})
+                                            </button>
+                                        );
+                                    })()}
                                 </div>
                             </div>
 

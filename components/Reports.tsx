@@ -779,6 +779,19 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                 <label className="text-[11px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest leading-none block mb-3">Pacientes-Dia</label>
                 <input type="number" className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 rounded-2xl font-black text-xl outline-none focus:border-blue-500 transition-all text-center text-slate-900 dark:text-white"
                   value={patientDays} onChange={e => setPatientDays(parseInt(e.target.value) || 1)} />
+                {(() => {
+                  const activeAtbCount = (patients || []).filter(p => p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)).length;
+                  const computedPatientDays = (activeAtbCount || (patients || []).length || 1) * 30;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => setPatientDays(computedPatientDays)}
+                      className="w-full mt-2 py-1.5 px-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 rounded-xl font-black text-[8px] uppercase transition-all border border-blue-200 dark:border-blue-800"
+                    >
+                      ⚡ Usar Tempo Real ({activeAtbCount} Pcts × 30d = {computedPatientDays})
+                    </button>
+                  );
+                })()}
               </div>
               <Card label="Variação" value="+5.2%" icon={<TrendingUp size={16} />} color="emerald" />
             </div>
