@@ -399,7 +399,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   }, [patients]);
 
   const notifications = useMemo(() => {
-    const list: { id: string, patientName: string, text: string, type: 'expired' | 'pending', patientId: string, sector: string }[] = [];
+    const list: { id: string, patientName: string, text: string, type: 'expired' | 'pending' | 'system', patientId: string, sector: string }[] = [];
 
     // Conjunto de IDs de pacientes existentes para evitar notificações de pacientes deletados
     const existingPatientIds = new Set(patients.map(p => p.id));
@@ -411,40 +411,56 @@ const Dashboard: React.FC<DashboardProps> = ({
           p.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0).forEach(a => {
             const notifyId = `expired-${p.id}-${a.id}`;
             if (!dismissedNotifications.includes(notifyId)) {
-              list.push({ id: notifyId, patientName: p.name, text: `${a.name} venceu.`, type: 'expired', patientId: p.id, sector: p.sector });
+              list.push({ id: notifyId, patientName: p.name, text: `${a.name} venceu (D${a.durationDays}).`, type: 'expired', patientId: p.id, sector: p.sector });
             }
           });
         });
     }
 
-    if (configNotifyPending) {
+    if (configNotifyReset) {
       const now = new Date();
       const currentH = now.getHours();
       const currentM = now.getMinutes();
 
-      const [clinH, clinM] = configPendingTimeClinicas.split(':').map(Number);
-      const [utiH, utiM] = configPendingTimeUTI.split(':').map(Number);
+      const [clinH, clinM] = configResetTime.split(':').map(Number);
+      const [utiH, utiM] = configResetTimeUTI.split(':').map(Number);
 
       const isClinTime = currentH > clinH || (currentH === clinH && currentM >= clinM);
       const isUtiTime = currentH > utiH || (currentH === utiH && currentM >= utiM);
 
-      unevaluatedPatients
-        .filter(p => existingPatientIds.has(p.id)) // só pacientes que ainda existem
-        .forEach(p => {
-          const isUTI = p.sector?.includes('UTI');
-          const canShow = isUTI ? isUtiTime : isClinTime;
+      const todayStr = new Date().toISOString().split('T')[0];
 
-          if (!canShow) return;
+      if (isClinTime) {
+        const resetClinId = `reset-clin-${todayStr}`;
+        if (!dismissedNotifications.includes(resetClinId)) {
+          list.push({
+            id: resetClinId,
+            patientName: 'Rotina de Reset (Clínicas)',
+            text: `Reset de avaliações efetuado às ${configResetTime}`,
+            type: 'system',
+            patientId: 'system',
+            sector: 'Clínicas'
+          });
+        }
+      }
 
-          const notifyId = `pending-${p.id}`;
-          if (!dismissedNotifications.includes(notifyId)) {
-            list.push({ id: notifyId, patientName: p.name, text: 'Aguardando avaliação.', type: 'pending', patientId: p.id, sector: p.sector });
-          }
-        });
+      if (isUtiTime) {
+        const resetUtiId = `reset-uti-${todayStr}`;
+        if (!dismissedNotifications.includes(resetUtiId)) {
+          list.push({
+            id: resetUtiId,
+            patientName: 'Rotina de Reset (UTI)',
+            text: `Reset de avaliações efetuado às ${configResetTimeUTI}`,
+            type: 'system',
+            patientId: 'system',
+            sector: 'UTI'
+          });
+        }
+      }
     }
 
     return list;
-  }, [patients, stats.expiredList, unevaluatedPatients, dismissedNotifications, configNotifyExpired, configNotifyPending]);
+  }, [patients, stats.expiredList, dismissedNotifications, configNotifyExpired, configNotifyReset, configResetTime, configResetTimeUTI]);
 
   const handleNotifyClick = () => {
     setReportInitialTab('vencimento');
@@ -770,29 +786,29 @@ const Dashboard: React.FC<DashboardProps> = ({
           )}
 
           {notifications.map((notify) => (
-            <div key={notify.id} className={`pointer-events-auto text-white p-3 rounded-2xl shadow-xl border-l-4 animate-in slide-in-from-right-5 flex flex-col gap-2 relative group w-64
-              ${notify.type === 'expired' ? 'bg-slate-900 border-l-red-500' : 'bg-slate-900 border-l-orange-500'}`}>
-              <button onClick={(e) => { e.stopPropagation(); setDismissedNotifications(prev => [...prev, notify.id]); }} className="absolute top-2 right-2 p-1 bg-white/10 hover:bg-red-500 rounded-full transition-colors"><X size={12} /></button>
+            <div key={notify.id} className={`pointer-events-auto text-white p-3.5 rounded-2xl shadow-xl border-l-4 animate-in slide-in-from-right-5 flex flex-col gap-2 relative group w-72
+              ${notify.type === 'expired' ? 'bg-slate-900 border-l-red-500' : 'bg-slate-900 border-l-blue-500'}`}>
+              <button onClick={(e) => { e.stopPropagation(); setDismissedNotifications(prev => [...prev, notify.id]); }} className="absolute top-2 right-2 p-1 bg-white/10 hover:bg-red-500 rounded-full transition-colors" title="Dispensar"><X size={12} /></button>
               <div className="cursor-pointer" onClick={() => {
-                setSearchTerm(notify.patientName);
-                if (notify.type === 'expired' && activeTab === 'relatorios') {
-                  // If already in reports, maybe stay there, but user wanted patient card
+                if (notify.type === 'expired') {
+                  setSearchTerm(notify.patientName);
                   setActiveTab(notify.sector);
                 } else {
-                  setActiveTab(notify.sector);
+                  setReportInitialTab('pendentes');
+                  setActiveTab('relatorios');
                 }
               }}>
                 <div className="flex items-center gap-2 mb-1">
-                  <div className={`p-1 rounded-lg ${notify.type === 'expired' ? 'bg-red-500' : 'bg-orange-500'}`}>
+                  <div className={`p-1 rounded-lg ${notify.type === 'expired' ? 'bg-red-500' : 'bg-blue-500'}`}>
                     <Bell size={12} />
                   </div>
-                  <span className={`text-[8px] font-black uppercase ${notify.type === 'expired' ? 'text-red-400' : 'text-orange-400'}`}>
-                    {notify.type === 'expired' ? 'Vencimento' : 'Avaliação Pendente'}
+                  <span className={`text-[8px] font-black uppercase ${notify.type === 'expired' ? 'text-red-400' : 'text-blue-400'}`}>
+                    {notify.type === 'expired' ? 'Vencimento ATB (Individual)' : 'Rotina do Sistema (Geral)'}
                   </span>
                 </div>
-                <p className="text-[9px] font-black uppercase leading-tight">{notify.patientName}</p>
-                <p className="text-[8px] font-bold text-slate-400 uppercase italic mt-0.5">{notify.text}</p>
-                <div className="mt-2 flex items-center gap-1 text-[8px] font-black text-emerald-400 uppercase">Ver <ArrowRight size={10} /></div>
+                <p className="text-[10px] font-black uppercase leading-tight text-white">{notify.patientName}</p>
+                <p className="text-[9px] font-bold text-slate-300 uppercase italic mt-0.5">{notify.text}</p>
+                <div className="mt-2 flex items-center gap-1 text-[8px] font-black text-emerald-400 uppercase">Ver mais <ArrowRight size={10} /></div>
               </div>
             </div>
           ))}
