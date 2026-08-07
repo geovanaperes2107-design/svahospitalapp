@@ -26,7 +26,6 @@ export const DEFAULT_SECTORS = [
   'Pronto Socorro',
   'Ambulatório',
   'UTI Adulto',
-  'UTI Neonatal',
   'Centro Cirúrgico'
 ];
 
@@ -155,7 +154,6 @@ export const DEFAULT_MENU_ITEMS = [
   { id: 'Pronto Socorro', label: 'Pronto Socorro', icon: <Ambulance size={20} />, color: 'bg-[#ea580c]' },
   { id: 'Ambulatório', label: 'Ambulatório', icon: <Stethoscope size={20} />, color: 'bg-[#0d9488]' },
   { id: 'UTI Adulto', label: 'UTI Adulto', icon: <Activity size={20} />, color: 'bg-[#b91c1c]' },
-  { id: 'UTI Neonatal', label: 'UTI Neonatal', icon: <Activity size={20} />, color: 'bg-[#b91c1c]' },
   { id: 'Centro Cirúrgico', label: 'Centro Cirúrgico', icon: <Scissors size={20} />, color: 'bg-[#7c3aed]' },
   { id: 'finalizados', label: 'Painel Finalizados', icon: <CheckSquare size={20} />, color: 'bg-[#475569]' },
   { id: 'relatorios', label: 'Relatórios', icon: <FileText size={20} />, color: 'bg-[#3b82f6]' },
