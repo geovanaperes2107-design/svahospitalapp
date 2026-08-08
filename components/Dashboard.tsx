@@ -418,19 +418,15 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
 
     if (configNotifyReset) {
-      const now = new Date();
-      const currentH = now.getHours();
-      const currentM = now.getMinutes();
-
-      const [clinH, clinM] = configResetTime.split(':').map(Number);
-      const [utiH, utiM] = configResetTimeUTI.split(':').map(Number);
-
-      const isClinTime = currentH > clinH || (currentH === clinH && currentM >= clinM);
-      const isUtiTime = currentH > utiH || (currentH === utiH && currentM >= utiM);
-
       const todayStr = new Date().toISOString().split('T')[0];
+      const savedResets = localStorage.getItem('sva_sector_resets');
+      let lastResetDateMap: Record<string, string> = {};
+      try {
+        if (savedResets) lastResetDateMap = JSON.parse(savedResets);
+      } catch (e) { }
 
-      if (isClinTime) {
+      // Exibe a notificação APENAS após o reset ter sido efetivamente executado no horário hoje
+      if (lastResetDateMap['GERAL'] === todayStr) {
         const resetClinId = `reset-clin-${todayStr}`;
         if (!dismissedNotifications.includes(resetClinId)) {
           list.push({
@@ -444,7 +440,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         }
       }
 
-      if (isUtiTime) {
+      if (lastResetDateMap['UTI'] === todayStr) {
         const resetUtiId = `reset-uti-${todayStr}`;
         if (!dismissedNotifications.includes(resetUtiId)) {
           list.push({
