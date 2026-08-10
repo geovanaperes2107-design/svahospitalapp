@@ -190,8 +190,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
     };
 
     const filteredUsers = (currentUser.role === UserRole.ADMINISTRADOR ? users : users.filter(u => u.id === currentUser.id)).filter(u =>
-        u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.cpf.includes(searchTerm)
+        (u.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (u.cpf || '').includes(searchTerm)
     );
 
     return (

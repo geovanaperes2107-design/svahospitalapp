@@ -670,24 +670,38 @@ const App: React.FC = () => {
   };
 
   const handleAddUser = useCallback(async (u: User) => {
-    // Admin provisioning flow
     if (!u.cpf || !u.password) {
       alert("Para cadastrar um usuário, preencha CPF e uma Senha Chave (temporária).");
       return;
     }
 
+    const cleanCpf = u.cpf.replace(/\D/g, '');
+    const formattedCpf = cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    const cleanEmail = u.email.toLowerCase().trim();
+
+    // Clean up any legacy or duplicate pre-registrations and profiles first to avoid duplicate key errors
+    await supabase.from('pre_registrations').delete().in('cpf', [cleanCpf, formattedCpf, u.cpf]);
+    if (cleanEmail) {
+      await supabase.from('pre_registrations').delete().eq('email', cleanEmail);
+    }
+    await supabase.from('profiles').delete().in('cpf', [cleanCpf, formattedCpf]);
+    if (cleanEmail) {
+      await supabase.from('profiles').delete().eq('email', cleanEmail);
+    }
+
+    // Insert fresh pre-registration
     const { error } = await supabase.from('pre_registrations').insert([{
-      cpf: u.cpf,
-      email: u.email,
-      name: u.name.toUpperCase(),
+      cpf: cleanCpf,
+      email: cleanEmail,
+      name: u.name.toUpperCase().trim(),
       sector: u.sector,
       role: u.role,
-      temp_password: u.password // The 'key' password
+      temp_password: u.password
     }]);
 
     if (error) {
       console.error('Erro ao pré-cadastrar usuário:', error);
-      alert(`Erro ao cadastrar: ${error.message}. Verifique se o CPF já existe.`);
+      alert(`Erro ao cadastrar: ${error.message}`);
     } else {
       alert(`Usuário ${u.name} pré-cadastrado com sucesso! Informe a senha chave "${u.password}" para o primeiro acesso.`);
       fetchUsers();
@@ -764,21 +778,32 @@ const App: React.FC = () => {
 
     const confirm = window.confirm("Confirmar exclusão deste usuário?");
     if (confirm) {
-      setUsers(prev => prev.filter(u => u.id !== id));
+      setUsers(prev => {
+        const target = prev.find(u => u.id === id);
+        if (target) {
+          const rawCpf = target.cpf || id.replace('pre-', '');
+          const cleanCpf = rawCpf.replace(/\D/g, '');
+          const formattedCpf = cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+          const cleanEmail = target.email?.toLowerCase().trim();
 
-      if (String(id).startsWith('pre-')) {
-        const cpf = String(id).replace('pre-', '');
-        const { error } = await supabase.from('pre_registrations').delete().eq('cpf', cpf);
-        if (error) alert("Erro ao excluir pré-cadastro: " + error.message);
-      } else {
-        const { error } = await supabase.from('profiles').delete().eq('id', id);
-        if (error) {
-          console.error("Error deleting profile:", error);
-          // We can't easily delete from auth.users via client without edge function, 
-          // so deleting profile effectively 'hides' them and prevents logic from working mostly.
-          fetchUsers();
+          // Delete from pre_registrations
+          supabase.from('pre_registrations').delete().in('cpf', [cleanCpf, formattedCpf, rawCpf]).then(() => {
+            if (cleanEmail) supabase.from('pre_registrations').delete().eq('email', cleanEmail);
+          });
+
+          // Delete from profiles
+          if (!String(id).startsWith('pre-')) {
+            supabase.from('profiles').delete().eq('id', id);
+          }
+          if (cleanEmail) {
+            supabase.from('profiles').delete().eq('email', cleanEmail);
+          }
+          supabase.from('profiles').delete().in('cpf', [cleanCpf, formattedCpf]);
         }
-      }
+        return prev.filter(u => u.id !== id);
+      });
+
+      setTimeout(() => fetchUsers(), 500);
     }
   }, [user, fetchUsers]);
 
