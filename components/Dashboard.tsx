@@ -113,9 +113,11 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [infectoHistoryMonth, setInfectoHistoryMonth] = useState(() =>
     localStorage.getItem('sva_infecto_month') || new Date().toISOString().substring(0, 7)
   );
-  const [ccSubTab, setCcSubTab] = useState<'pendentes' | 'avaliados' | 'historico'>(() =>
-    (localStorage.getItem('sva_cc_subtab') as any) || 'pendentes'
-  );
+  const [ccSubTab, setCcSubTab] = useState<'pendentes' | 'avaliados' | 'historico'>(() => {
+    const saved = localStorage.getItem('sva_cc_subtab');
+    if (saved === 'finalizados') return 'avaliados';
+    return (saved as any) || 'pendentes';
+  });
   const [ccHistoryMonth, setCcHistoryMonth] = useState(() =>
     localStorage.getItem('sva_cc_month') || new Date().toISOString().substring(0, 7)
   );
@@ -238,16 +240,23 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (activeTab === 'Centro Cirúrgico') {
       const isCC = p.sector === 'Centro Cirúrgico';
       const historicallyCC = p.sector === 'Centro Cirúrgico' || p.history.some(h => h.details.includes('Centro Cirúrgico'));
+      const currentMonth = new Date().toISOString().substring(0, 7);
 
       if (ccSubTab === 'historico') {
-        const matchesMonth = p.antibiotics.some(a => a.startDate.startsWith(ccHistoryMonth));
+        const matchesMonth = p.antibiotics.some(a => a.startDate.startsWith(ccHistoryMonth)) ||
+          (p.procedureDate ? p.procedureDate.startsWith(ccHistoryMonth) : false);
         return historicallyCC && matchesMonth && matchesSearch;
       }
 
       if (!isCC) return false;
-      const isEvaluated = !!p.incisionRelation;
-      if (ccSubTab === 'pendentes') return !isEvaluated && matchesSearch;
-      return isEvaluated && matchesSearch;
+      const isCurrentMonth = p.antibiotics.some(a => a.startDate.startsWith(currentMonth)) ||
+        (p.procedureDate ? p.procedureDate.startsWith(currentMonth) : true);
+
+      if (!isCurrentMonth) return false;
+
+      const hasIncision = !!p.incisionRelation;
+      if (ccSubTab === 'pendentes') return !hasIncision && matchesSearch;
+      return hasIncision && matchesSearch; // Sub-aba 'avaliados'
     }
 
     if (activeTab === 'infectologia') {
@@ -359,8 +368,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const stats = useMemo(() => {
-    const activeAtbPatients = patients.filter(p => p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO));
-    const totalActiveATBs = patients.reduce((acc, p) => acc + p.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO).length, 0);
+    const activeAtbPatients = patients.filter(p => p.sector !== 'Centro Cirúrgico' && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO));
+    const totalActiveATBs = patients.reduce((acc, p) => p.sector === 'Centro Cirúrgico' ? acc : acc + p.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO).length, 0);
 
     const expiredPatients = activeAtbPatients.filter(p =>
       !p.sector.includes('Centro Cir') &&
@@ -683,13 +692,20 @@ const Dashboard: React.FC<DashboardProps> = ({
                       <p className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-2 leading-none">Gestão e Monitoramento</p>
                     </div>
                   </div>
-                  {activeTab === 'Centro Cirúrgico' && (
-                    <div className="flex gap-2">
-                      <button onClick={() => setCcSubTab('pendentes')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${ccSubTab === 'pendentes' ? 'bg-purple-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Pendentes</button>
-                      <button onClick={() => setCcSubTab('avaliados')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${ccSubTab === 'avaliados' ? 'bg-purple-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Avaliados</button>
-                      <button onClick={() => setCcSubTab('historico')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${ccSubTab === 'historico' ? 'bg-purple-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Histórico</button>
-                    </div>
-                  )}
+                  {activeTab === 'Centro Cirúrgico' && (() => {
+                    const currentMonth = new Date().toISOString().substring(0, 7);
+                    const pendCount = patients.filter(p => p.sector === 'Centro Cirúrgico' && !p.incisionRelation && (p.antibiotics.some(a => a.startDate.startsWith(currentMonth)) || (p.procedureDate ? p.procedureDate.startsWith(currentMonth) : true))).length;
+                    const avalCount = patients.filter(p => p.sector === 'Centro Cirúrgico' && !!p.incisionRelation && (p.antibiotics.some(a => a.startDate.startsWith(currentMonth)) || (p.procedureDate ? p.procedureDate.startsWith(currentMonth) : true))).length;
+                    const histCount = patients.filter(p => (p.sector === 'Centro Cirúrgico' || p.history.some(h => h.details.includes('Centro Cirúrgico'))) && (p.antibiotics.some(a => a.startDate.startsWith(ccHistoryMonth)) || (p.procedureDate ? p.procedureDate.startsWith(ccHistoryMonth) : false))).length;
+
+                    return (
+                      <div className="flex gap-2">
+                        <button onClick={() => setCcSubTab('pendentes')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${ccSubTab === 'pendentes' ? 'bg-purple-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Pendentes ({pendCount})</button>
+                        <button onClick={() => setCcSubTab('avaliados')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${ccSubTab === 'avaliados' || (ccSubTab as string) === 'finalizados' ? 'bg-purple-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Avaliados ({avalCount})</button>
+                        <button onClick={() => setCcSubTab('historico')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${ccSubTab === 'historico' ? 'bg-purple-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Histórico ({histCount})</button>
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
                   {activeTab === 'infectologia' && (

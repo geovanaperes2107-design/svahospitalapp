@@ -116,6 +116,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
   }, [patient.antibiotics]);
 
   const isCC = patient.sector === 'Centro Cirúrgico';
+  const isEvaluatedEffective = isCC || patient.isEvaluated;
   const isInfectoPanel = activeTab === 'infectologia';
 
   // --- ROLE-BASED PERMISSIONS ---
@@ -276,16 +277,24 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
   };
 
   const handleIncisionChange = (relation: IncisionRelation) => {
+    const updatedAntibiotics = isCC
+      ? patient.antibiotics.map(a => ({
+          ...a,
+          status: AntibioticStatus.FINALIZADO
+        }))
+      : patient.antibiotics;
+
     onUpdate({
       ...patient,
       incisionRelation: relation,
+      isEvaluated: true,
+      antibiotics: updatedAntibiotics,
       history: addHistory('CC Registro', `Relação com incisão: ${relation}`)
     });
   };
 
   const getCardTheme = () => {
-    if (patient.isEvaluated) return 'bg-purple-100 border-purple-500 shadow-purple-200';
-    if (isCC) return 'bg-slate-50 border-purple-300 shadow-purple-50';
+    if (isEvaluatedEffective) return 'bg-purple-100 border-purple-500 shadow-purple-200';
     const activeAtbs = patient.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO);
     if (activeAtbs.length === 0) return 'bg-white border-slate-200';
     const minDaysRemaining = Math.min(...activeAtbs.map(a => {
@@ -306,9 +315,11 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
     setShowStatusMenu(null);
   };
 
-  const antibioticsToDisplay = activeTab === 'finalizados'
-    ? patient.antibiotics.filter(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.EVADIDO, AntibioticStatus.OBITO].includes(a.status))
-    : patient.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO);
+  const antibioticsToDisplay = (isCC || activeTab === 'Centro Cirúrgico')
+    ? patient.antibiotics
+    : (activeTab === 'finalizados'
+      ? patient.antibiotics.filter(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.EVADIDO, AntibioticStatus.OBITO].includes(a.status))
+      : patient.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO));
 
   return (
     <div
@@ -321,7 +332,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
     >
 
       {/* 🔝 HEADER OTIMIZADO */}
-      <div className={`px-4 py-3 flex items-start justify-between border-b rounded-t-xl transition-colors ${patient.isEvaluated ? 'border-purple-200 bg-purple-100/50' : 'border-black/5 bg-white/40'}`}>
+      <div className={`px-4 py-3 flex items-start justify-between border-b rounded-t-xl transition-colors ${isEvaluatedEffective ? 'border-purple-200 bg-purple-100/50' : 'border-black/5 bg-white/40'}`}>
         <div className="flex gap-4 items-start flex-1 text-left">
           <div className="bg-white px-2 py-1.5 rounded-xl border border-black/5 shadow-sm min-w-[64px] text-center flex items-center gap-1.5">
             {!isInfectoPanel && <GripVertical size={16} className="text-slate-300 -ml-1 cursor-grab active:cursor-grabbing" />}
@@ -466,12 +477,13 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                     <button
                       disabled={isInfectoPanel}
                       onClick={() => !isInfectoPanel && setShowStatusMenu(showStatusMenu === atb.id ? null : atb.id)}
-                      className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase transition-all shadow-sm ${atb.status === AntibioticStatus.EM_USO ? 'bg-emerald-500 text-white' :
+                      className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase transition-all shadow-sm ${isCC || atb.status === AntibioticStatus.FINALIZADO ? 'bg-purple-600 text-white' :
+                        atb.status === AntibioticStatus.EM_USO ? 'bg-emerald-500 text-white' :
                         atb.status === AntibioticStatus.SUSPENSO ? 'bg-amber-500 text-white' :
-                          atb.status === AntibioticStatus.OBITO ? 'bg-slate-700 text-white' : 'bg-red-500 text-white'
+                        atb.status === AntibioticStatus.OBITO ? 'bg-slate-700 text-white' : 'bg-red-500 text-white'
                         } ${isInfectoPanel ? 'cursor-default' : ''}`}
                     >
-                      <div className="w-1 h-1 rounded-full bg-white animate-pulse" /> {atb.status} {!isInfectoPanel && '▾'}
+                      <div className="w-1 h-1 rounded-full bg-white animate-pulse" /> {isCC ? 'Finalizado' : atb.status} {!isInfectoPanel && '▾'}
                     </button>
                     {showStatusMenu === atb.id && !isInfectoPanel && (
                       <div className="absolute top-full left-0 mt-1 w-32 bg-white shadow-xl rounded-xl p-1 z-[200] border border-slate-100 flex flex-col gap-0.5">
@@ -629,8 +641,8 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
         })}
 
         <div className="flex justify-end items-center gap-2 pt-1 uppercase text-[9px] font-black">
-          <button onClick={() => onUpdate({ ...patient, isEvaluated: !patient.isEvaluated })} className={`px-4 py-1 rounded-full font-black uppercase shadow transition-all ${patient.isEvaluated ? 'bg-purple-600 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'}`}>
-            {patient.isEvaluated ? '✓ AVALIADO' : 'MARCAR COMO AVALIADO'}
+          <button onClick={() => onUpdate({ ...patient, isEvaluated: !patient.isEvaluated })} className={`px-4 py-1 rounded-full font-black uppercase shadow transition-all ${isEvaluatedEffective ? 'bg-purple-600 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'}`}>
+            {isEvaluatedEffective ? '✓ AVALIADO' : 'MARCAR COMO AVALIADO'}
           </button>
         </div>
 

@@ -90,7 +90,7 @@ const BulkImport: React.FC<BulkImportProps> = ({ onImport, onCancel }) => {
                             diagnosis: diagnosis || 'Não informado',
                             treatmentType: validSector === 'Centro Cirúrgico' ? TreatmentType.PROFILATICO : TreatmentType.TERAPEUTICO,
                             infectoStatus: validSector === 'Centro Cirúrgico' ? InfectoStatus.AUTORIZADO : InfectoStatus.PENDENTE,
-                            isEvaluated: false,
+                            isEvaluated: validSector === 'Centro Cirúrgico' ? true : false,
                             history: [{
                                 date: new Date().toLocaleString('pt-BR'),
                                 action: 'Importação',
@@ -105,7 +105,7 @@ const BulkImport: React.FC<BulkImportProps> = ({ onImport, onCancel }) => {
                                 frequency: frequency || '',
                                 startDate: startDate && String(startDate).includes('/') ? startDate.split('/').reverse().join('-') : (startDate || new Date().toISOString().split('T')[0]),
                                 durationDays: parseInt(duration) || 7,
-                                status: AntibioticStatus.EM_USO,
+                                status: validSector === 'Centro Cirúrgico' ? AntibioticStatus.FINALIZADO : AntibioticStatus.EM_USO,
                                 times: ['08:00'],
                                 route: 'EV'
                             }] : []
@@ -136,7 +136,7 @@ const BulkImport: React.FC<BulkImportProps> = ({ onImport, onCancel }) => {
                             diagnosis: diagnosis || 'Não informado',
                             treatmentType: validSector === 'Centro Cirúrgico' ? TreatmentType.PROFILATICO : TreatmentType.TERAPEUTICO,
                             infectoStatus: validSector === 'Centro Cirúrgico' ? InfectoStatus.AUTORIZADO : InfectoStatus.PENDENTE,
-                            isEvaluated: false,
+                            isEvaluated: validSector === 'Centro Cirúrgico' ? true : false,
                             history: [{
                                 date: new Date().toLocaleString('pt-BR'),
                                 action: 'Importação',
@@ -151,7 +151,7 @@ const BulkImport: React.FC<BulkImportProps> = ({ onImport, onCancel }) => {
                                 frequency: frequency || '',
                                 startDate: startDate && String(startDate).includes('/') ? startDate.split('/').reverse().join('-') : (startDate || new Date().toISOString().split('T')[0]),
                                 durationDays: parseInt(duration) || 7,
-                                status: AntibioticStatus.EM_USO,
+                                status: validSector === 'Centro Cirúrgico' ? AntibioticStatus.FINALIZADO : AntibioticStatus.EM_USO,
                                 times: ['08:00'],
                                 route: 'EV'
                             }] : []

@@ -54,7 +54,8 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
         ...atb,
         name: 'CEFAZOLINA PO P/ SOL INJ 1G',
         frequency: 'Dose Única',
-        durationDays: 1
+        durationDays: 1,
+        status: AntibioticStatus.FINALIZADO
       })));
       setFormData(prev => ({ ...prev, treatmentType: TreatmentType.PROFILATICO }));
     }
@@ -73,7 +74,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
           frequency: formData.sector === 'Centro Cirúrgico' ? 'Dose Única' : '08/08',
           startDate: new Date().toISOString().split('T')[0],
           durationDays: formData.sector === 'Centro Cirúrgico' ? 1 : 7,
-          status: AntibioticStatus.EM_USO,
+          status: formData.sector === 'Centro Cirúrgico' ? AntibioticStatus.FINALIZADO : AntibioticStatus.EM_USO,
           times: ['08:00'],
           route: 'EV'
         });
@@ -113,7 +114,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
       observation: formData.observation,
       treatmentType: formData.sector === 'Centro Cirúrgico' ? TreatmentType.PROFILATICO : formData.treatmentType,
       infectoStatus: formData.sector === 'Centro Cirúrgico' ? InfectoStatus.AUTORIZADO : InfectoStatus.PENDENTE,
-      isEvaluated: false,
+      isEvaluated: formData.sector === 'Centro Cirúrgico' ? true : false,
       history: [
         {
           date: new Date().toLocaleString('pt-BR'),
