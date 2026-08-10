@@ -68,17 +68,16 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
       const isCpfMatch = cleanInput.length === 11 && /^\d+$/.test(cleanInput);
 
       if (isCpfMatch) {
-        // Normalize the CPF for lookup - Ensure we use trimmed digits-only primarily
         const digitsOnly = cleanInput;
         const formattedCpf = formatCpf(digitsOnly);
 
         console.log('Login CPF Lookup debug:', { formattedCpf, digitsOnly });
 
-        // Lookup email by CPF in profiles first (trying both formatted and unformatted)
+        // Lookup email by CPF in profiles first (trying both formatted and unformatted using .in)
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('email')
-          .or(`cpf.eq.${digitsOnly},cpf.eq.${formattedCpf}`)
+          .in('cpf', [digitsOnly, formattedCpf])
           .maybeSingle();
 
         if (profile) {
@@ -88,7 +87,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
           const { data: preReg } = await supabase
             .from('pre_registrations')
             .select('email')
-            .or(`cpf.eq.${digitsOnly},cpf.eq.${formattedCpf}`)
+            .in('cpf', [digitsOnly, formattedCpf])
             .maybeSingle();
 
           if (preReg) {
@@ -131,7 +130,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
             const { data: preRegByCpf } = await supabase
               .from('pre_registrations')
               .select('*')
-              .or(`cpf.eq.${formattedCpf},cpf.eq.${cleanInput}`)
+              .in('cpf', [cleanInput, formattedCpf])
               .maybeSingle();
 
             if (preRegByCpf) emailForPreReg = preRegByCpf.email;
@@ -144,10 +143,21 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
             .eq('email', emailForPreReg)
             .maybeSingle();
 
-          if (preReg && (preReg.temp_password === password || preReg.temp_password === password.toUpperCase())) {
+          const isPasswordMatch = preReg && preReg.temp_password && (
+            preReg.temp_password.trim() === password.trim() ||
+            preReg.temp_password.trim().toLowerCase() === password.trim().toLowerCase() ||
+            preReg.temp_password.trim().toUpperCase() === password.trim().toUpperCase()
+          );
+
+          if (preReg && isPasswordMatch) {
             // Found pre-registration and password matches!
             // Execute JIT Sign Up
             console.log('Pre-registration found. Signing up...');
+
+            if (password.length < 6) {
+              setError('A senha temporária definida pelo administrador possui menos de 6 caracteres. Peça ao administrador para redefinir a senha com no mínimo 6 caracteres.');
+              return;
+            }
 
             const { data: authData, error: signUpError } = await supabase.auth.signUp({
               email: emailForPreReg,
@@ -160,7 +170,13 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
               }
             });
 
-            if (signUpError) throw signUpError;
+            if (signUpError) {
+              if (signUpError.message?.includes('at least 6 characters')) {
+                setError('A senha temporária precisa ter no mínimo 6 caracteres.');
+                return;
+              }
+              throw signUpError;
+            }
 
             if (authData.user) {
               // Create Profile
@@ -179,7 +195,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
               if (profileError) console.error('Error creating profile for pre-reg:', profileError);
 
               // Delete Pre-registration
-              await supabase.from('pre_registrations').delete().eq('cpf', preReg.cpf);
+              await supabase.from('pre_registrations').delete().in('cpf', [preReg.cpf, formatCpf(preReg.cpf)]);
 
               if (authData.session) {
                 // Session established
@@ -192,8 +208,12 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
               }
             }
           }
-        } catch (jitError) {
+        } catch (jitError: any) {
           console.error('Error during JIT check:', jitError);
+          if (jitError.message?.includes('at least 6 characters')) {
+            setError('A senha deve conter no mínimo 6 caracteres.');
+            return;
+          }
         }
       }
 

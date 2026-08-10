@@ -913,13 +913,14 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                         <input
                                             required
                                             type="text"
-                                            className="w-full bg-white dark:bg-slate-900 border-2 border-amber-200 dark:border-amber-800 p-3 rounded-xl font-black text-center text-lg tracking-[0.5em] focus:border-amber-500 outline-none text-slate-900 dark:text-white transition-all"
+                                            minLength={6}
+                                            className="w-full bg-white dark:bg-slate-900 border-2 border-amber-200 dark:border-amber-800 p-3 rounded-xl font-black text-center text-lg tracking-[0.3em] focus:border-amber-500 outline-none text-slate-900 dark:text-white transition-all"
                                             value={formData.password || ''}
                                             onChange={e => setFormData({ ...formData, password: e.target.value.toUpperCase() })}
-                                            placeholder="8754"
-                                            maxLength={6}
+                                            placeholder="SVA123"
+                                            maxLength={12}
                                         />
-                                        <p className="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase text-center">Informe esta senha ao colaborador para o primeiro acesso.</p>
+                                        <p className="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase text-center">Mínimo 6 caracteres. Informe esta senha ao colaborador para o primeiro acesso.</p>
                                     </div>
                                 )}
                             </div>
@@ -1040,11 +1041,12 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             <div className="space-y-4 mt-6">
                                 <input
                                     type="text"
-                                    className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 p-4 rounded-2xl font-black text-center text-lg tracking-[0.5em] focus:border-yellow-500 outline-none text-slate-900 dark:text-white transition-all uppercase"
-                                    placeholder="NOVA SENHA"
+                                    minLength={6}
+                                    className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 p-4 rounded-2xl font-black text-center text-lg tracking-[0.3em] focus:border-yellow-500 outline-none text-slate-900 dark:text-white transition-all uppercase"
+                                    placeholder="NOVA SENHA (MÍN 6 DIG)"
                                     value={newResetPassword}
                                     onChange={e => setNewResetPassword(e.target.value.toUpperCase())}
-                                    maxLength={8}
+                                    maxLength={12}
                                 />
                                 <div className="flex gap-2">
                                     <button onClick={() => setResetPasswordUser(null)} className="flex-1 py-4 bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-400 rounded-2xl font-black uppercase text-[10px] hover:bg-slate-200 dark:hover:bg-slate-600 transition-all">Cancelar</button>

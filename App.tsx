@@ -711,13 +711,26 @@ const App: React.FC = () => {
 
     // Determine if it is a pre-registration or full profile based on ID
     if (String(u.id).startsWith('pre-')) {
-      const cpf = String(u.id).replace('pre-', '');
-      // For pre-regs, we only update core fields
-      const { error } = await supabase.from('pre_registrations').update({
-        name: u.name,
+      const rawCpf = String(u.id).replace('pre-', '');
+      const cleanCpf = rawCpf.replace(/\D/g, '');
+      const formattedCpf = cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+      
+      const updateData: any = {
+        name: u.name.toUpperCase(),
         sector: u.sector,
         role: u.role,
-      }).eq('cpf', cpf);
+        email: u.email.toLowerCase().trim()
+      };
+
+      if (u.password) {
+        updateData.temp_password = u.password;
+      }
+
+      const { error } = await supabase
+        .from('pre_registrations')
+        .update(updateData)
+        .in('cpf', [cleanCpf, formattedCpf, rawCpf]);
+
       if (error) alert("Erro ao atualizar pré-cadastro: " + error.message);
     } else {
       const { error } = await supabase.from('profiles').update(payload).eq('id', u.id);
