@@ -91,50 +91,74 @@ export const getCategoryForDiagnosis = (diagText: string): string => {
     .replace(/[\u0300-\u036f]/g, '')
     .toUpperCase();
 
-  // 1. SEPSE / SEPSIS / SÉPTICA / CHOQUE SÉPTICO / FOCO SÉPTICO / SEPTICEMIA
+  // 1. SEPSE / SEPSIS / SÉPTICO / SÉPTICA / CHOQUE SÉPTICO / SEPTICEMIA / FOCO SÉPTICO
   if (
     norm.includes('SEPSE') ||
     norm.includes('SEPSIS') ||
     norm.includes('SEPTIC') ||
     norm.includes('SEPTICO') ||
-    norm.includes('SEPTICA')
+    norm.includes('SEPTICA') ||
+    norm.includes('SEPTICEMIA') ||
+    norm.includes('FOCO SEPT')
   ) {
     return 'SEPSE';
   }
 
-  // 2. ITU / INFECÇÃO URINÁRIA / PIELONEFRITE / TRATO URINÁRIO / CISTITE
+  // 2. PNEUMONIA / PNM / PAC / PAV / PULMONAR / BRONCOPNEUMONIA / PNEUMOPATIA
+  if (
+    norm.includes('PNEUMONIA') ||
+    norm.includes('PNEUMO') ||
+    norm.includes('BRONCOPNEUMO') ||
+    norm.includes('PULMONAR') ||
+    norm.includes('PNEUMOPATIA') ||
+    /\bPNM\b/.test(norm) ||
+    /\bPAC\b/.test(norm) ||
+    /\bPAV\b/.test(norm) ||
+    norm.includes('INFEC CAO RESPIRATORIA') ||
+    norm.includes('INFECCAO RESPIRATORIA') ||
+    norm.includes('INF RESPIRATORIA')
+  ) {
+    return 'PNEUMONIA';
+  }
+
+  // 3. ITU / INFECÇÃO URINÁRIA / PIELONEFRITE / CISTITE / TRATO URINÁRIO
   if (
     norm.includes('ITU') ||
     norm.includes('URINARI') ||
     norm.includes('PIELONEFRITE') ||
     norm.includes('PYELONEFRITE') ||
-    norm.includes('CISTITE')
+    norm.includes('CISTITE') ||
+    norm.includes('TRATO URINARIO') ||
+    norm.includes('INF URINARIA')
   ) {
     return 'ITU';
   }
 
-  // 3. PNEUMONIA / PAV / PAC / PULMONAR
+  // 4. DPOC / BRONQUITE / ENFISEMA
   if (
-    norm.includes('PNEUMONIA') ||
-    norm.includes('PNEUMO') ||
-    norm.includes('PAV') ||
-    norm.includes('PAC')
+    norm.includes('DPOC') ||
+    norm.includes('BRONQUITE') ||
+    norm.includes('ENFISEMA')
   ) {
-    return 'PNEUMONIA';
-  }
-
-  // 4. DPOC
-  if (norm.includes('DPOC')) {
     return 'DPOC';
   }
 
-  // 5. APENDICITE
-  if (norm.includes('APENDICITE')) {
+  // 5. APENDICITE / APENDICECTOMIA
+  if (
+    norm.includes('APENDIC') ||
+    norm.includes('APPENDIX')
+  ) {
     return 'APENDICITE';
   }
 
-  // 6. FRATURA
-  if (norm.includes('FRATURA')) {
+  // 6. FRATURA / FRACTURA / FÊMUR / OSTEOSSÍNTESE
+  if (
+    norm.includes('FRATURA') ||
+    norm.includes('FRACTURA') ||
+    norm.includes('FEMUR') ||
+    norm.includes('OSTEOSSINTESE') ||
+    /\bFX\b/.test(norm)
+  ) {
     return 'FRATURA';
   }
 
