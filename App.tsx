@@ -688,24 +688,48 @@ const App: React.FC = () => {
     const cleanCpf = u.cpf.replace(/\D/g, '');
     const formattedCpf = cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
     const cleanEmail = u.email.toLowerCase().trim();
+    const effectiveRole = (u.sector === 'FARMÁCIA' || u.sector === 'FARMACIA') ? UserRole.FARMACEUTICO : normalizeRole(u.role);
 
-    // Clean up any legacy or duplicate pre-registrations and profiles first to avoid duplicate key errors
+    // 1. Check if user already exists in profiles
+    const { data: existingProfiles } = await supabase
+      .from('profiles')
+      .select('*')
+      .or(`email.eq.${cleanEmail},cpf.eq.${cleanCpf},cpf.eq.${formattedCpf}`)
+      .limit(1);
+
+    if (existingProfiles && existingProfiles.length > 0) {
+      // User profile already exists in Supabase! Update existing profile with new credentials
+      const profile = existingProfiles[0];
+      const { error: updateErr } = await supabase.from('profiles').update({
+        name: u.name.toUpperCase().trim(),
+        sector: u.sector,
+        role: effectiveRole,
+        cpf: cleanCpf,
+        temp_password: u.password,
+        needs_password_change: true
+      }).eq('id', profile.id);
+
+      if (updateErr) {
+        alert("Erro ao atualizar usuário existente: " + updateErr.message);
+      } else {
+        alert(`Usuário ${u.name} atualizado com sucesso! Perfil: ${effectiveRole}. Informar a senha "${u.password}".`);
+        fetchUsers();
+      }
+      return;
+    }
+
+    // 2. Otherwise insert fresh pre-registration
     await supabase.from('pre_registrations').delete().in('cpf', [cleanCpf, formattedCpf, u.cpf]);
     if (cleanEmail) {
       await supabase.from('pre_registrations').delete().eq('email', cleanEmail);
     }
-    await supabase.from('profiles').delete().in('cpf', [cleanCpf, formattedCpf]);
-    if (cleanEmail) {
-      await supabase.from('profiles').delete().eq('email', cleanEmail);
-    }
 
-    // Insert fresh pre-registration
     const { error } = await supabase.from('pre_registrations').insert([{
       cpf: cleanCpf,
       email: cleanEmail,
       name: u.name.toUpperCase().trim(),
       sector: u.sector,
-      role: u.role,
+      role: effectiveRole,
       temp_password: u.password
     }]);
 
@@ -718,7 +742,7 @@ const App: React.FC = () => {
         name: `${u.name.toUpperCase().trim()} (PENDENTE)`,
         email: cleanEmail,
         cpf: cleanCpf,
-        role: u.role,
+        role: effectiveRole,
         sector: u.sector,
         mobile: '',
         birthDate: '',
@@ -726,7 +750,7 @@ const App: React.FC = () => {
         password: u.password
       };
       setUsers(prev => [...prev.filter(x => (x.email?.toLowerCase().trim() !== cleanEmail && (x.cpf || '').replace(/\D/g, '') !== cleanCpf)), newUserObj]);
-      alert(`Usuário ${u.name} pré-cadastrado com sucesso! Informe a senha chave "${u.password}" para o primeiro acesso.`);
+      alert(`Usuário ${u.name} pré-cadastrado com sucesso! Perfil: ${effectiveRole}. Informe a senha chave "${u.password}" para o primeiro acesso.`);
       fetchUsers();
     }
   }, [fetchUsers]);
