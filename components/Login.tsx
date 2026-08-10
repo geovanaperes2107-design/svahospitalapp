@@ -73,25 +73,25 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
 
         console.log('Login CPF Lookup debug:', { formattedCpf, digitsOnly });
 
-        // Lookup email by CPF in profiles first (trying both formatted and unformatted using .in)
-        const { data: profile, error: profileError } = await supabase
+        // Lookup email by CPF in profiles first (trying both formatted and unformatted using .in and .limit(1))
+        const { data: profilesFound, error: profileError } = await supabase
           .from('profiles')
           .select('email')
           .in('cpf', [digitsOnly, formattedCpf])
-          .maybeSingle();
+          .limit(1);
 
-        if (profile) {
-          emailToLogin = profile.email;
+        if (profilesFound && profilesFound.length > 0) {
+          emailToLogin = profilesFound[0].email;
         } else {
           // If not in profiles, check pre_registrations for pre-registered users doing first-time JIT login
-          const { data: preReg } = await supabase
+          const { data: preRegsFound } = await supabase
             .from('pre_registrations')
             .select('email')
             .in('cpf', [digitsOnly, formattedCpf])
-            .maybeSingle();
+            .limit(1);
 
-          if (preReg) {
-            emailToLogin = preReg.email;
+          if (preRegsFound && preRegsFound.length > 0) {
+            emailToLogin = preRegsFound[0].email;
           } else {
             if (profileError) {
               console.error('Database error during CPF lookup:', profileError);
@@ -131,17 +131,22 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
               .from('pre_registrations')
               .select('*')
               .in('cpf', [cleanInput, formattedCpf])
-              .maybeSingle();
+              .limit(1);
 
-            if (preRegByCpf) emailForPreReg = preRegByCpf.email;
+            if (preRegByCpf && preRegByCpf.length > 0) {
+              emailForPreReg = preRegByCpf[0].email;
+            }
           }
 
-          // Check pre_registrations
-          const { data: preReg } = await supabase
+          // Check pre_registrations by email OR clean cpf OR formatted cpf
+          const formattedCpfInput = isCpfMatch ? formatCpf(cleanInput) : '';
+          const { data: preRegList } = await supabase
             .from('pre_registrations')
             .select('*')
-            .eq('email', emailForPreReg)
-            .maybeSingle();
+            .or(`email.eq.${emailForPreReg},cpf.eq.${cleanInput},cpf.eq.${formattedCpfInput}`)
+            .limit(1);
+
+          const preReg = preRegList && preRegList.length > 0 ? preRegList[0] : null;
 
           const isPasswordMatch = preReg && preReg.temp_password && (
             preReg.temp_password.trim() === password.trim() ||
@@ -152,7 +157,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
           if (preReg && isPasswordMatch) {
             // Found pre-registration and password matches!
             // Execute JIT Sign Up
-            console.log('Pre-registration found. Signing up...');
+            console.log('Pre-registration found for FIRST ACCESS. Signing up...');
 
             if (password.length < 6) {
               setError('A senha temporária definida pelo administrador possui menos de 6 caracteres. Peça ao administrador para redefinir a senha com no mínimo 6 caracteres.');
@@ -160,7 +165,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
             }
 
             const { data: authData, error: signUpError } = await supabase.auth.signUp({
-              email: emailForPreReg,
+              email: preReg.email.toLowerCase().trim(),
               password: password,
               options: {
                 data: {
@@ -179,7 +184,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
                 console.log('User already registered in Auth. Trying RPC or direct login recovery...');
                 try {
                   await supabase.rpc('update_user_password', {
-                    user_email: emailForPreReg,
+                    user_email: preReg.email.toLowerCase().trim(),
                     new_password: password
                   });
                 } catch (rErr) {
@@ -187,7 +192,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
                 }
 
                 const { data: retryAuth, error: retryErr } = await supabase.auth.signInWithPassword({
-                  email: emailForPreReg,
+                  email: preReg.email.toLowerCase().trim(),
                   password: password
                 });
 
@@ -195,7 +200,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
                   // Ensure profile exists
                   await supabase.from('profiles').upsert([{
                     id: retryAuth.user.id,
-                    email: emailForPreReg,
+                    email: preReg.email.toLowerCase().trim(),
                     cpf: preReg.cpf,
                     name: preReg.name.toUpperCase(),
                     role: preReg.role,
@@ -205,10 +210,11 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
                   }]);
 
                   await supabase.from('pre_registrations').delete().in('cpf', [preReg.cpf, formatCpf(preReg.cpf)]);
+                  await supabase.from('pre_registrations').delete().eq('email', preReg.email.toLowerCase().trim());
                   onLoginSuccess();
                   return;
                 } else {
-                  setError(`O e-mail (${emailForPreReg}) já possui um cadastro anterior na autenticação. Clique em "ESQUECI MINHA SENHA" abaixo para definir a senha de acesso.`);
+                  setError(`O e-mail (${preReg.email}) já possui um cadastro anterior na autenticação. Clique em "ESQUECI MINHA SENHA" abaixo para definir a senha de acesso.`);
                   return;
                 }
               }
@@ -219,9 +225,9 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
               // Create Profile
               const { error: profileError } = await supabase
                 .from('profiles')
-                .insert([{
+                .upsert([{
                   id: authData.user.id,
-                  email: emailForPreReg,
+                  email: preReg.email.toLowerCase().trim(),
                   cpf: preReg.cpf,
                   name: preReg.name.toUpperCase(),
                   role: preReg.role,
@@ -234,13 +240,24 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
 
               // Delete Pre-registration
               await supabase.from('pre_registrations').delete().in('cpf', [preReg.cpf, formatCpf(preReg.cpf)]);
+              await supabase.from('pre_registrations').delete().eq('email', preReg.email.toLowerCase().trim());
 
               if (authData.session) {
                 // Session established
                 onLoginSuccess();
                 return; // Successfully logged in via JIT
               } else {
-                // Session null -> Email confirmation required
+                // Session null -> Try signing in immediately with the password!
+                const { data: directSignIn, error: directSignInErr } = await supabase.auth.signInWithPassword({
+                  email: preReg.email.toLowerCase().trim(),
+                  password: password
+                });
+
+                if (!directSignInErr && directSignIn.session) {
+                  onLoginSuccess();
+                  return;
+                }
+
                 setError('sucesso: Cadastro inicial realizado! Verifique seu e-mail para ativar a conta.');
                 return;
               }
