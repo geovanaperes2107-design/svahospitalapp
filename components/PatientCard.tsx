@@ -24,7 +24,7 @@ import {
 import { Patient, UserRole, AntibioticStatus, InfectoStatus, Antibiotic, HistoryEntry, TreatmentType, IncisionRelation, MedicationCategory } from '../types';
 import { DEFAULT_SECTORS, ANTIBIOTICS_LIST, FREQUENCY_OPTIONS, MEDICATION_LISTS } from '../constants';
 import { format, differenceInDays, parseISO, startOfDay, addDays } from 'date-fns';
-import { calculateEndDate, parseAnyDate } from '../utils';
+import { calculateEndDate, parseAnyDate, isD0Frequency } from '../utils';
 
 interface PatientCardProps {
   patient: Patient;
@@ -300,7 +300,8 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
     const minDaysRemaining = Math.min(...activeAtbs.map(a => {
       const start = startOfDay(parseISO(a.startDate));
       const today = startOfDay(new Date());
-      const calculatedDay = differenceInDays(today, start) + 1;
+      const diff = differenceInDays(today, start);
+      const calculatedDay = isD0Frequency(a.frequency) ? Math.max(0, diff) : Math.max(1, diff + 1);
       const currentCycle = calculatedDay + (a.cycleOffset || 0);
       return a.durationDays - currentCycle;
     }));
@@ -446,9 +447,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
           const start = startOfDay(parseAnyDate(atb.startDate));
           const adjustedToday = startOfDay(automationNow);
           const diff = differenceInDays(adjustedToday, start);
-          const freqUpper = (atb.frequency || '').toUpperCase();
-          const isFractionalFreq = freqUpper.includes('4/4') || freqUpper.includes('6/6') || freqUpper.includes('8/8') || freqUpper.includes('12/12');
-          const calculatedDay = isFractionalFreq ? Math.max(0, diff) : Math.max(1, diff + 1);
+          const calculatedDay = isD0Frequency(atb.frequency) ? Math.max(0, diff) : Math.max(1, diff + 1);
 
           let displayDay = calculatedDay + (atb.cycleOffset || 0);
 

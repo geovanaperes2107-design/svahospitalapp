@@ -47,14 +47,30 @@ export const getDaysRemaining = (endDate: string): number => {
   return differenceInDays(end, today);
 };
 
+export const isD0Frequency = (frequency?: string): boolean => {
+  if (!frequency) return false;
+  const f = frequency.toUpperCase().replace(/\s+/g, '');
+
+  if (f.includes('24') || f.includes('48') || f.includes('DOSE') || f.includes('1X')) {
+    return false;
+  }
+
+  const d0Patterns = [
+    '12/12', '12-12', '12EM12', '12H',
+    '8/8', '08/08', '8-8', '08-08', '8EM8', '08EM08', '8H',
+    '6/6', '06/06', '6-6', '06-06', '6EM6', '06EM06', '6H',
+    '4/4', '04/04', '4-4', '04-04', '4EM4', '04EM04', '4H'
+  ];
+
+  return d0Patterns.some(pattern => f.includes(pattern));
+};
+
 export const getATBDay = (startDate: string, frequency?: string): number => {
   const today = startOfDay(new Date());
   const start = startOfDay(parseAnyDate(startDate));
   const diff = differenceInDays(today, start);
-  const freqUpper = (frequency || '').toUpperCase();
-  const isFractionalFreq = freqUpper.includes('4/4') || freqUpper.includes('6/6') || freqUpper.includes('8/8') || freqUpper.includes('12/12');
 
-  if (isFractionalFreq) {
+  if (isD0Frequency(frequency)) {
     return Math.max(0, diff);
   } else {
     return Math.max(1, diff + 1);
