@@ -182,7 +182,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
       updatedAtbs.push(atbObj);
       updateLog = `Adicionado ATB: ${newAtb.name}`;
     } else if (editMode?.type === 'troca') {
-      updatedAtbs = updatedAtbs.map(a => a.id === editMode.atbId ? { ...a, status: AntibioticStatus.TROCADO } : a);
+      updatedAtbs = updatedAtbs.map(a => a.id === editMode.atbId ? { ...a, status: AntibioticStatus.TROCADO, swapReason: newAtb.justification } : a);
       const atbObj: Antibiotic = {
         id: 'atb-' + Math.random().toString(36).substr(2, 9),
         category: getInferredCategory(newAtb.name),
@@ -199,6 +199,11 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
       };
       updatedAtbs.push(atbObj);
       updateLog = `Substituição: ${newAtb.name} substituiu ${editMode.oldAtbName}. Motivo: ${newAtb.justification}`;
+      
+      const swapNote = `[SUBSTITUIÇÃO DE ATB] ${newAtb.name} substituiu ${editMode.oldAtbName}. Motivo: ${newAtb.justification}`;
+      updatedPatient.prescriberNotes = updatedPatient.prescriberNotes
+        ? `${updatedPatient.prescriberNotes}\n${swapNote}`
+        : swapNote;
     } else if (editMode?.type === 'editar') {
       // If tempBed has changed, update patient bed
       if (tempBed !== patient.bed) {

@@ -233,9 +233,9 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
     const isProfilatico = (p: Patient) => p.treatmentType === TreatmentType.PROFILATICO || String(p.treatmentType || '').toUpperCase().includes('PROFIL');
 
     if (type === 'finalized') {
-      title = 'Pacientes com ATBs Finalizados';
+      title = 'Pacientes com ATBs Finalizados / Encerrados';
       color = 'emerald';
-      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.status === AntibioticStatus.FINALIZADO);
+      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.status === AntibioticStatus.FINALIZADO || a.status === AntibioticStatus.TROCADO);
     } else if (type === 'suspended') {
       title = 'Pacientes com ATBs Suspensos';
       color = 'amber';
@@ -298,7 +298,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
 
     const patientsList = matchedPatients.map(p => {
       let filteredAtbs = p.antibiotics.filter(a => (
-        type === 'finalized' ? a.status === AntibioticStatus.FINALIZADO :
+        type === 'finalized' ? (a.status === AntibioticStatus.FINALIZADO || a.status === AntibioticStatus.TROCADO) :
         type === 'suspended' ? a.status === AntibioticStatus.SUSPENSO :
         type === 'substituted' ? a.status === AntibioticStatus.TROCADO :
         type === 'obitos' ? a.status === AntibioticStatus.OBITO :
@@ -434,10 +434,12 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
           const doseMg = parseFloat(a.dose.replace(/[^\d.]/g, '')) || 0;
           const doseG = a.dose.toUpperCase().includes('G') && !a.dose.toUpperCase().includes('MG') ? doseMg : doseMg / 1000;
           
-          // Se o ATB está EM_USO, usa os dias decorridos no ciclo; se FINALIZADO/SUSPENSO/TROCADO, usa os dias prescritos/executados
+          // Se o ATB está EM_USO, usa os dias decorridos no ciclo; se FINALIZADO/SUSPENSO/TROCADO, calcula os dias efetivamente consumidos até o encerramento/troca
+          const calculatedDays = Math.max(1, getATBDay(a.startDate, a.frequency));
+          const maxDuration = Number(a.durationDays) || 1;
           const daysUsed = a.status === AntibioticStatus.EM_USO
-            ? Math.max(1, getATBDay(a.startDate, a.frequency))
-            : (Number(a.durationDays) || 1);
+            ? calculatedDays
+            : Math.min(calculatedDays, maxDuration);
 
           const consumo = doseG * daysUsed;
 
