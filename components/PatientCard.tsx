@@ -445,9 +445,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
             : now;
 
           const start = startOfDay(parseAnyDate(atb.startDate));
-          const adjustedToday = startOfDay(automationNow);
-          const diff = differenceInDays(adjustedToday, start);
-          const calculatedDay = isD0Frequency(atb.frequency) ? Math.max(0, diff) : Math.max(1, diff + 1);
+          const adjustedTodayCandidate = startOfDay(automationNow);
+          // Impede que o dia retroceda para antes da data de início do medicamento
+          const adjustedToday = adjustedTodayCandidate < start ? start : adjustedTodayCandidate;
+          const diff = Math.max(0, differenceInDays(adjustedToday, start));
+          const isD0 = isD0Frequency(atb.frequency);
+          const calculatedDay = isD0 ? Math.max(0, diff) : Math.max(1, diff + 1);
 
           let displayDay = calculatedDay + (atb.cycleOffset || 0);
 
@@ -460,6 +463,10 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
             // Se ajustou hoje, mantém o valor exato do ajuste até a próxima "virada"
             displayDay = calculatedDay + (atb.cycleOffset || 0);
           }
+
+          // Garante que o dia exibido nunca seja negativo (ex: -1)
+          const minDay = isD0 ? 0 : 1;
+          displayDay = Math.max(minDay, displayDay);
 
           const daysRemaining = atb.durationDays - displayDay;
           const isVencido = daysRemaining <= 0;
