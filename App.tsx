@@ -733,6 +733,20 @@ const App: React.FC = () => {
 
       if (error) alert("Erro ao atualizar pré-cadastro: " + error.message);
     } else {
+      const payload: any = {
+        name: u.name,
+        sector: u.sector,
+        role: u.role,
+        mobile: u.mobile,
+        birth_date: parseDateToDb(u.birthDate),
+        photo_url: u.photoURL,
+        needs_password_change: u.needsPasswordChange
+      };
+
+      if (u.password) {
+        payload.temp_password = u.password;
+      }
+
       const { error } = await supabase.from('profiles').update(payload).eq('id', u.id);
       if (error) {
         console.error("Error updating user profile:", error);

@@ -189,7 +189,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
                   name: preReg.name.toUpperCase(),
                   role: preReg.role,
                   sector: preReg.sector,
-                  needs_password_change: true
+                  needs_password_change: true,
+                  temp_password: password
                 }]);
 
               if (profileError) console.error('Error creating profile for pre-reg:', profileError);
@@ -206,6 +207,39 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
                 setError('sucesso: Cadastro inicial realizado! Verifique seu e-mail para ativar a conta.');
                 return;
               }
+            }
+          }
+
+          // 2. Check if user profile has temp_password matching
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('email', emailForPreReg)
+            .maybeSingle();
+
+          const isProfilePasswordMatch = profile && profile.temp_password && (
+            profile.temp_password.trim() === password.trim() ||
+            profile.temp_password.trim().toLowerCase() === password.trim().toLowerCase() ||
+            profile.temp_password.trim().toUpperCase() === password.trim().toUpperCase()
+          );
+
+          if (profile && isProfilePasswordMatch) {
+            console.log('Profile temp_password matched. Attempting RPC password update...');
+            try {
+              await supabase.rpc('update_user_password', {
+                user_email: emailForPreReg,
+                new_password: password
+              });
+              const { error: retryError } = await supabase.auth.signInWithPassword({
+                email: emailForPreReg,
+                password
+              });
+              if (!retryError) {
+                onLoginSuccess();
+                return;
+              }
+            } catch (rpcErr) {
+              console.log('RPC sync notice:', rpcErr);
             }
           }
         } catch (jitError: any) {
