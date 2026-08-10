@@ -817,7 +817,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                     <p className="text-[8px] font-bold text-slate-400 uppercase mt-2 leading-tight">Valor usado para o cálculo de demanda nas compras.</p>
                                     
                                     {(() => {
-                                        const activeAtbCount = (patients || []).filter(p => p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)).length;
+                                        const activeAtbCount = (patients || []).filter(p => p.sector !== 'Centro Cirúrgico' && !p.sector?.includes('Centro Cir') && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)).length;
                                         const computedPatientDays = (activeAtbCount || (patients || []).length || 1) * 30;
                                         return (
                                             <button

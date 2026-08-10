@@ -236,6 +236,9 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
     let therapeuticCount = 0, prophylacticCount = 0, oralCount = 0, ivCount = 0;
 
     filteredPatients.forEach(p => {
+      // Exclui pacientes do Centro Cirúrgico de todos os indicadores gerais de relatórios
+      if (p.sector === 'Centro Cirúrgico' || p.sector?.includes('Centro Cir')) return;
+
       if (p.treatmentType === TreatmentType.TERAPEUTICO) therapeuticCount++; else prophylacticCount++;
       let hasAtbInPeriod = false;
       let hasActiveAtb = false;
@@ -264,7 +267,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
       if (hasActiveAtb) currentActivePatients.add(p.id);
     });
 
-    const vencidosCount = filteredPatients.filter(p => !p.sector.includes('Centro Cir') && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0)).length;
+    const vencidosCount = filteredPatients.filter(p => p.sector !== 'Centro Cirúrgico' && !p.sector.includes('Centro Cir') && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0)).length;
 
     return {
       totalPatients: totalPatientsInPeriod.size,

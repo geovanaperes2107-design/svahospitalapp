@@ -459,7 +459,7 @@ const App: React.FC = () => {
     doc.text(`Gerado em: ${format(today, 'dd/MM/yyyy HH:mm')}`, 14, 34);
 
     // Stats
-    const activePatients = patients.filter(p => p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)).length;
+    const activePatients = patients.filter(p => p.sector !== 'Centro Cirúrgico' && !p.sector?.includes('Centro Cir') && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)).length;
     doc.text(`Pacientes em Uso de ATB: ${activePatients}`, 14, 45);
     const totalCost = (Object.values(atbCosts) as any[]).reduce((a: number, b: number) => a + (Number(b) || 0), 0);
     doc.text(`Custo Total Estimado: R$ ${totalCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 14, 51);
