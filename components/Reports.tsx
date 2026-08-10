@@ -271,19 +271,27 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
     let totalDDD = 0;
 
     filteredPatients.forEach(p => {
-      p.antibiotics.filter(a => a.category === categoryFilter).forEach(a => {
-        const doseMg = parseFloat(a.dose.replace(/[^\d.]/g, '')) || 0;
-        const doseG = a.dose.toUpperCase().includes('G') && !a.dose.toUpperCase().includes('MG') ? doseMg : doseMg / 1000;
-        const totalDays = Number(a.durationDays) || 0;
-        const consumo = doseG * totalDays;
+      p.antibiotics
+        .filter(a => a.category === categoryFilter)
+        .filter(a => [AntibioticStatus.EM_USO, AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.OBITO].includes(a.status))
+        .forEach(a => {
+          const doseMg = parseFloat(a.dose.replace(/[^\d.]/g, '')) || 0;
+          const doseG = a.dose.toUpperCase().includes('G') && !a.dose.toUpperCase().includes('MG') ? doseMg : doseMg / 1000;
+          
+          // Se o ATB está EM_USO, usa os dias decorridos no ciclo; se FINALIZADO/SUSPENSO/TROCADO, usa os dias prescritos/executados
+          const daysUsed = a.status === AntibioticStatus.EM_USO
+            ? Math.max(1, getATBDay(a.startDate, a.frequency))
+            : (Number(a.durationDays) || 1);
 
-        consumoByAtb[a.name] = (consumoByAtb[a.name] || 0) + consumo;
+          const consumo = doseG * daysUsed;
 
-        const dddValue = DDD_MAP[a.name.toUpperCase()] || 1;
-        const dddCalc = (consumo / dddValue / patientDays) * 1000;
-        dddByAtb[a.name] = (dddByAtb[a.name] || 0) + dddCalc;
-        totalDDD += dddCalc;
-      });
+          consumoByAtb[a.name] = (consumoByAtb[a.name] || 0) + consumo;
+
+          const dddValue = DDD_MAP[a.name.toUpperCase()] || 1;
+          const dddCalc = (consumo / dddValue / patientDays) * 1000;
+          dddByAtb[a.name] = (dddByAtb[a.name] || 0) + dddCalc;
+          totalDDD += dddCalc;
+        });
     });
 
     const sorted = Object.entries(dddByAtb).sort((a, b) => b[1] - a[1]);
