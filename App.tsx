@@ -357,7 +357,16 @@ const App: React.FC = () => {
     const validProfiles = profiles ? profiles.map(mapProfileToUser) : [];
     const validPreRegs = preRegs ? preRegs.map(mapPreRegToUser) : [];
 
-    setUsers([...validProfiles, ...validPreRegs]);
+    const existingEmails = new Set(validProfiles.map(p => p.email?.toLowerCase().trim()));
+    const existingCpfs = new Set(validProfiles.map(p => (p.cpf || '').replace(/\D/g, '')));
+
+    const filteredPreRegs = validPreRegs.filter(pr => {
+      const prEmail = pr.email?.toLowerCase().trim();
+      const prCpf = (pr.cpf || '').replace(/\D/g, '');
+      return !existingEmails.has(prEmail) && !existingCpfs.has(prCpf);
+    });
+
+    setUsers([...validProfiles, ...filteredPreRegs]);
   }, []);
 
   useEffect(() => {
@@ -703,6 +712,19 @@ const App: React.FC = () => {
       console.error('Erro ao pré-cadastrar usuário:', error);
       alert(`Erro ao cadastrar: ${error.message}`);
     } else {
+      const newUserObj: User = {
+        id: `pre-${cleanCpf}`,
+        name: `${u.name.toUpperCase().trim()} (PENDENTE)`,
+        email: cleanEmail,
+        cpf: cleanCpf,
+        role: u.role,
+        sector: u.sector,
+        mobile: '',
+        birthDate: '',
+        needsPasswordChange: true,
+        password: u.password
+      };
+      setUsers(prev => [...prev.filter(x => (x.email?.toLowerCase().trim() !== cleanEmail && (x.cpf || '').replace(/\D/g, '') !== cleanCpf)), newUserObj]);
       alert(`Usuário ${u.name} pré-cadastrado com sucesso! Informe a senha chave "${u.password}" para o primeiro acesso.`);
       fetchUsers();
     }

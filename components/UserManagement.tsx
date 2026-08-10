@@ -189,10 +189,18 @@ const UserManagement: React.FC<UserManagementProps> = ({
         }
     };
 
-    const filteredUsers = (currentUser.role === UserRole.ADMINISTRADOR ? users : users.filter(u => u.id === currentUser.id)).filter(u =>
-        (u.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (u.cpf || '').includes(searchTerm)
-    );
+    const isAdmin = String(currentUser.role || '').toUpperCase() === 'ADMINISTRADOR';
+    const cleanSearch = (searchTerm || '').toLowerCase().trim();
+    const filteredUsers = (isAdmin ? users : users.filter(u => u.id === currentUser.id)).filter(u => {
+        if (!cleanSearch) return true;
+        const nameMatch = (u.name || '').toLowerCase().includes(cleanSearch);
+        const emailMatch = (u.email || '').toLowerCase().includes(cleanSearch);
+        const cleanCpf = (u.cpf || '').replace(/\D/g, '');
+        const cleanSearchDigits = cleanSearch.replace(/\D/g, '');
+        const cpfMatch = (cleanSearchDigits && cleanCpf.includes(cleanSearchDigits)) || (u.cpf || '').toLowerCase().includes(cleanSearch);
+        const sectorMatch = (u.sector || '').toLowerCase().includes(cleanSearch);
+        return nameMatch || emailMatch || cpfMatch || sectorMatch;
+    });
 
     return (
         <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500 pb-10 text-left">
