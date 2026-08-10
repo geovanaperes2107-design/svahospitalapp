@@ -844,12 +844,13 @@ const App: React.FC = () => {
   };
 
   // Check for Forced Password Change
-  const needsPasswordChange = users.find(u => u.id === currentUser.id)?.needsPasswordChange;
+  const targetUserObj = users.find(u => u.id === currentUser.id || u.email?.toLowerCase() === currentUser.email?.toLowerCase());
+  const needsPasswordChange = targetUserObj?.needsPasswordChange === true;
 
   if (recoverySession || (session && needsPasswordChange)) {
     return <PasswordReset onSuccess={() => {
       setRecoverySession(false);
-      // Refresh users to clear needsPasswordChange without losing session
+      setUsers(prev => prev.map(u => (u.id === currentUser.id || u.email?.toLowerCase() === currentUser.email?.toLowerCase()) ? { ...u, needsPasswordChange: false } : u));
       fetchUsers();
     }} />;
   }

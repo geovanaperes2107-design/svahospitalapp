@@ -45,20 +45,24 @@ const PasswordReset: React.FC<PasswordResetProps> = ({ onSuccess }) => {
                 throw error;
             }
 
-            // Update profile flag
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const { error: profileError } = await supabase.from('profiles').update({ needs_password_change: false }).eq('id', user.id);
-                if (profileError) {
-                    console.error('Error updating profile:', profileError);
-                    throw new Error('A senha foi alterada, mas houve um erro ao atualizar seu perfil. Por favor, tente novamente ou contate o suporte.');
+            // Update profile flag & pre-registrations
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    await supabase.from('profiles').update({ needs_password_change: false }).eq('id', user.id);
+                    if (user.email) {
+                        await supabase.from('profiles').update({ needs_password_change: false }).eq('email', user.email.toLowerCase());
+                        await supabase.from('pre_registrations').delete().eq('email', user.email.toLowerCase());
+                    }
                 }
+            } catch (pErr) {
+                console.warn('Profile update notice during password reset:', pErr);
             }
 
             setSuccess(true);
             setTimeout(() => {
                 onSuccess();
-            }, 1000);
+            }, 800);
         } catch (err: any) {
             setError(err.message || 'Erro ao atualizar senha.');
         } finally {
