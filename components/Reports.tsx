@@ -243,14 +243,16 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
     };
   }, [filteredPatients, categoryFilter]);
 
-  // CENSO INFECTO
+  // CENSO INFECTO (Exclui estritamente pacientes do Centro Cirúrgico)
   const censoStats = useMemo(() => {
-    const auth = filteredPatients.filter(p => p.infectoStatus === InfectoStatus.AUTORIZADO).length;
-    const notAuth = filteredPatients.filter(p => p.infectoStatus === InfectoStatus.NAO_AUTORIZADO).length;
-    const pending = filteredPatients.filter(p => p.infectoStatus === InfectoStatus.PENDENTE && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)).length;
-    const total = filteredPatients.length;
-    const semAvaliacao = filteredPatients.filter(p => p.infectoStatus === InfectoStatus.PENDENTE && p.sector !== 'Centro Cirúrgico' && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO));
-    const todosIniciados = filteredPatients.filter(p =>
+    const infectoPatients = filteredPatients.filter(p => p.sector !== 'Centro Cirúrgico' && !p.sector.includes('Centro Cir'));
+
+    const auth = infectoPatients.filter(p => p.infectoStatus === InfectoStatus.AUTORIZADO).length;
+    const notAuth = infectoPatients.filter(p => p.infectoStatus === InfectoStatus.NAO_AUTORIZADO).length;
+    const pending = infectoPatients.filter(p => p.infectoStatus === InfectoStatus.PENDENTE && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)).length;
+    const total = infectoPatients.length;
+    const semAvaliacao = infectoPatients.filter(p => p.infectoStatus === InfectoStatus.PENDENTE && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO));
+    const todosIniciados = infectoPatients.filter(p =>
       p.antibiotics.some(a => a.category === MedicationCategory.ANTIMICROBIANO)
     ).sort((a, b) => a.name.localeCompare(b.name));
 
@@ -406,7 +408,10 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
       });
     } else if (activeReportTab === 'monitoramento' || activeReportTab === 'censo') {
       headers = ["Paciente", "Leito", "Setor", "ATB/Dose", "Início", "Dia", "Status"];
-      rows = filteredPatients.flatMap(p =>
+      const censoExportPatients = activeReportTab === 'censo'
+        ? filteredPatients.filter(p => p.sector !== 'Centro Cirúrgico' && !p.sector.includes('Centro Cir'))
+        : filteredPatients;
+      rows = censoExportPatients.flatMap(p =>
         p.antibiotics.filter(a => a.category === categoryFilter).map(a => [
           p.name, p.bed, p.sector, `${a.name}\n(${a.dose})`, a.startDate, `D${getATBDay(a.startDate, a.frequency)}`, p.infectoStatus
         ])
@@ -450,7 +455,9 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
 
   const exportToExcel = () => {
     const headers = ["Paciente", "Nascimento", "Leito", "Setor", "Medicamento", "Dose", "Frequência", "Início", "Duração", "Dia Ciclo", "Status", "Status Infecto", "Diagnóstico"];
-    const sourcePatients = activeReportTab === 'pendentes' ? pendingEvaluationPatients : filteredPatients;
+    const sourcePatients = activeReportTab === 'censo'
+      ? filteredPatients.filter(p => p.sector !== 'Centro Cirúrgico' && !p.sector.includes('Centro Cir'))
+      : activeReportTab === 'pendentes' ? pendingEvaluationPatients : filteredPatients;
     const rows = sourcePatients.flatMap(p =>
       p.antibiotics.filter(a => a.category === categoryFilter).map(a => [
         p.name, p.birthDate, p.bed, p.sector, a.name, a.dose, a.frequency, a.startDate, a.durationDays, `D${getATBDay(a.startDate, a.frequency)}`, a.status, p.infectoStatus, p.diagnosis

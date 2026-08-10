@@ -260,6 +260,9 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
 
     if (activeTab === 'infectologia') {
+      const isCC = p.sector === 'Centro Cirúrgico' || p.sector?.includes('Centro Cir');
+      if (isCC) return false; // Exclui pacientes do Centro Cirúrgico do painel da Infectologia
+
       const hasActiveAtb = p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO);
       const matchesMonth = p.antibiotics.some(a => a.startDate.startsWith(infectoHistoryMonth));
 
