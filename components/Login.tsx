@@ -175,6 +175,43 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
                 setError('A senha temporária precisa ter no mínimo 6 caracteres.');
                 return;
               }
+              if (signUpError.message?.includes('already registered') || signUpError.message?.includes('already exists') || signUpError.message?.includes('User already')) {
+                console.log('User already registered in Auth. Trying RPC or direct login recovery...');
+                try {
+                  await supabase.rpc('update_user_password', {
+                    user_email: emailForPreReg,
+                    new_password: password
+                  });
+                } catch (rErr) {
+                  console.log('RPC update_user_password notice:', rErr);
+                }
+
+                const { data: retryAuth, error: retryErr } = await supabase.auth.signInWithPassword({
+                  email: emailForPreReg,
+                  password: password
+                });
+
+                if (!retryErr && retryAuth.user) {
+                  // Ensure profile exists
+                  await supabase.from('profiles').upsert([{
+                    id: retryAuth.user.id,
+                    email: emailForPreReg,
+                    cpf: preReg.cpf,
+                    name: preReg.name.toUpperCase(),
+                    role: preReg.role,
+                    sector: preReg.sector,
+                    needs_password_change: true,
+                    temp_password: password
+                  }]);
+
+                  await supabase.from('pre_registrations').delete().in('cpf', [preReg.cpf, formatCpf(preReg.cpf)]);
+                  onLoginSuccess();
+                  return;
+                } else {
+                  setError(`O e-mail (${emailForPreReg}) já possui um cadastro anterior na autenticação. Clique em "ESQUECI MINHA SENHA" abaixo para definir a senha de acesso.`);
+                  return;
+                }
+              }
               throw signUpError;
             }
 
