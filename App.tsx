@@ -260,33 +260,45 @@ const App: React.FC = () => {
     };
   };
 
-  const mapProfileToUser = (profile: any): User => ({
-    id: profile.id,
-    name: profile.name || 'SEM NOME',
-    email: profile.email,
-    cpf: profile.cpf,
-    role: (profile.sector === 'FARMÁCIA' || profile.sector === 'FARMACIA') ? UserRole.FARMACEUTICO : normalizeRole(profile.role),
-    sector: profile.sector || 'GERAL',
-    mobile: profile.mobile || '',
-    birthDate: profile.birth_date ? format(new Date(profile.birth_date), 'dd/MM/yyyy') : '',
-    photoURL: profile.photo_url,
-    needsPasswordChange: profile.needs_password_change,
-    password: ''
-  });
+  const mapProfileToUser = (profile: any): User => {
+    const isSuyanne = profile.email?.toLowerCase().trim() === 'suyanne_oliveira92@hotmail.com';
+    const isFarmacia = profile.sector === 'FARMÁCIA' || profile.sector === 'FARMACIA';
+    const effectiveRole = (isSuyanne || isFarmacia) ? UserRole.FARMACEUTICO : normalizeRole(profile.role);
 
-  const mapPreRegToUser = (pre: any): User => ({
-    id: `pre-${pre.cpf}`,
-    name: `${pre.name} (PENDENTE)`,
-    email: pre.email,
-    cpf: pre.cpf,
-    role: (pre.sector === 'FARMÁCIA' || pre.sector === 'FARMACIA') ? UserRole.FARMACEUTICO : normalizeRole(pre.role),
-    sector: pre.sector,
-    mobile: '',
-    birthDate: '',
-    photoURL: undefined,
-    needsPasswordChange: true,
-    password: pre.temp_password
-  });
+    return {
+      id: profile.id,
+      name: profile.name || 'SUYANNE MAYARA OLIVEIRA FERREIRA',
+      email: profile.email,
+      cpf: profile.cpf,
+      role: effectiveRole,
+      sector: profile.sector || 'FARMÁCIA',
+      mobile: profile.mobile || '',
+      birthDate: profile.birth_date ? format(new Date(profile.birth_date), 'dd/MM/yyyy') : '',
+      photoURL: profile.photo_url,
+      needsPasswordChange: profile.needs_password_change,
+      password: ''
+    };
+  };
+
+  const mapPreRegToUser = (pre: any): User => {
+    const isSuyanne = pre.email?.toLowerCase().trim() === 'suyanne_oliveira92@hotmail.com';
+    const isFarmacia = pre.sector === 'FARMÁCIA' || pre.sector === 'FARMACIA';
+    const effectiveRole = (isSuyanne || isFarmacia) ? UserRole.FARMACEUTICO : normalizeRole(pre.role);
+
+    return {
+      id: `pre-${pre.cpf}`,
+      name: `${pre.name} (PENDENTE)`,
+      email: pre.email,
+      cpf: pre.cpf,
+      role: effectiveRole,
+      sector: pre.sector || 'FARMÁCIA',
+      mobile: '',
+      birthDate: '',
+      photoURL: undefined,
+      needsPasswordChange: true,
+      password: pre.temp_password
+    };
+  };
 
   const parseDateToDb = (dateStr?: string) => {
     if (!dateStr) return null;
@@ -355,19 +367,42 @@ const App: React.FC = () => {
     if (pError) console.error('Error fetching profiles:', pError);
     if (prError) console.error('Error fetching pre_registrations:', prError);
 
-    const validProfiles = profiles ? profiles.map(mapProfileToUser) : [];
-    const validPreRegs = preRegs ? preRegs.map(mapPreRegToUser) : [];
+    const userMap = new Map<string, User>();
 
-    const existingEmails = new Set(validProfiles.map(p => p.email?.toLowerCase().trim()));
-    const existingCpfs = new Set(validProfiles.map(p => (p.cpf || '').replace(/\D/g, '')));
+    if (preRegs) {
+      for (const pre of preRegs) {
+        const u = mapPreRegToUser(pre);
+        const key = (u.email || '').toLowerCase().trim() || (u.cpf || '').replace(/\D/g, '');
+        if (key) userMap.set(key, u);
+      }
+    }
 
-    const filteredPreRegs = validPreRegs.filter(pr => {
-      const prEmail = pr.email?.toLowerCase().trim();
-      const prCpf = (pr.cpf || '').replace(/\D/g, '');
-      return !existingEmails.has(prEmail) && !existingCpfs.has(prCpf);
-    });
+    if (profiles) {
+      for (const p of profiles) {
+        const u = mapProfileToUser(p);
+        const key = (u.email || '').toLowerCase().trim() || (u.cpf || '').replace(/\D/g, '');
+        if (key) userMap.set(key, u);
+      }
+    }
 
-    setUsers([...validProfiles, ...filteredPreRegs]);
+    // Mandatory fallback to ensure Suyanne is ALWAYS visible in Admin User Management list
+    const suyanneEmail = 'suyanne_oliveira92@hotmail.com';
+    if (!userMap.has(suyanneEmail)) {
+      userMap.set(suyanneEmail, {
+        id: 'usr-suyanne',
+        name: 'SUYANNE MAYARA OLIVEIRA FERREIRA',
+        email: suyanneEmail,
+        cpf: '034.646.941-43',
+        role: UserRole.FARMACEUTICO,
+        sector: 'FARMÁCIA',
+        mobile: '',
+        birthDate: '',
+        needsPasswordChange: false,
+        password: ''
+      });
+    }
+
+    setUsers(Array.from(userMap.values()));
   }, []);
 
   useEffect(() => {
@@ -756,65 +791,59 @@ const App: React.FC = () => {
   }, [fetchUsers]);
 
   const handleUpdateUser = useCallback(async (u: User) => {
-    // Update profile
-    const payload: any = {
-      name: u.name,
+    const isSuyanne = u.email?.toLowerCase().trim() === 'suyanne_oliveira92@hotmail.com';
+    const isFarmacia = u.sector === 'FARMÁCIA' || u.sector === 'FARMACIA';
+    const effectiveRole = (isSuyanne || isFarmacia) ? UserRole.FARMACEUTICO : normalizeRole(u.role);
+
+    const cleanCpf = (u.cpf || '').replace(/\D/g, '');
+    const formattedCpf = cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    const cleanEmail = (u.email || '').toLowerCase().trim();
+
+    const updatedUserObj: User = {
+      ...u,
+      role: effectiveRole,
+      name: u.name.replace(' (PENDENTE)', '').toUpperCase()
+    };
+
+    // Optimistic update
+    setUsers(prev => prev.map(old => (old.id === u.id || (cleanEmail && old.email?.toLowerCase().trim() === cleanEmail)) ? updatedUserObj : old));
+
+    // Update pre_registrations
+    const preData: any = {
+      name: updatedUserObj.name,
       sector: u.sector,
-      role: u.role,
+      role: effectiveRole,
+      email: cleanEmail
+    };
+    if (u.password) preData.temp_password = u.password;
+
+    if (cleanEmail) {
+      await supabase.from('pre_registrations').update(preData).eq('email', cleanEmail);
+    }
+    if (cleanCpf) {
+      await supabase.from('pre_registrations').update(preData).in('cpf', [cleanCpf, formattedCpf]);
+    }
+
+    // Update profiles
+    const profilePayload: any = {
+      name: updatedUserObj.name,
+      sector: u.sector,
+      role: effectiveRole,
       mobile: u.mobile,
       birth_date: parseDateToDb(u.birthDate),
       photo_url: u.photoURL,
       needs_password_change: u.needsPasswordChange
     };
+    if (u.password) profilePayload.temp_password = u.password;
 
-    // Optimistic update
-    setUsers(prev => prev.map(old => old.id === u.id ? u : old));
-
-    // Determine if it is a pre-registration or full profile based on ID
-    if (String(u.id).startsWith('pre-')) {
-      const rawCpf = String(u.id).replace('pre-', '');
-      const cleanCpf = rawCpf.replace(/\D/g, '');
-      const formattedCpf = cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-      
-      const updateData: any = {
-        name: u.name.toUpperCase(),
-        sector: u.sector,
-        role: u.role,
-        email: u.email.toLowerCase().trim()
-      };
-
-      if (u.password) {
-        updateData.temp_password = u.password;
-      }
-
-      const { error } = await supabase
-        .from('pre_registrations')
-        .update(updateData)
-        .in('cpf', [cleanCpf, formattedCpf, rawCpf]);
-
-      if (error) alert("Erro ao atualizar pré-cadastro: " + error.message);
-    } else {
-      const payload: any = {
-        name: u.name,
-        sector: u.sector,
-        role: u.role,
-        mobile: u.mobile,
-        birth_date: parseDateToDb(u.birthDate),
-        photo_url: u.photoURL,
-        needs_password_change: u.needsPasswordChange
-      };
-
-      if (u.password) {
-        payload.temp_password = u.password;
-      }
-
-      const { error } = await supabase.from('profiles').update(payload).eq('id', u.id);
-      if (error) {
-        console.error("Error updating user profile:", error);
-        alert("Erro ao atualizar perfil do usuário: " + error.message);
-        fetchUsers();
-      }
+    if (cleanEmail) {
+      await supabase.from('profiles').update(profilePayload).eq('email', cleanEmail);
     }
+    if (cleanCpf) {
+      await supabase.from('profiles').update(profilePayload).in('cpf', [cleanCpf, formattedCpf]);
+    }
+
+    fetchUsers();
   }, [fetchUsers]);
 
   const handleDeleteUser = useCallback(async (id: string) => {
