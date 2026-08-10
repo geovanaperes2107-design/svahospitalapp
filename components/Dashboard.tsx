@@ -179,6 +179,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     patients.filter(p => 
       !p.isEvaluated && 
       p.sector !== 'Centro Cirúrgico' &&
+      !p.sector?.includes('Centro Cir') &&
       p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)
     ), 
     [patients]
@@ -371,15 +372,17 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const stats = useMemo(() => {
-    const activeAtbPatients = patients.filter(p => p.sector !== 'Centro Cirúrgico' && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO));
-    const totalActiveATBs = patients.reduce((acc, p) => p.sector === 'Centro Cirúrgico' ? acc : acc + p.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO).length, 0);
+    const isCC = (sec?: string) => sec === 'Centro Cirúrgico' || sec?.includes('Centro Cir');
+
+    const activeAtbPatients = patients.filter(p => !isCC(p.sector) && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO));
+    const totalActiveATBs = patients.reduce((acc, p) => isCC(p.sector) ? acc : acc + p.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO).length, 0);
 
     const expiredPatients = activeAtbPatients.filter(p =>
-      !p.sector.includes('Centro Cir') &&
       p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0)
     );
 
     const finalizedCount = patients.filter(p =>
+      !isCC(p.sector) &&
       !p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO) &&
       p.antibiotics.some(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.OBITO].includes(a.status))
     ).length;
@@ -390,7 +393,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     });
 
     const todayStr = new Date().toISOString().split('T')[0];
-    const newCycles = patients.reduce((acc, p) => acc + p.antibiotics.filter(a => a.startDate === todayStr).length, 0);
+    const newCycles = patients.reduce((acc, p) => isCC(p.sector) ? acc : acc + p.antibiotics.filter(a => a.startDate === todayStr).length, 0);
 
     const evaluatedCount = activeAtbPatients.filter(p => p.isEvaluated || p.infectoStatus === InfectoStatus.AUTORIZADO).length;
     const adesaoCalc = activeAtbPatients.length > 0
@@ -408,7 +411,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       finalizados: finalizedCount,
       sectorCounts
     };
-  }, [patients]);
+  }, [patients, activeSectors]);
 
   const notifications = useMemo(() => {
     const list: { id: string, patientName: string, text: string, type: 'expired' | 'pending' | 'system', patientId: string, sector: string }[] = [];
