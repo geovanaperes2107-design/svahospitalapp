@@ -357,28 +357,52 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
     const keyDiagnosticStats: Record<string, { count: number; meds: Record<string, number>; sectors: Record<string, number> }> = {};
     keywords.forEach(k => keyDiagnosticStats[k] = { count: 0, meds: {}, sectors: {} });
 
-    const allDiagnoses: Array<{ patient: string; sector: string; diagnosis: string; category: string; atbs: string[] }> = [];
+    let totalActive = 0;
+    let totalFinalized = 0;
+
+    const allDiagnoses: Array<{
+      patient: string;
+      sector: string;
+      diagnosis: string;
+      category: string;
+      hasActiveAtb: boolean;
+      atbs: Array<{ name: string; status: AntibioticStatus }>;
+    }> = [];
 
     filteredPatients.forEach(p => {
       const category = getCategoryForDiagnosis(p.diagnosis);
       keyDiagnosticStats[category].count++;
       keyDiagnosticStats[category].sectors[p.sector] = (keyDiagnosticStats[category].sectors[p.sector] || 0) + 1;
 
-      const atbNames = p.antibiotics.filter(a => a.category === categoryFilter).map(a => a.name);
-      atbNames.forEach(atbName => {
-        keyDiagnosticStats[category].meds[atbName] = (keyDiagnosticStats[category].meds[atbName] || 0) + 1;
+      const categoryAtbs = p.antibiotics.filter(a => a.category === categoryFilter);
+      categoryAtbs.forEach(a => {
+        keyDiagnosticStats[category].meds[a.name] = (keyDiagnosticStats[category].meds[a.name] || 0) + 1;
       });
+
+      const hasActive = categoryAtbs.some(a => a.status === AntibioticStatus.EM_USO);
+      if (hasActive) {
+        totalActive++;
+      } else {
+        totalFinalized++;
+      }
 
       allDiagnoses.push({
         patient: p.name,
         sector: p.sector,
         diagnosis: p.diagnosis || 'Não informado',
         category,
-        atbs: atbNames
+        hasActiveAtb: hasActive,
+        atbs: categoryAtbs.map(a => ({ name: a.name, status: a.status }))
       });
     });
 
-    return { keyDiagnostics: keyDiagnosticStats, allDiagnoses };
+    return {
+      keyDiagnostics: keyDiagnosticStats,
+      allDiagnoses,
+      totalActive,
+      totalFinalized,
+      totalPatients: filteredPatients.length
+    };
   }, [filteredPatients, categoryFilter]);
 
   const handlePrint = () => window.print();
@@ -849,6 +873,12 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
         {/* ===== MATRIZ EPIDEMIOLÓGICA ===== */}
         {activeReportTab === 'epidemiologia' && (
           <div className="space-y-2 animate-in fade-in">
+            <div className="grid grid-cols-3 gap-3 mb-2">
+              <Card label="Total no Mês" value={epidemiologyStats.totalPatients} icon={<Users size={16} />} color="blue" />
+              <Card label="Em Uso (Ativos)" value={epidemiologyStats.totalActive} icon={<Activity size={16} />} color="emerald" />
+              <Card label="Finalizados (Mês)" value={epidemiologyStats.totalFinalized} icon={<CheckCircle2 size={16} />} color="purple" />
+            </div>
+
             <div className="grid grid-cols-3 md:grid-cols-7 gap-3">
               {['SEPSE', 'ITU', 'DPOC', 'PNEUMONIA', 'APENDICITE', 'FRATURA', 'OUTROS'].map((key, i) => {
                 const colors = ['red', 'blue', 'amber', 'emerald', 'purple', 'indigo', 'slate'];
@@ -884,7 +914,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
             <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-md overflow-hidden transition-colors">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-6 border-b dark:border-slate-700 bg-slate-100/50 dark:bg-slate-900/50">
                 <h4 className="text-sm font-black uppercase text-slate-600 dark:text-slate-400 flex items-center gap-3 leading-none tracking-widest">
-                  <Stethoscope size={18} /> Detalhamento de Diagnósticos e Terapias ({epidemiologyStats.allDiagnoses.length})
+                  <Stethoscope size={18} /> Detalhamento de Diagnósticos e Terapias do Mês ({epidemiologyStats.allDiagnoses.length})
                 </h4>
                 <div className="relative w-full md:w-64">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Search size={14} /></span>
@@ -900,7 +930,13 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
               <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
                 <table className="w-full text-left">
                   <thead className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs font-black uppercase tracking-widest border-b-2 dark:border-slate-700 sticky top-0 z-10">
-                    <tr><th className="px-6 py-4">Paciente</th><th className="px-6 py-4 text-center">Setor</th><th className="px-6 py-4">Diagnóstico Principal</th><th className="px-6 py-4">Esquema ATB</th></tr>
+                    <tr>
+                      <th className="px-6 py-4">Paciente</th>
+                      <th className="px-6 py-4 text-center">Setor</th>
+                      <th className="px-6 py-4">Diagnóstico Principal</th>
+                      <th className="px-6 py-4 text-center">Status</th>
+                      <th className="px-6 py-4">Esquema ATB</th>
+                    </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-[13px]">
                     {epidemiologyStats.allDiagnoses
@@ -908,7 +944,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                         const matchesSearch = !searchDiag ||
                           d.patient.toLowerCase().includes(searchDiag.toLowerCase()) ||
                           d.diagnosis.toLowerCase().includes(searchDiag.toLowerCase()) ||
-                          d.atbs.some(a => a.toLowerCase().includes(searchDiag.toLowerCase()));
+                          d.atbs.some(a => a.name.toLowerCase().includes(searchDiag.toLowerCase()));
                         const matchesKeyDiag = !activeKeyDiagnostic || d.category === activeKeyDiagnostic;
                         return matchesSearch && matchesKeyDiag;
                       })
@@ -917,9 +953,18 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                           <td className="px-6 py-4 font-black text-slate-900 dark:text-white uppercase text-sm leading-tight">{d.patient}</td>
                           <td className="px-6 py-4 text-slate-700 dark:text-slate-300 uppercase font-black text-center"><span className="bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px]">{d.sector}</span></td>
                           <td className="px-6 py-4 text-slate-800 dark:text-slate-200 font-black max-w-sm leading-relaxed" title={d.diagnosis}>{d.diagnosis}</td>
+                          <td className="px-6 py-4 text-center">
+                            <span className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase ${d.hasActiveAtb ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border border-purple-200'}`}>
+                              {d.hasActiveAtb ? 'Em Uso' : 'Finalizado'}
+                            </span>
+                          </td>
                           <td className="px-6 py-4">
                             <div className="flex flex-wrap gap-2">
-                              {d.atbs.map((atb, j) => (<span key={j} className="bg-blue-600 text-white px-3 py-1.5 rounded-xl text-[10px] font-black uppercase shadow-sm tracking-tight">{atb}</span>))}
+                              {d.atbs.map((atb, j) => (
+                                <span key={j} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase shadow-sm tracking-tight ${atb.status === AntibioticStatus.EM_USO ? 'bg-emerald-600 text-white' : 'bg-purple-600 text-white'}`}>
+                                  {atb.name} ({atb.status})
+                                </span>
+                              ))}
                             </div>
                           </td>
                         </tr>
