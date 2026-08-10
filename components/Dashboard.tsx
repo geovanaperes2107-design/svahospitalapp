@@ -686,13 +686,13 @@ const Dashboard: React.FC<DashboardProps> = ({
 
           {['finalizados', 'Centro Cirúrgico', 'infectologia', ...activeSectors].includes(activeTab) && (
             <div className="max-w-[1200px] mx-auto space-y-3 text-left animate-in fade-in pb-6">
-              <div className="flex flex-col md:flex-row justify-between items-center no-print bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-md border border-slate-100 dark:border-slate-700 gap-8 transition-colors">
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center gap-8">
-                    <div className={`p-5 rounded-[1.5rem] text-white shadow-lg ${menuItems.find(m => m.id === activeTab)?.color || 'bg-slate-500'}`}>{React.cloneElement(menuItems.find(m => m.id === activeTab)?.icon as React.ReactElement, { size: 36 })}</div>
-                    <div>
-                      <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-none">{menuItems.find(m => m.id === activeTab)?.label}</h2>
-                      <p className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-2 leading-none">Gestão e Monitoramento</p>
+              <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center no-print bg-white dark:bg-slate-800 p-5 md:p-6 lg:p-7 rounded-[2.5rem] shadow-md border border-slate-100 dark:border-slate-700 gap-4 lg:gap-6 transition-colors overflow-hidden">
+                <div className="flex flex-col gap-3 min-w-0">
+                  <div className="flex items-center gap-4 md:gap-6 min-w-0">
+                    <div className={`p-4 md:p-5 rounded-[1.5rem] text-white shadow-lg shrink-0 ${menuItems.find(m => m.id === activeTab)?.color || 'bg-slate-500'}`}>{React.cloneElement(menuItems.find(m => m.id === activeTab)?.icon as React.ReactElement, { size: 32 })}</div>
+                    <div className="min-w-0">
+                      <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-none truncate">{menuItems.find(m => m.id === activeTab)?.label}</h2>
+                      <p className="text-xs md:text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1.5 leading-none">Gestão e Monitoramento</p>
                     </div>
                   </div>
                   {activeTab === 'Centro Cirúrgico' && (() => {
@@ -702,7 +702,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     const histCount = patients.filter(p => (p.sector === 'Centro Cirúrgico' || p.history.some(h => h.details.includes('Centro Cirúrgico'))) && (p.antibiotics.some(a => a.startDate.startsWith(ccHistoryMonth)) || (p.procedureDate ? p.procedureDate.startsWith(ccHistoryMonth) : false))).length;
 
                     return (
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <button onClick={() => setCcSubTab('pendentes')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${ccSubTab === 'pendentes' ? 'bg-purple-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Pendentes ({pendCount})</button>
                         <button onClick={() => setCcSubTab('avaliados')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${ccSubTab === 'avaliados' || (ccSubTab as string) === 'finalizados' ? 'bg-purple-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Avaliados ({avalCount})</button>
                         <button onClick={() => setCcSubTab('historico')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${ccSubTab === 'historico' ? 'bg-purple-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Histórico ({histCount})</button>
@@ -710,18 +710,18 @@ const Dashboard: React.FC<DashboardProps> = ({
                     );
                   })()}
                 </div>
-                <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto shrink-0 min-w-0">
                   {activeTab === 'infectologia' && (
-                    <div className="flex flex-col gap-2">
-                      <div className="flex gap-2">
-                        <button onClick={() => setInfectoSubTab('pendentes')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${infectoSubTab === 'pendentes' ? 'bg-amber-500 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Pendentes</button>
-                        <button onClick={() => setInfectoSubTab('autorizados')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${infectoSubTab === 'autorizados' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Aut.</button>
-                        <button onClick={() => setInfectoSubTab('nao_autorizados')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${infectoSubTab === 'nao_autorizados' ? 'bg-red-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Não Aut.</button>
-                        <button onClick={() => setInfectoSubTab('todos')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${infectoSubTab === 'todos' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Todos</button>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <div className="flex flex-wrap gap-1.5">
+                        <button onClick={() => setInfectoSubTab('pendentes')} className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase transition-all ${infectoSubTab === 'pendentes' ? 'bg-amber-500 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Pendentes</button>
+                        <button onClick={() => setInfectoSubTab('autorizados')} className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase transition-all ${infectoSubTab === 'autorizados' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Aut.</button>
+                        <button onClick={() => setInfectoSubTab('nao_autorizados')} className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase transition-all ${infectoSubTab === 'nao_autorizados' ? 'bg-red-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Não Aut.</button>
+                        <button onClick={() => setInfectoSubTab('todos')} className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase transition-all ${infectoSubTab === 'todos' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Todos</button>
                       </div>
-                      <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-100 shadow-inner w-full justify-between">
-                        <span className="text-[10px] font-black uppercase text-slate-400 ml-2">Mês:</span>
-                        <input type="month" className="bg-transparent border-0 font-bold text-sm outline-none text-slate-600" value={infectoHistoryMonth} onChange={e => setInfectoHistoryMonth(e.target.value)} />
+                      <div className="flex items-center gap-2 bg-slate-50 p-1.5 px-2.5 rounded-xl border border-slate-100 shadow-inner justify-between">
+                        <span className="text-[10px] font-black uppercase text-slate-400">Mês:</span>
+                        <input type="month" className="bg-transparent border-0 font-bold text-xs outline-none text-slate-600" value={infectoHistoryMonth} onChange={e => setInfectoHistoryMonth(e.target.value)} />
                       </div>
                     </div>
                   )}
@@ -732,9 +732,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                       <input type="month" className="bg-transparent border-0 font-bold text-sm outline-none text-slate-600" value={ccHistoryMonth} onChange={e => setCcHistoryMonth(e.target.value)} />
                     </div>
                   )}
-                  <div className="relative w-full md:w-[450px]">
-                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={24} />
-                    <input type="text" placeholder="Filtrar por nome ou leito..." className="w-full pl-14 pr-8 py-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl font-bold text-base outline-none focus:bg-white dark:focus:bg-slate-800 border border-transparent focus:border-blue-400 dark:focus:border-blue-500 transition-all shadow-inner text-slate-900 dark:text-white" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                  <div className="relative w-full sm:w-64 md:w-72 lg:w-80">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={20} />
+                    <input type="text" placeholder="Filtrar por nome ou leito..." className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl font-bold text-sm outline-none focus:bg-white dark:focus:bg-slate-800 border border-transparent focus:border-blue-400 dark:focus:border-blue-500 transition-all shadow-inner text-slate-900 dark:text-white" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                   </div>
                 </div>
               </div>
