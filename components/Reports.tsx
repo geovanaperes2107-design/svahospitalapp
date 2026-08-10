@@ -177,6 +177,91 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
   const [searchPatient, setSearchPatient] = useState('');
   const [searchDiag, setSearchDiag] = useState('');
 
+  const [cardModalData, setCardModalData] = useState<{
+    title: string;
+    color: string;
+    type: string;
+    patientsList: Array<{
+      id: string;
+      name: string;
+      bed: string;
+      sector: string;
+      diagnosis: string;
+      atbs: Array<{ name: string; dose: string; frequency: string; durationDays: number; status: string; startDate: string }>;
+    }>;
+  } | null>(null);
+  const [modalSearchTerm, setModalSearchTerm] = useState('');
+
+  const openCardModal = (type: 'finalized' | 'suspended' | 'substituted' | 'obitos' | 'prolonged' | 'active' | 'total') => {
+    let title = '';
+    let color = 'blue';
+    const nonCC = (p: Patient) => p.sector !== 'Centro Cirúrgico' && !p.sector?.includes('Centro Cir');
+
+    let filterFn: (p: Patient) => boolean = () => true;
+
+    if (type === 'finalized') {
+      title = 'Pacientes com ATBs Finalizados';
+      color = 'emerald';
+      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.category === categoryFilter && a.status === AntibioticStatus.FINALIZADO);
+    } else if (type === 'suspended') {
+      title = 'Pacientes com ATBs Suspensos';
+      color = 'amber';
+      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.category === categoryFilter && a.status === AntibioticStatus.SUSPENSO);
+    } else if (type === 'substituted') {
+      title = 'Pacientes com Trocas de ATB';
+      color = 'purple';
+      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.category === categoryFilter && a.status === AntibioticStatus.TROCADO);
+    } else if (type === 'obitos') {
+      title = 'Pacientes - Registros de Óbito';
+      color = 'slate';
+      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.category === categoryFilter && a.status === AntibioticStatus.OBITO);
+    } else if (type === 'prolonged') {
+      title = 'Pacientes em Uso Prolongado (>14 dias)';
+      color = 'red';
+      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.category === categoryFilter && a.status === AntibioticStatus.EM_USO && getATBDay(a.startDate, a.frequency) > 14);
+    } else if (type === 'active') {
+      title = 'Pacientes com ATB Ativo (Em Uso)';
+      color = 'emerald';
+      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.category === categoryFilter && a.status === AntibioticStatus.EM_USO);
+    } else if (type === 'total') {
+      title = 'Atendimento Geral de Pacientes no Período';
+      color = 'blue';
+      filterFn = p => nonCC(p);
+    }
+
+    const matchedPatients = filteredPatients.filter(filterFn);
+
+    const patientsList = matchedPatients.map(p => {
+      const targetAtbs = p.antibiotics.filter(a => a.category === categoryFilter && (
+        type === 'finalized' ? a.status === AntibioticStatus.FINALIZADO :
+        type === 'suspended' ? a.status === AntibioticStatus.SUSPENSO :
+        type === 'substituted' ? a.status === AntibioticStatus.TROCADO :
+        type === 'obitos' ? a.status === AntibioticStatus.OBITO :
+        type === 'prolonged' ? (a.status === AntibioticStatus.EM_USO && getATBDay(a.startDate, a.frequency) > 14) :
+        type === 'active' ? a.status === AntibioticStatus.EM_USO : true
+      ));
+
+      return {
+        id: p.id,
+        name: p.name,
+        bed: p.bed || 'S/L',
+        sector: p.sector,
+        diagnosis: p.diagnosis || 'Não informado',
+        atbs: targetAtbs.map(a => ({
+          name: a.name,
+          dose: a.dose,
+          frequency: a.frequency,
+          durationDays: a.durationDays,
+          status: a.status,
+          startDate: a.startDate
+        }))
+      };
+    });
+
+    setModalSearchTerm('');
+    setCardModalData({ title, color, type, patientsList });
+  };
+
   const updateAtbCost = (name: string, value: number) => {
     setAtbCosts(prev => ({ ...prev, [name]: value }));
   };
@@ -551,13 +636,23 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
   };
 
   // CARD COMPONENT
-  const Card = ({ label, value, icon, color = 'blue' }: { label: string; value: string | number; icon: React.ReactNode; color?: string }) => (
-    <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col justify-between h-36 transition-colors">
+  const Card = ({ label, value, icon, color = 'blue', onClick }: { label: string; value: string | number; icon: React.ReactNode; color?: string; onClick?: () => void }) => (
+    <div
+      onClick={onClick}
+      className={`bg-white dark:bg-slate-800 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col justify-between h-36 transition-all ${onClick ? 'cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-500' : ''}`}
+    >
       <div className="flex justify-between items-start">
         <p className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">{label}</p>
         <div className={`p-1.5 rounded-2xl bg-${color}-50 dark:bg-${color}-900/20 text-${color}-600 dark:text-${color}-400`}>{React.cloneElement(icon as React.ReactElement, { size: 24 })}</div>
       </div>
-      <h3 className="text-4xl font-black text-slate-900 dark:text-white leading-none">{value}</h3>
+      <div className="flex justify-between items-end">
+        <h3 className="text-4xl font-black text-slate-900 dark:text-white leading-none">{value}</h3>
+        {onClick && (
+          <span className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400 flex items-center gap-1 hover:underline">
+            Ver Lista ➔
+          </span>
+        )}
+      </div>
     </div>
   );
 
@@ -766,16 +861,16 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
         {activeReportTab === 'stewardship' && (
           <div className="space-y-2 animate-in fade-in">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 mb-2">
-              <Card label="Atd. Geral de Pacientes" value={stats.totalPatients} icon={<Users size={12} />} color="blue" />
-              <Card label="Pacientes com ATB Ativo" value={stats.activePatients} icon={<Pill size={12} />} color="emerald" />
-              <Card label="Prolongados (>14d)" value={stats.prolonged} icon={<AlertTriangle size={12} />} color="red" />
+              <Card label="Atd. Geral de Pacientes" value={stats.totalPatients} icon={<Users size={12} />} color="blue" onClick={() => openCardModal('total')} />
+              <Card label="Pacientes com ATB Ativo" value={stats.activePatients} icon={<Pill size={12} />} color="emerald" onClick={() => openCardModal('active')} />
+              <Card label="Prolongados (>14d)" value={stats.prolonged} icon={<AlertTriangle size={12} />} color="red" onClick={() => openCardModal('prolonged')} />
               <Card label="Média de Dias" value={stats.avgDuration} icon={<Timer size={12} />} color="slate" />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
-              <Card label="Finalizados" value={stats.finalized} icon={<CheckCircle2 size={12} />} color="emerald" />
-              <Card label="Suspensos" value={stats.suspended} icon={<XCircle size={12} />} color="amber" />
-              <Card label="Trocas" value={stats.substituted} icon={<ArrowRightLeft size={12} />} color="purple" />
-              <Card label="Óbitos" value={stats.obitos} icon={<Activity size={12} />} color="slate" />
+              <Card label="Finalizados" value={stats.finalized} icon={<CheckCircle2 size={12} />} color="emerald" onClick={() => openCardModal('finalized')} />
+              <Card label="Suspensos" value={stats.suspended} icon={<XCircle size={12} />} color="amber" onClick={() => openCardModal('suspended')} />
+              <Card label="Trocas" value={stats.substituted} icon={<ArrowRightLeft size={12} />} color="purple" onClick={() => openCardModal('substituted')} />
+              <Card label="Óbitos" value={stats.obitos} icon={<Activity size={12} />} color="slate" onClick={() => openCardModal('obitos')} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1360,6 +1455,110 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
           </div>
         )}
       </div>
+
+      {/* ===== MODAL DE LISTAGEM DETALHADA DOS CARDS ===== */}
+      {cardModalData && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[5000] p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-800 w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden flex flex-col max-h-[85vh]">
+            {/* MODAL HEADER */}
+            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+              <div>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
+                  <span className={`w-3.5 h-3.5 rounded-full bg-${cardModalData.color}-500`} />
+                  {cardModalData.title} ({cardModalData.patientsList.length})
+                </h3>
+                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mt-1">
+                  Mês de referência: {filterMonth} — Listagem dos pacientes e tratamentos
+                </p>
+              </div>
+              <button
+                onClick={() => setCardModalData(null)}
+                className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl transition-colors"
+                title="Fechar"
+              >
+                <XCircle size={24} />
+              </button>
+            </div>
+
+            {/* SEARCH BAR */}
+            <div className="p-4 bg-slate-100/50 dark:bg-slate-900/30 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <input
+                  type="text"
+                  placeholder="Pesquisar por nome do paciente, leito, setor ou medicamento..."
+                  className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-none focus:border-blue-500 text-slate-900 dark:text-white shadow-sm"
+                  value={modalSearchTerm}
+                  onChange={e => setModalSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* MODAL BODY TABLE */}
+            <div className="p-4 overflow-y-auto flex-1 custom-scrollbar">
+              {cardModalData.patientsList.length === 0 ? (
+                <div className="py-16 text-center text-slate-400 font-black uppercase text-xs tracking-wider">
+                  Nenhum paciente encontrado para esta categoria no mês selecionado.
+                </div>
+              ) : (
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-[10px] font-black uppercase tracking-widest sticky top-0 z-10">
+                    <tr>
+                      <th className="px-4 py-3">Paciente / Leito</th>
+                      <th className="px-4 py-3 text-center">Setor</th>
+                      <th className="px-4 py-3">Diagnóstico</th>
+                      <th className="px-4 py-3">Antimicrobianos</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
+                    {cardModalData.patientsList
+                      .filter(p => !modalSearchTerm ||
+                        p.name.toLowerCase().includes(modalSearchTerm.toLowerCase()) ||
+                        p.bed.toLowerCase().includes(modalSearchTerm.toLowerCase()) ||
+                        p.sector.toLowerCase().includes(modalSearchTerm.toLowerCase()) ||
+                        p.atbs.some(a => a.name.toLowerCase().includes(modalSearchTerm.toLowerCase()))
+                      )
+                      .map(p => (
+                        <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
+                          <td className="px-4 py-3.5 font-bold">
+                            <span className="font-black text-slate-900 dark:text-white block text-sm">{p.name}</span>
+                            <span className="text-[10px] font-black text-slate-500 uppercase">Leito: {p.bed}</span>
+                          </td>
+                          <td className="px-4 py-3.5 text-center">
+                            <span className="bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded-xl font-black text-[10px] uppercase text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                              {p.sector}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3.5 font-bold text-slate-700 dark:text-slate-300 max-w-xs leading-relaxed">
+                            {p.diagnosis}
+                          </td>
+                          <td className="px-4 py-3.5">
+                            <div className="flex flex-col gap-1.5">
+                              {p.atbs.map((a, idx) => (
+                                <div key={idx} className="flex items-center gap-2 text-[11px] bg-slate-50 dark:bg-slate-900/70 p-2 rounded-xl border border-slate-200 dark:border-slate-700">
+                                  <span className="font-black text-blue-700 dark:text-blue-400 uppercase">{a.name}</span>
+                                  <span className="text-slate-600 dark:text-slate-400 font-bold">({a.dose} — {a.frequency})</span>
+                                  <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase ml-auto border ${
+                                    a.status === AntibioticStatus.EM_USO ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' :
+                                    a.status === AntibioticStatus.SUSPENSO ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800' :
+                                    a.status === AntibioticStatus.TROCADO ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800' :
+                                    'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700'
+                                  }`}>
+                                    {a.status}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="pt-8 border-t border-slate-200 text-center pb-6 no-print">
         <p className="text-xs font-black text-slate-600 dark:text-slate-500 uppercase tracking-[0.4em] opacity-80">© 2025 SVA — Sistema de Vigilância Ativa e Farmacêutica</p>
