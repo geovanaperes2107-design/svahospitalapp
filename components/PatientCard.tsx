@@ -63,7 +63,16 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
     return saved ? JSON.parse(saved) : null;
   });
 
-  const [newAtb, setNewAtb] = useState(() => {
+  const [newAtb, setNewAtb] = useState<{
+    name: string;
+    dose: string;
+    freq: string;
+    times: string;
+    duration: number;
+    start: string;
+    justification: string;
+    route: string;
+  }>(() => {
     const saved = localStorage.getItem(`sva_draft_atb_data_${patient.id}`);
     return saved ? JSON.parse(saved) : {
       name: '',
@@ -72,7 +81,8 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
       times: '',
       duration: 7,
       start: format(new Date(), 'yyyy-MM-dd'),
-      justification: ''
+      justification: '',
+      route: 'EV'
     };
   });
 
@@ -166,6 +176,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
         times: newAtb.times.split(',').map(t => t.trim()).filter(t => t !== ''),
         status: AntibioticStatus.EM_USO,
         justification: newAtb.justification,
+        route: newAtb.route || 'EV',
         infectoStatus: InfectoStatus.PENDENTE // New ATBs start as pending
       };
       updatedAtbs.push(atbObj);
@@ -183,6 +194,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
         times: newAtb.times.split(',').map(t => t.trim()).filter(t => t !== ''),
         status: AntibioticStatus.EM_USO,
         justification: newAtb.justification,
+        route: newAtb.route || 'EV',
         infectoStatus: InfectoStatus.PENDENTE // New ATBs start as pending
       };
       updatedAtbs.push(atbObj);
@@ -209,9 +221,10 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
           dose: newAtb.dose,
           frequency: isCC ? 'Dose Única' : newAtb.freq,
           times: newAtb.times.split(',').map(t => t.trim()).filter(t => t !== ''),
-          justification: newAtb.justification
+          justification: newAtb.justification,
+          route: newAtb.route || a.route || 'EV'
         } : a);
-        const atbLog = `ATB ${atbToUpdate?.name} editado (Dose/Horário)`;
+        const atbLog = `ATB ${atbToUpdate?.name} editado (Dose/Horário/Via)`;
         updateLog = updateLog ? `${updateLog} | ${atbLog}` : atbLog;
       }
     } else if (editMode?.type === 'tempo') {
@@ -500,8 +513,11 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                       </div>
                     )}
                   </div>
-                  <div className="flex items-baseline gap-2">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <h4 className="text-[13px] font-black text-slate-800 uppercase tracking-tight">{atb.name}</h4>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-blue-100 text-blue-800 border border-blue-200">
+                      {atb.route || 'EV'}
+                    </span>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Hor: <span className="text-slate-700 font-black">{atb.times.join('/')}</span></p>
                   </div>
 
@@ -518,15 +534,15 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                 {/* AÇÕES */}
                 {!isInfectoPanel && (
                   <div className="flex gap-1.5">
-                    <button onClick={() => { setNewAtb({ ...newAtb, name: atb.name, dose: atb.dose, freq: atb.frequency, times: atb.times.join(', '), duration: atb.durationDays }); setEditMode({ type: 'troca', atbId: atb.id, oldAtbName: atb.name }); }} className="p-1.5 bg-slate-800 text-white rounded-lg shadow hover:scale-105 transition-all border border-slate-700" title="Substituir">
+                    <button onClick={() => { setNewAtb({ ...newAtb, name: atb.name, dose: atb.dose, freq: atb.frequency, times: atb.times.join(', '), duration: atb.durationDays, route: atb.route || 'EV' }); setEditMode({ type: 'troca', atbId: atb.id, oldAtbName: atb.name }); }} className="p-1.5 bg-slate-800 text-white rounded-lg shadow hover:scale-105 transition-all border border-slate-700" title="Substituir">
                       <Dna size={14} />
                     </button>
                     {!isCC && (
-                      <button onClick={() => { setNewAtb({ ...newAtb, duration: atb.durationDays, times: atb.times.join(', ') }); setEditMode({ type: 'tempo', atbId: atb.id }); }} className="p-1.5 bg-blue-500 dark:bg-blue-600 text-white rounded-lg shadow hover:scale-105 transition-all" title="Alterar Tempo">
+                      <button onClick={() => { setNewAtb({ ...newAtb, duration: atb.durationDays, times: atb.times.join(', '), route: atb.route || 'EV' }); setEditMode({ type: 'tempo', atbId: atb.id }); }} className="p-1.5 bg-blue-500 dark:bg-blue-600 text-white rounded-lg shadow hover:scale-105 transition-all" title="Alterar Tempo">
                         <Clock size={14} />
                       </button>
                     )}
-                    <button onClick={() => { setNewAtb({ ...newAtb, name: atb.name, dose: atb.dose, freq: atb.frequency, times: atb.times.join(', ') }); setEditMode({ type: 'editar', atbId: atb.id }); }} className="p-1.5 bg-white border border-slate-200 text-slate-400 rounded-lg hover:text-slate-800 shadow-sm transition-colors" title="Editar">
+                    <button onClick={() => { setNewAtb({ ...newAtb, name: atb.name, dose: atb.dose, freq: atb.frequency, times: atb.times.join(', '), route: atb.route || 'EV' }); setEditMode({ type: 'editar', atbId: atb.id }); }} className="p-1.5 bg-white border border-slate-200 text-slate-400 rounded-lg hover:text-slate-800 shadow-sm transition-colors" title="Editar">
                       <Edit3 size={14} />
                     </button>
                   </div>
@@ -793,6 +809,15 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                       </select>
                     </div>
                   )}
+                  <div className="space-y-0.5">
+                    <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500">Via de Administração</label>
+                    <select className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl font-bold text-xs outline-none focus:border-blue-500 text-slate-900 dark:text-white" value={newAtb.route || 'EV'} onChange={e => setNewAtb({ ...newAtb, route: e.target.value })}>
+                      <option value="EV" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">EV (Intravenosa)</option>
+                      <option value="ORAL" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Oral</option>
+                      <option value="IM" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">IM (Intramuscular)</option>
+                      <option value="SC" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">SC (Subcutânea)</option>
+                    </select>
+                  </div>
                 </div>
               )}
 
