@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserPlus, Shield, Key, Trash2, Edit2, Search, X, CheckCircle2, Building2, Save, Image as ImageIcon, Upload, Monitor, Lock, Unlock, MailCheck, AlertCircle, Eye, EyeOff, Bell, Clock, Users, LayoutGrid, PlusCircle, Archive, ArchiveRestore, Info, ShieldCheck } from 'lucide-react';
 import { supabase } from '../supabaseClient';
-import { User, UserRole, Patient, AntibioticStatus } from '../types';
+import { User, UserRole, Patient, AntibioticStatus, normalizeRole } from '../types';
 import { DEFAULT_SECTORS } from '../constants';
 import { safeJsonParse } from '../utils';
 
@@ -189,9 +189,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
         }
     };
 
-    const isAdmin = String(currentUser.role || '').toUpperCase() === 'ADMINISTRADOR';
     const cleanSearch = (searchTerm || '').toLowerCase().trim();
-    const filteredUsers = (isAdmin ? users : users.filter(u => u.id === currentUser.id)).filter(u => {
+    const filteredUsers = users.filter(u => {
         if (!cleanSearch) return true;
         const nameMatch = (u.name || '').toLowerCase().includes(cleanSearch);
         const emailMatch = (u.email || '').toLowerCase().includes(cleanSearch);
@@ -902,7 +901,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1">Perfil de Acesso</label>
-                                        <select className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 p-4 rounded-2xl font-bold text-sm focus:border-emerald-500 outline-none text-slate-900 dark:text-white transition-all uppercase" value={formData.role || UserRole.VISUALIZADOR} onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}>
+                                        <select className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 p-4 rounded-2xl font-bold text-sm focus:border-emerald-500 outline-none text-slate-900 dark:text-white transition-all uppercase" value={normalizeRole(formData.role)} onChange={e => setFormData({ ...formData, role: normalizeRole(e.target.value) })}>
                                             <option value={UserRole.ADMINISTRADOR}>Administrador</option>
                                             <option value={UserRole.VISUALIZADOR}>Visualizador</option>
                                             <option value={UserRole.INFECTO}>Infecto</option>

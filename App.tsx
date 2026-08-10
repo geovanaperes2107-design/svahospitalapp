@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import PasswordReset from './components/PasswordReset';
-import { UserRole, Patient, User, AntibioticStatus } from './types';
+import { UserRole, Patient, User, AntibioticStatus, normalizeRole } from './types';
 import { INITIAL_PATIENTS } from './data/mockData';
 import { DEFAULT_SECTORS } from './constants';
 import { format } from 'date-fns';
@@ -264,7 +264,7 @@ const App: React.FC = () => {
     name: profile.name || 'SEM NOME',
     email: profile.email,
     cpf: profile.cpf,
-    role: profile.role || UserRole.VISUALIZADOR,
+    role: normalizeRole(profile.role),
     sector: profile.sector || 'GERAL',
     mobile: profile.mobile || '',
     birthDate: profile.birth_date ? format(new Date(profile.birth_date), 'dd/MM/yyyy') : '',
@@ -278,13 +278,13 @@ const App: React.FC = () => {
     name: `${pre.name} (PENDENTE)`,
     email: pre.email,
     cpf: pre.cpf,
-    role: pre.role as UserRole,
+    role: normalizeRole(pre.role),
     sector: pre.sector,
     mobile: '',
     birthDate: '',
     photoURL: undefined,
     needsPasswordChange: true,
-    password: pre.temp_password // Exposed here if we want to show it, or keep hidden. Usually admin knows what they set.
+    password: pre.temp_password
   });
 
   const parseDateToDb = (dateStr?: string) => {

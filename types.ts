@@ -7,6 +7,16 @@ export enum UserRole {
   VISUALIZADOR = 'VISUALIZADOR'
 }
 
+export const normalizeRole = (roleStr?: string): UserRole => {
+  if (!roleStr) return UserRole.VISUALIZADOR;
+  const clean = String(roleStr).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (clean.includes('ADMIN')) return UserRole.ADMINISTRADOR;
+  if (clean.includes('INFECTO')) return UserRole.INFECTO;
+  if (clean.includes('SCIH')) return UserRole.SCIH;
+  if (clean.includes('FARMACEUT') || clean.includes('FARMAC')) return UserRole.FARMACEUTICO;
+  return UserRole.VISUALIZADOR;
+};
+
 export enum MedicationCategory {
   ANTIMICROBIANO = 'Antimicrobiano',
   PSICOTROPICO = 'Psicotrópico',
