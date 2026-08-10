@@ -199,11 +199,20 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
 
   const filteredPatients = useMemo(() => {
     return patients.filter(p => {
-      // Inclui pacientes cujos ATBs iniciaram no mês OU que estão em uso no mês atual
-      const matchesMonth = p.antibiotics.some(a =>
-        a.startDate.startsWith(filterMonth) ||
-        (a.status === AntibioticStatus.EM_USO && filterMonth === new Date().toISOString().substring(0, 7))
-      );
+      // Inclui pacientes cujos ATBs iniciaram no mês, estão em uso no mês, ou foram finalizados/encerrados no mês
+      const matchesMonth = p.antibiotics.length > 0 && p.antibiotics.some(a => {
+        if (!a.startDate) return false;
+        const startMonth = a.startDate.substring(0, 7);
+        // Iniciou no mês do filtro
+        if (startMonth === filterMonth) return true;
+        // Em uso no mês atual
+        if (a.status === AntibioticStatus.EM_USO && filterMonth === new Date().toISOString().substring(0, 7)) return true;
+        // Finalizado/Suspenso/Trocado/Óbito que iniciou até o mês do filtro
+        if ([AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.OBITO].includes(a.status)) {
+          return startMonth <= filterMonth;
+        }
+        return false;
+      });
       const matchesSector = sectorFilter === 'Todos' || p.sector === sectorFilter || sectorFilter === 'Todos os Setores';
       const matchesAtb = atbFilter === 'Todos' || atbFilter === 'Todos os ATBs' || p.antibiotics.some(a => a.name === atbFilter);
       return matchesMonth && matchesSector && matchesAtb;
