@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
 import {
   Activity, Scissors, CheckCircle2, Clock, Scale, XCircle, TrendingUp, Download, List, AlertTriangle,
-  ArrowRightLeft, Shield, Dna, Bug, ChevronDown, User, Timer, CheckSquare, ShieldCheck, FileSpreadsheet,
+  ArrowRightLeft, ArrowRight, Shield, Dna, Bug, ChevronDown, User, Timer, CheckSquare, ShieldCheck, FileSpreadsheet,
   FileText, Printer, ChevronRight, Bone, Stethoscope, DollarSign, Pill, ThumbsUp, ThumbsDown, Eye, Calendar,
   TrendingDown, BarChart3, PieChart, Users, Syringe, Hospital, BadgeCheck, AlertCircle, Search, HelpCircle
 } from 'lucide-react';
@@ -187,93 +187,11 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
       bed: string;
       sector: string;
       diagnosis: string;
-      atbs: Array<{ name: string; dose: string; frequency: string; durationDays: number; status: string; startDate: string }>;
+      treatmentType?: string;
+      atbs: Array<{ name: string; dose: string; frequency: string; durationDays: number; status: string; startDate: string; route?: string }>;
     }>;
   } | null>(null);
   const [modalSearchTerm, setModalSearchTerm] = useState('');
-
-  const openCardModal = (type: 'finalized' | 'suspended' | 'substituted' | 'obitos' | 'prolonged' | 'active' | 'total') => {
-    let title = '';
-    let color = 'blue';
-    const nonCC = (p: Patient) => p.sector !== 'Centro Cirúrgico' && !p.sector?.includes('Centro Cir');
-
-    let filterFn: (p: Patient) => boolean = () => true;
-
-    if (type === 'finalized') {
-      title = 'Pacientes com ATBs Finalizados';
-      color = 'emerald';
-      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.category === categoryFilter && a.status === AntibioticStatus.FINALIZADO);
-    } else if (type === 'suspended') {
-      title = 'Pacientes com ATBs Suspensos';
-      color = 'amber';
-      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.category === categoryFilter && a.status === AntibioticStatus.SUSPENSO);
-    } else if (type === 'substituted') {
-      title = 'Pacientes com Trocas de ATB';
-      color = 'purple';
-      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.category === categoryFilter && a.status === AntibioticStatus.TROCADO);
-    } else if (type === 'obitos') {
-      title = 'Pacientes - Registros de Óbito';
-      color = 'slate';
-      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.category === categoryFilter && a.status === AntibioticStatus.OBITO);
-    } else if (type === 'prolonged') {
-      title = 'Pacientes em Uso Prolongado (>14 dias)';
-      color = 'red';
-      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.category === categoryFilter && a.status === AntibioticStatus.EM_USO && getATBDay(a.startDate, a.frequency) > 14);
-    } else if (type === 'active') {
-      title = 'Pacientes com ATB Ativo (Em Uso)';
-      color = 'emerald';
-      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.category === categoryFilter && a.status === AntibioticStatus.EM_USO);
-    } else if (type === 'total') {
-      title = 'Atendimento Geral de Pacientes no Período';
-      color = 'blue';
-      filterFn = p => nonCC(p);
-    }
-
-    const matchedPatients = filteredPatients.filter(filterFn);
-
-    const patientsList = matchedPatients.map(p => {
-      const targetAtbs = p.antibiotics.filter(a => a.category === categoryFilter && (
-        type === 'finalized' ? a.status === AntibioticStatus.FINALIZADO :
-        type === 'suspended' ? a.status === AntibioticStatus.SUSPENSO :
-        type === 'substituted' ? a.status === AntibioticStatus.TROCADO :
-        type === 'obitos' ? a.status === AntibioticStatus.OBITO :
-        type === 'prolonged' ? (a.status === AntibioticStatus.EM_USO && getATBDay(a.startDate, a.frequency) > 14) :
-        type === 'active' ? a.status === AntibioticStatus.EM_USO : true
-      ));
-
-      return {
-        id: p.id,
-        name: p.name,
-        bed: p.bed || 'S/L',
-        sector: p.sector,
-        diagnosis: p.diagnosis || 'Não informado',
-        atbs: targetAtbs.map(a => ({
-          name: a.name,
-          dose: a.dose,
-          frequency: a.frequency,
-          durationDays: a.durationDays,
-          status: a.status,
-          startDate: a.startDate
-        }))
-      };
-    });
-
-    setModalSearchTerm('');
-    setCardModalData({ title, color, type, patientsList });
-  };
-
-  const updateAtbCost = (name: string, value: number) => {
-    setAtbCosts(prev => ({ ...prev, [name]: value }));
-  };
-
-  useEffect(() => {
-    localStorage.setItem('sva_report_filter_month', filterMonth);
-    localStorage.setItem('sva_report_filter_sector', sectorFilter);
-    localStorage.setItem('sva_report_filter_atb', atbFilter);
-    localStorage.setItem('sva_report_cc_subtab', ccSubTab);
-  }, [filterMonth, sectorFilter, atbFilter, ccSubTab]);
-
-  useEffect(() => { if (initialReportTab) setActiveReportTab(initialReportTab as ReportTab); }, [initialReportTab]);
 
   const categoryFilter = MedicationCategory.ANTIMICROBIANO;
 
@@ -303,6 +221,123 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
       return matchesMonth && matchesSector && matchesAtb;
     });
   }, [patients, filterMonth, sectorFilter, atbFilter]);
+
+  const openCardModal = (type: 'finalized' | 'suspended' | 'substituted' | 'obitos' | 'prolonged' | 'active' | 'total' | 'therapeutic' | 'prophylactic' | 'oral' | 'ev' | 'vencidos' | 'censo_authorized' | 'censo_not_authorized' | 'censo_pending') => {
+    let title = '';
+    let color = 'blue';
+    const nonCC = (p: Patient) => p.sector !== 'Centro Cirúrgico' && !p.sector?.includes('Centro Cir');
+
+    let filterFn: (p: Patient) => boolean = () => true;
+
+    const isOral = (a: any) => String(a.route || '').toUpperCase() === 'ORAL';
+    const isProfilatico = (p: Patient) => p.treatmentType === TreatmentType.PROFILATICO || String(p.treatmentType || '').toUpperCase().includes('PROFIL');
+
+    if (type === 'finalized') {
+      title = 'Pacientes com ATBs Finalizados';
+      color = 'emerald';
+      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.status === AntibioticStatus.FINALIZADO);
+    } else if (type === 'suspended') {
+      title = 'Pacientes com ATBs Suspensos';
+      color = 'amber';
+      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.status === AntibioticStatus.SUSPENSO);
+    } else if (type === 'substituted') {
+      title = 'Pacientes com Trocas de ATB';
+      color = 'purple';
+      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.status === AntibioticStatus.TROCADO);
+    } else if (type === 'obitos') {
+      title = 'Pacientes - Registros de Óbito';
+      color = 'slate';
+      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.status === AntibioticStatus.OBITO);
+    } else if (type === 'prolonged') {
+      title = 'Pacientes em Uso Prolongado (>14 dias)';
+      color = 'red';
+      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getATBDay(a.startDate, a.frequency) > 14);
+    } else if (type === 'active') {
+      title = 'Pacientes com ATB Ativo (Em Uso)';
+      color = 'emerald';
+      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO);
+    } else if (type === 'total') {
+      title = 'Atendimento Geral de Pacientes no Período';
+      color = 'blue';
+      filterFn = p => nonCC(p);
+    } else if (type === 'therapeutic') {
+      title = 'Pacientes em Uso Terapêutico';
+      color = 'blue';
+      filterFn = p => nonCC(p) && !isProfilatico(p);
+    } else if (type === 'prophylactic') {
+      title = 'Pacientes em Uso Profilático';
+      color = 'amber';
+      filterFn = p => nonCC(p) && isProfilatico(p);
+    } else if (type === 'oral') {
+      title = 'Pacientes com Prescrição Via Oral';
+      color = 'emerald';
+      filterFn = p => nonCC(p) && p.antibiotics.some(a => isOral(a));
+    } else if (type === 'ev') {
+      title = 'Pacientes com Prescrição Via Endovenosa (EV)';
+      color = 'purple';
+      filterFn = p => nonCC(p) && p.antibiotics.some(a => !isOral(a));
+    } else if (type === 'vencidos') {
+      title = 'Pacientes com ATB Vencidos';
+      color = 'red';
+      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0);
+    } else if (type === 'censo_authorized') {
+      title = 'Pacientes Autorizados pela Infectologia';
+      color = 'emerald';
+      filterFn = p => nonCC(p) && p.infectoStatus === InfectoStatus.AUTORIZADO;
+    } else if (type === 'censo_not_authorized') {
+      title = 'Pacientes Não Autorizados pela Infectologia';
+      color = 'red';
+      filterFn = p => nonCC(p) && p.infectoStatus === InfectoStatus.NAO_AUTORIZADO;
+    } else if (type === 'censo_pending') {
+      title = 'Pacientes Pendentes de Avaliação';
+      color = 'amber';
+      filterFn = p => nonCC(p) && p.infectoStatus === InfectoStatus.PENDENTE && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO);
+    }
+
+    const matchedPatients = filteredPatients.filter(filterFn);
+
+    const patientsList = matchedPatients.map(p => {
+      let filteredAtbs = p.antibiotics.filter(a => (
+        type === 'finalized' ? a.status === AntibioticStatus.FINALIZADO :
+        type === 'suspended' ? a.status === AntibioticStatus.SUSPENSO :
+        type === 'substituted' ? a.status === AntibioticStatus.TROCADO :
+        type === 'obitos' ? a.status === AntibioticStatus.OBITO :
+        type === 'prolonged' ? (a.status === AntibioticStatus.EM_USO && getATBDay(a.startDate, a.frequency) > 14) :
+        type === 'active' ? a.status === AntibioticStatus.EM_USO :
+        type === 'oral' ? isOral(a) :
+        type === 'ev' ? !isOral(a) :
+        type === 'vencidos' ? (a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0) :
+        type === 'censo_pending' ? a.status === AntibioticStatus.EM_USO :
+        true
+      ));
+
+      if (filteredAtbs.length === 0) {
+        const activeAtbs = p.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO);
+        filteredAtbs = activeAtbs.length > 0 ? activeAtbs : p.antibiotics;
+      }
+
+      return {
+        id: p.id,
+        name: p.name,
+        bed: p.bed || 'S/L',
+        sector: p.sector,
+        diagnosis: p.diagnosis || 'Não informado',
+        treatmentType: p.treatmentType,
+        atbs: filteredAtbs.map(a => ({
+          name: a.name,
+          dose: a.dose,
+          frequency: a.frequency,
+          durationDays: a.durationDays,
+          status: a.status,
+          startDate: a.startDate,
+          route: a.route
+        }))
+      };
+    });
+
+    setModalSearchTerm('');
+    setCardModalData({ title, color, type, patientsList });
+  };
 
   const pendingEvaluationPatients = useMemo(() => {
     return filteredPatients.filter(p =>
@@ -874,57 +909,111 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors">
-                <h4 className="text-sm font-black uppercase text-slate-600 dark:text-slate-400 mb-4 tracking-widest leading-none flex items-center">
-                  Perfil de Tratamento
-                  <Tooltip text="Divisão entre uso terapêutico (infecção confirmada) e profilático (prevenção cirúrgica/procedimento)." />
-                </h4>
-                <div className="flex gap-3">
-                  <div className="flex-1 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl text-center border border-blue-100 dark:border-blue-800">
-                    <p className="text-4xl font-black text-blue-700 dark:text-blue-400 leading-none">{stats.therapeutic}</p>
-                    <p className="text-[10px] font-black text-blue-500 dark:text-blue-500/80 uppercase leading-none mt-2">Terapêutico</p>
-                    <MiniChart value={stats.therapeutic} total={stats.therapeutic + stats.prophylactic} color="blue" />
-                  </div>
-                  <div className="flex-1 bg-amber-50 dark:bg-amber-900/20 p-4 rounded-2xl text-center border border-amber-100 dark:border-amber-800">
-                    <p className="text-4xl font-black text-amber-700 dark:text-amber-400 leading-none">{stats.prophylactic}</p>
-                    <p className="text-[10px] font-black text-amber-500 dark:text-amber-500/80 uppercase leading-none mt-2">Profilático</p>
-                    <MiniChart value={stats.prophylactic} total={stats.therapeutic + stats.prophylactic} color="amber" />
+              <div className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors flex flex-col justify-between">
+                <div>
+                  <h4 className="text-sm font-black uppercase text-slate-600 dark:text-slate-400 mb-4 tracking-widest leading-none flex items-center">
+                    Perfil de Tratamento
+                    <Tooltip text="Divisão entre uso terapêutico (infecção confirmada) e profilático (prevenção cirúrgica/procedimento)." />
+                  </h4>
+                  <div className="flex gap-3">
+                    <div
+                      onClick={() => openCardModal('therapeutic')}
+                      className="flex-1 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl text-center border border-blue-100 dark:border-blue-800 cursor-pointer hover:scale-[1.02] hover:shadow-md transition-all active:scale-[0.98] group flex flex-col justify-between min-h-[110px]"
+                      title="Clique para ver lista de pacientes em uso Terapêutico"
+                    >
+                      <div>
+                        <p className="text-4xl font-black text-blue-700 dark:text-blue-400 leading-none">{stats.therapeutic}</p>
+                        <p className="text-[10px] font-black text-blue-500 dark:text-blue-500/80 uppercase leading-none mt-2">Terapêutico</p>
+                        <MiniChart value={stats.therapeutic} total={stats.therapeutic + stats.prophylactic} color="blue" />
+                      </div>
+                      <span className="text-[8px] font-black text-blue-500 dark:text-blue-400 uppercase tracking-widest mt-2 flex items-center justify-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                        Ver Lista <ArrowRight size={8} />
+                      </span>
+                    </div>
+                    <div
+                      onClick={() => openCardModal('prophylactic')}
+                      className="flex-1 bg-amber-50 dark:bg-amber-900/20 p-4 rounded-2xl text-center border border-amber-100 dark:border-amber-800 cursor-pointer hover:scale-[1.02] hover:shadow-md transition-all active:scale-[0.98] group flex flex-col justify-between min-h-[110px]"
+                      title="Clique para ver lista de pacientes em uso Profilático"
+                    >
+                      <div>
+                        <p className="text-4xl font-black text-amber-700 dark:text-amber-400 leading-none">{stats.prophylactic}</p>
+                        <p className="text-[10px] font-black text-amber-500 dark:text-amber-500/80 uppercase leading-none mt-2">Profilático</p>
+                        <MiniChart value={stats.prophylactic} total={stats.therapeutic + stats.prophylactic} color="amber" />
+                      </div>
+                      <span className="text-[8px] font-black text-amber-500 dark:text-amber-400 uppercase tracking-widest mt-2 flex items-center justify-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                        Ver Lista <ArrowRight size={8} />
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors">
-                <h4 className="text-sm font-black uppercase text-slate-600 dark:text-slate-400 mb-4 tracking-widest leading-none flex items-center">
-                  Via de Administração
-                  <Tooltip text="Comparativo entre medicamentos por via Endovenosa (EV) e via Oral. O switch precoce para oral é um pilar do stewardship." />
-                </h4>
-                <div className="flex gap-3">
-                  <div className="flex-1 bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-2xl text-center border border-emerald-100 dark:border-emerald-800">
-                    <p className="text-4xl font-black text-emerald-700 dark:text-emerald-400 leading-none">{stats.oral}</p>
-                    <p className="text-[10px] font-black text-emerald-500 dark:text-emerald-500/80 uppercase leading-none mt-2">Oral</p>
-                    <MiniChart value={stats.oral} total={stats.oral + stats.iv} color="emerald" />
-                  </div>
-                  <div className="flex-1 bg-purple-50 dark:bg-purple-900/20 p-4 rounded-2xl text-center border border-purple-100 dark:border-purple-800">
-                    <p className="text-4xl font-black text-purple-700 dark:text-purple-400 leading-none">{stats.iv}</p>
-                    <p className="text-[10px] font-black text-purple-500 dark:text-purple-500/80 uppercase leading-none mt-2">EV</p>
-                    <MiniChart value={stats.iv} total={stats.oral + stats.iv} color="purple" />
+              <div className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors flex flex-col justify-between">
+                <div>
+                  <h4 className="text-sm font-black uppercase text-slate-600 dark:text-slate-400 mb-4 tracking-widest leading-none flex items-center">
+                    Via de Administração
+                    <Tooltip text="Comparativo entre medicamentos por via Endovenosa (EV) e via Oral. O switch precoce para oral é um pilar do stewardship." />
+                  </h4>
+                  <div className="flex gap-3">
+                    <div
+                      onClick={() => openCardModal('oral')}
+                      className="flex-1 bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-2xl text-center border border-emerald-100 dark:border-emerald-800 cursor-pointer hover:scale-[1.02] hover:shadow-md transition-all active:scale-[0.98] group flex flex-col justify-between min-h-[110px]"
+                      title="Clique para ver lista de pacientes com prescrição Oral"
+                    >
+                      <div>
+                        <p className="text-4xl font-black text-emerald-700 dark:text-emerald-400 leading-none">{stats.oral}</p>
+                        <p className="text-[10px] font-black text-emerald-500 dark:text-emerald-500/80 uppercase leading-none mt-2">Oral</p>
+                        <MiniChart value={stats.oral} total={stats.oral + stats.iv} color="emerald" />
+                      </div>
+                      <span className="text-[8px] font-black text-emerald-500 dark:text-emerald-400 uppercase tracking-widest mt-2 flex items-center justify-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                        Ver Lista <ArrowRight size={8} />
+                      </span>
+                    </div>
+                    <div
+                      onClick={() => openCardModal('ev')}
+                      className="flex-1 bg-purple-50 dark:bg-purple-900/20 p-4 rounded-2xl text-center border border-purple-100 dark:border-purple-800 cursor-pointer hover:scale-[1.02] hover:shadow-md transition-all active:scale-[0.98] group flex flex-col justify-between min-h-[110px]"
+                      title="Clique para ver lista de pacientes com prescrição EV"
+                    >
+                      <div>
+                        <p className="text-4xl font-black text-purple-700 dark:text-purple-400 leading-none">{stats.iv}</p>
+                        <p className="text-[10px] font-black text-purple-500 dark:text-purple-500/80 uppercase leading-none mt-2">EV</p>
+                        <MiniChart value={stats.iv} total={stats.oral + stats.iv} color="purple" />
+                      </div>
+                      <span className="text-[8px] font-black text-purple-500 dark:text-purple-400 uppercase tracking-widest mt-2 flex items-center justify-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                        Ver Lista <ArrowRight size={8} />
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-3xl border border-red-100 dark:border-red-900 shadow-sm transition-colors">
-                <h4 className="text-sm font-black uppercase text-red-600 dark:text-red-400 mb-4 flex items-center gap-2 tracking-widest leading-none">
-                  <AlertTriangle size={14} /> Alertas Críticos
-                  <Tooltip text="Atenção aos pacientes com tratamento vencido ou uso prolongado sem reavaliação formal." />
-                </h4>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-[11px] leading-none uppercase">
-                    <span className="font-black text-slate-700 dark:text-slate-300 mb-1">ATB Vencidos</span>
-                    <span className="font-black text-white bg-red-600 px-3 py-1 rounded-lg text-sm shadow-md">{stats.vencidos}</span>
-                  </div>
-                  <div className="flex justify-between text-[11px] leading-none uppercase">
-                    <span className="font-black text-slate-700 dark:text-slate-300 mb-1">Uso Prolongado</span>
-                    <span className="font-black text-white bg-amber-500 px-3 py-1 rounded-lg text-sm shadow-md">{stats.prolonged}</span>
+              <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-3xl border border-red-100 dark:border-red-900 shadow-sm transition-colors flex flex-col justify-between">
+                <div>
+                  <h4 className="text-sm font-black uppercase text-red-600 dark:text-red-400 mb-4 flex items-center gap-2 tracking-widest leading-none">
+                    <AlertTriangle size={14} /> Alertas Críticos
+                    <Tooltip text="Atenção aos pacientes com tratamento vencido ou uso prolongado sem reavaliação formal." />
+                  </h4>
+                  <div className="space-y-3">
+                    <div
+                      onClick={() => openCardModal('vencidos')}
+                      className="flex justify-between items-center text-[11px] leading-none uppercase p-2.5 rounded-xl bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 cursor-pointer transition-all active:scale-[0.98] group border border-red-100 dark:border-red-900/40"
+                      title="Clique para ver lista de pacientes com ATB vencidos"
+                    >
+                      <span className="font-black text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                        ATB Vencidos <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all text-red-600" />
+                      </span>
+                      <span className="font-black text-white bg-red-600 px-3 py-1 rounded-lg text-sm shadow-md">{stats.vencidos}</span>
+                    </div>
+                    <div
+                      onClick={() => openCardModal('prolonged')}
+                      className="flex justify-between items-center text-[11px] leading-none uppercase p-2.5 rounded-xl bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 cursor-pointer transition-all active:scale-[0.98] group border border-amber-100 dark:border-amber-900/40"
+                      title="Clique para ver lista de pacientes em uso prolongado"
+                    >
+                      <span className="font-black text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                        Uso Prolongado <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all text-amber-600" />
+                      </span>
+                      <span className="font-black text-white bg-amber-500 px-3 py-1 rounded-lg text-sm shadow-md">{stats.prolonged}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -936,9 +1025,9 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
         {activeReportTab === 'censo' && (
           <div className="space-y-2 animate-in fade-in">
             <div className="grid grid-cols-2 md:grid-cols-5 gap-1.5">
-              <Card label="Autorizados" value={censoStats.authorized} icon={<ThumbsUp size={12} />} color="emerald" />
-              <Card label="Não Autorizados" value={censoStats.notAuthorized} icon={<ThumbsDown size={12} />} color="red" />
-              <Card label="Pendentes" value={censoStats.pending} icon={<Clock size={12} />} color="amber" />
+              <Card label="Autorizados" value={censoStats.authorized} icon={<ThumbsUp size={12} />} color="emerald" onClick={() => openCardModal('censo_authorized')} />
+              <Card label="Não Autorizados" value={censoStats.notAuthorized} icon={<ThumbsDown size={12} />} color="red" onClick={() => openCardModal('censo_not_authorized')} />
+              <Card label="Pendentes" value={censoStats.pending} icon={<Clock size={12} />} color="amber" onClick={() => openCardModal('censo_pending')} />
               <Card label="% Avaliados" value={`${censoStats.evaluationRate}%`} icon={<BadgeCheck size={12} />} color="blue" />
               <Card label="% Pendentes" value={`${censoStats.pendingRate}%`} icon={<AlertCircle size={12} />} color="slate" />
             </div>
@@ -1522,7 +1611,18 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                         <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
                           <td className="px-4 py-3.5 font-bold">
                             <span className="font-black text-slate-900 dark:text-white block text-sm">{p.name}</span>
-                            <span className="text-[10px] font-black text-slate-500 uppercase">Leito: {p.bed}</span>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-[10px] font-black text-slate-500 uppercase">Leito: {p.bed}</span>
+                              {p.treatmentType && (
+                                <span className={`px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase ${
+                                  p.treatmentType === TreatmentType.PROFILATICO
+                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+                                    : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
+                                }`}>
+                                  {p.treatmentType}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-3.5 text-center">
                             <span className="bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded-xl font-black text-[10px] uppercase text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
@@ -1537,7 +1637,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                               {p.atbs.map((a, idx) => (
                                 <div key={idx} className="flex items-center gap-2 text-[11px] bg-slate-50 dark:bg-slate-900/70 p-2 rounded-xl border border-slate-200 dark:border-slate-700">
                                   <span className="font-black text-blue-700 dark:text-blue-400 uppercase">{a.name}</span>
-                                  <span className="text-slate-600 dark:text-slate-400 font-bold">({a.dose} — {a.frequency})</span>
+                                  <span className="text-slate-600 dark:text-slate-400 font-bold">({a.dose} — {a.frequency}{a.route ? ` — ${a.route}` : ''})</span>
                                   <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase ml-auto border ${
                                     a.status === AntibioticStatus.EM_USO ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' :
                                     a.status === AntibioticStatus.SUSPENSO ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800' :
