@@ -81,7 +81,10 @@ const UserManagement: React.FC<UserManagementProps> = ({
     const [searchTerm, setSearchTerm] = useState('');
     const [tempHospitalName, setTempHospitalName] = useState(hospitalName);
     const [showEmailToast, setShowEmailToast] = useState<{ name: string, email: string } | null>(null);
-    const [activeTab, setActiveTab] = useState<'users' | 'alerts' | 'params' | 'paineis'>('users');
+    const [activeTab, setActiveTab] = useState<'users' | 'alerts' | 'params' | 'paineis'>(() => {
+        const isAdm = normalizeRole(currentUser.role) === UserRole.ADMINISTRADOR;
+        return isAdm ? 'users' : 'params';
+    });
     const [visiblePasswordId, setVisiblePasswordId] = useState<string | null>(null);
     const [newSectorName, setNewSectorName] = useState('');
 
@@ -121,7 +124,6 @@ const UserManagement: React.FC<UserManagementProps> = ({
         };
     });
 
-    // Salva rascunho do formulário
     useEffect(() => {
         localStorage.setItem('sva_user_form_draft', JSON.stringify(formData));
     }, [formData]);
@@ -145,14 +147,13 @@ const UserManagement: React.FC<UserManagementProps> = ({
         setShowForm(false);
         setEditingUser(null);
         setFormData({ role: UserRole.VISUALIZADOR, needsPasswordChange: true, password: '' });
-        localStorage.removeItem('sva_user_form_draft'); // Limpa rascunho
+        localStorage.removeItem('sva_user_form_draft');
     };
 
     const handleResetPassword = async () => {
         if (!newResetPassword || !resetPasswordUser) return;
 
         try {
-            // Update Auth if it's the current user
             if (resetPasswordUser.id === currentUser.id || resetPasswordUser.email === currentUser.email) {
                 const { error: authError } = await supabase.auth.updateUser({
                     password: newResetPassword
@@ -160,7 +161,6 @@ const UserManagement: React.FC<UserManagementProps> = ({
                 if (authError) throw authError;
             }
 
-            // Always update profiles/local state
             onUpdateUser({
                 ...resetPasswordUser,
                 password: newResetPassword,
@@ -175,8 +175,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
         }
     };
 
-    const handleDelete = (e: React.MouseEvent, u: User) => {
-        e.preventDefault();
+    const handleDeleteClick = (u: User, e: React.MouseEvent) => {
         e.stopPropagation();
 
         if (u.id === currentUser.id) {
@@ -189,8 +188,16 @@ const UserManagement: React.FC<UserManagementProps> = ({
         }
     };
 
+    const isAdminUser = normalizeRole(currentUser.role) === UserRole.ADMINISTRADOR;
     const cleanSearch = (searchTerm || '').toLowerCase().trim();
     const filteredUsers = users.filter(u => {
+        if (!isAdminUser) {
+            const isSelf = u.id === currentUser.id ||
+                (u.email && currentUser.email && u.email.toLowerCase().trim() === currentUser.email.toLowerCase().trim()) ||
+                (u.cpf && currentUser.cpf && (u.cpf || '').replace(/\D/g, '') === (currentUser.cpf || '').replace(/\D/g, ''));
+            return isSelf;
+        }
+
         if (!cleanSearch) return true;
         const nameMatch = (u.name || '').toLowerCase().includes(cleanSearch);
         const emailMatch = (u.email || '').toLowerCase().includes(cleanSearch);
@@ -227,7 +234,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
             <div className="space-y-2">
                 <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1 tracking-widest opacity-60">Escolha uma seção:</p>
                 <div className="flex gap-1 bg-slate-100 dark:bg-slate-900/50 p-1.5 rounded-[22px] w-fit border border-slate-200 dark:border-slate-800">
-                    {currentUser.role === UserRole.ADMINISTRADOR && (
+                    {isAdminUser && (
                         <button
                             onClick={() => setActiveTab('users')}
                             className={`px-6 py-2.5 rounded-[16px] text-[10px] font-black uppercase transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'users'
@@ -256,7 +263,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                     >
                         <Building2 size={14} /> Parâmetros & Fundo
                     </button>
-                    {currentUser.role === UserRole.ADMINISTRADOR && (
+                    {isAdminUser && (
                         <button
                             onClick={() => setActiveTab('paineis')}
                             className={`px-6 py-2.5 rounded-[16px] text-[10px] font-black uppercase transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'paineis'
@@ -277,7 +284,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600" size={16} />
                             <input type="text" placeholder="Filtrar por nome ou CPF..." className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/50 rounded-xl border-2 border-transparent focus:border-emerald-500 outline-none font-bold text-xs shadow-sm text-slate-900 dark:text-white transition-all" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                         </div>
-                        {String(currentUser.role).toUpperCase() === 'ADMINISTRADOR' && (
+                        {isAdminUser && (
                             <button
                                 onClick={() => { setEditingUser(null); setFormData({ role: UserRole.VISUALIZADOR, needsPasswordChange: true, password: '' }); setShowForm(true); }}
                                 className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
