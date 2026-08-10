@@ -135,7 +135,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
             const newUser: User = {
                 ...formData,
                 id: 'usr-' + Math.random().toString(36).substr(2, 9),
-                needsPasswordChange: formData.needsPasswordChange ?? false
+                needsPasswordChange: formData.needsPasswordChange ?? true
             } as User;
             onAddUser(newUser);
 
@@ -144,7 +144,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
         }
         setShowForm(false);
         setEditingUser(null);
-        setFormData({ role: UserRole.VISUALIZADOR, needsPasswordChange: false, password: '' });
+        setFormData({ role: UserRole.VISUALIZADOR, needsPasswordChange: true, password: '' });
         localStorage.removeItem('sva_user_form_draft'); // Limpa rascunho
     };
 
@@ -164,7 +164,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
             onUpdateUser({
                 ...resetPasswordUser,
                 password: newResetPassword,
-                needsPasswordChange: false
+                needsPasswordChange: true
             });
 
             alert(`Senha de ${resetPasswordUser.name} alterada com sucesso! O acesso deverá ser feito com a nova senha.`);

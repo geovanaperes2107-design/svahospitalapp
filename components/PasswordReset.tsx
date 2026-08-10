@@ -51,8 +51,14 @@ const PasswordReset: React.FC<PasswordResetProps> = ({ onSuccess }) => {
                 if (user) {
                     await supabase.from('profiles').update({ needs_password_change: false }).eq('id', user.id);
                     if (user.email) {
-                        await supabase.from('profiles').update({ needs_password_change: false }).eq('email', user.email.toLowerCase());
-                        await supabase.from('pre_registrations').delete().eq('email', user.email.toLowerCase());
+                        const cleanEmail = user.email.toLowerCase().trim();
+                        await supabase.from('profiles').update({ needs_password_change: false }).eq('email', cleanEmail);
+                        await supabase.from('pre_registrations').delete().eq('email', cleanEmail);
+                    }
+                    if (user.user_metadata?.cpf) {
+                        const cleanCpf = String(user.user_metadata.cpf).replace(/\D/g, '');
+                        await supabase.from('profiles').update({ needs_password_change: false }).eq('cpf', cleanCpf);
+                        await supabase.from('pre_registrations').delete().eq('cpf', cleanCpf);
                     }
                 }
             } catch (pErr) {

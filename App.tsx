@@ -154,6 +154,7 @@ const App: React.FC = () => {
   }, []);
 
 
+  const [completedPasswordResets, setCompletedPasswordResets] = useState<Set<string>>(new Set());
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('sva_dark_mode') === 'true');
 
   // Sincronização da classe 'dark' no documento para ativação das classes utilitárias do Tailwind
@@ -844,12 +845,19 @@ const App: React.FC = () => {
   };
 
   // Check for Forced Password Change
+  const userEmailKey = (currentUser.email || '').toLowerCase().trim();
+  const userCpfKey = (currentUser.cpf || '').replace(/\D/g, '');
+  const isPasswordAlreadyChangedLocally = (userEmailKey && completedPasswordResets.has(userEmailKey)) || (userCpfKey && completedPasswordResets.has(userCpfKey));
+
   const targetUserObj = users.find(u => u.id === currentUser.id || u.email?.toLowerCase() === currentUser.email?.toLowerCase());
-  const needsPasswordChange = targetUserObj?.needsPasswordChange === true;
+  const needsPasswordChange = !isPasswordAlreadyChangedLocally && (targetUserObj?.needsPasswordChange === true);
 
   if (recoverySession || (session && needsPasswordChange)) {
     return <PasswordReset onSuccess={() => {
       setRecoverySession(false);
+      if (userEmailKey) setCompletedPasswordResets(prev => new Set(prev).add(userEmailKey));
+      if (userCpfKey) setCompletedPasswordResets(prev => new Set(prev).add(userCpfKey));
+
       setUsers(prev => prev.map(u => (u.id === currentUser.id || u.email?.toLowerCase() === currentUser.email?.toLowerCase()) ? { ...u, needsPasswordChange: false } : u));
       fetchUsers();
     }} />;
