@@ -891,7 +891,15 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1">Setor Principal</label>
-                                        <select className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 p-4 rounded-2xl font-bold text-sm focus:border-emerald-500 outline-none text-slate-900 dark:text-white transition-all uppercase" value={formData.sector || ''} onChange={e => setFormData({ ...formData, sector: e.target.value })}>
+                                        <select
+                                            className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 p-4 rounded-2xl font-bold text-sm focus:border-emerald-500 outline-none text-slate-900 dark:text-white transition-all uppercase"
+                                            value={formData.sector || ''}
+                                            onChange={e => {
+                                                const sec = e.target.value;
+                                                const autoRole = (sec === 'FARMÁCIA' || sec === 'FARMACIA') ? UserRole.FARMACEUTICO : formData.role;
+                                                setFormData({ ...formData, sector: sec, role: autoRole });
+                                            }}
+                                        >
                                             <option value="">Selecione...</option>
                                             <option value="FARMÁCIA">FARMÁCIA</option>
                                             <option value="ENFERMARIAS">ENFERMARIAS</option>
@@ -901,7 +909,11 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1">Perfil de Acesso</label>
-                                        <select className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 p-4 rounded-2xl font-bold text-sm focus:border-emerald-500 outline-none text-slate-900 dark:text-white transition-all uppercase" value={normalizeRole(formData.role)} onChange={e => setFormData({ ...formData, role: normalizeRole(e.target.value) })}>
+                                        <select
+                                            className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 p-4 rounded-2xl font-bold text-sm focus:border-emerald-500 outline-none text-slate-900 dark:text-white transition-all uppercase"
+                                            value={(formData.sector === 'FARMÁCIA' || formData.sector === 'FARMACIA') ? UserRole.FARMACEUTICO : normalizeRole(formData.role)}
+                                            onChange={e => setFormData({ ...formData, role: normalizeRole(e.target.value) })}
+                                        >
                                             <option value={UserRole.ADMINISTRADOR}>Administrador</option>
                                             <option value={UserRole.VISUALIZADOR}>Visualizador</option>
                                             <option value={UserRole.INFECTO}>Infecto</option>

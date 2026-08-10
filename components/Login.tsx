@@ -197,14 +197,15 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
                 });
 
                 if (!retryErr && retryAuth.user) {
+                  const effectiveRole = (preReg.sector === 'FARMÁCIA' || preReg.sector === 'FARMACIA') ? UserRole.FARMACEUTICO : normalizeRole(preReg.role);
                   // Ensure profile exists
                   await supabase.from('profiles').upsert([{
                     id: retryAuth.user.id,
                     email: preReg.email.toLowerCase().trim(),
                     cpf: preReg.cpf,
                     name: preReg.name.toUpperCase(),
-                    role: preReg.role,
-                    sector: preReg.sector,
+                    role: effectiveRole,
+                    sector: preReg.sector || 'FARMÁCIA',
                     needs_password_change: true,
                     temp_password: password
                   }]);
@@ -222,6 +223,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
             }
 
             if (authData.user) {
+              const effectiveRole = (preReg.sector === 'FARMÁCIA' || preReg.sector === 'FARMACIA') ? UserRole.FARMACEUTICO : normalizeRole(preReg.role);
               // Create Profile
               const { error: profileError } = await supabase
                 .from('profiles')
@@ -230,8 +232,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, bgImage, bgFit, bgPositio
                   email: preReg.email.toLowerCase().trim(),
                   cpf: preReg.cpf,
                   name: preReg.name.toUpperCase(),
-                  role: preReg.role,
-                  sector: preReg.sector,
+                  role: effectiveRole,
+                  sector: preReg.sector || 'FARMÁCIA',
                   needs_password_change: true,
                   temp_password: password
                 }]);

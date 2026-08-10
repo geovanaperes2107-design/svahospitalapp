@@ -265,13 +265,13 @@ const App: React.FC = () => {
     name: profile.name || 'SEM NOME',
     email: profile.email,
     cpf: profile.cpf,
-    role: normalizeRole(profile.role),
+    role: (profile.sector === 'FARMÁCIA' || profile.sector === 'FARMACIA') ? UserRole.FARMACEUTICO : normalizeRole(profile.role),
     sector: profile.sector || 'GERAL',
     mobile: profile.mobile || '',
     birthDate: profile.birth_date ? format(new Date(profile.birth_date), 'dd/MM/yyyy') : '',
     photoURL: profile.photo_url,
     needsPasswordChange: profile.needs_password_change,
-    password: '' // Password hidden/unknown
+    password: ''
   });
 
   const mapPreRegToUser = (pre: any): User => ({
@@ -279,7 +279,7 @@ const App: React.FC = () => {
     name: `${pre.name} (PENDENTE)`,
     email: pre.email,
     cpf: pre.cpf,
-    role: normalizeRole(pre.role),
+    role: (pre.sector === 'FARMÁCIA' || pre.sector === 'FARMACIA') ? UserRole.FARMACEUTICO : normalizeRole(pre.role),
     sector: pre.sector,
     mobile: '',
     birthDate: '',
