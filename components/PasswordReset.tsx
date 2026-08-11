@@ -67,6 +67,7 @@ const PasswordReset: React.FC<PasswordResetProps> = ({ onSuccess }) => {
 
             setSuccess(true);
             setTimeout(() => {
+            
                 onSuccess();
             }, 800);
         } catch (err: any) {

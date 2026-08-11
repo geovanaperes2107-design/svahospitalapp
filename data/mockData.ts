@@ -54,5 +54,31 @@ export const INITIAL_PATIENTS: Patient[] = [
         status: AntibioticStatus.EM_USO
       }
     ]
+  },
+  {
+    id: '3',
+    name: 'LILLIANE CARVALHO RODRIGUES',
+    birthDate: '31/12/1985',
+    bed: 'L-9',
+    sector: 'UTI ADULTO',
+    diagnosis: 'PNEUMONIA + EMBOLIA SÉPTICA',
+    treatmentType: TreatmentType.TERAPEUTICO,
+    infectoStatus: InfectoStatus.PENDENTE,
+    isEvaluated: true,
+    history: [],
+    antibiotics: [
+      {
+        id: 'a3',
+        category: MedicationCategory.ANTIMICROBIANO,
+        name: 'PIPERACILINA + TAZOBACTAM PO P/ SOL INJ 4 + 0,5G',
+        dose: '4.5G',
+        frequency: '06/06',
+        startDate: '2026-08-10',
+        durationDays: 7,
+        times: ['22:00', '16:00', '10:00', '04:00'],
+        status: AntibioticStatus.EM_USO,
+        route: 'EV'
+      }
+    ]
   }
 ];
