@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { safeJsonParse, generateUUID, isValidUUID } from './utils';
+import { safeJsonParse, generateUUID, isValidUUID, formatDateBR, formatDateISO, parseAnyDate } from './utils';
 
 const DEFAULT_ATB_COSTS: Record<string, number> = {
   'MEROPENEM PO P/ SOL INJ 1G': 85.00,
@@ -212,7 +212,7 @@ const App: React.FC = () => {
   const mapDbToPatient = (row: any): Patient => ({
     id: row.id,
     name: row.name,
-    birthDate: row.birth_date ? format(new Date(row.birth_date), 'dd/MM/yyyy') : '',
+    birthDate: row.birth_date ? formatDateBR(row.birth_date) : '',
     bed: row.bed,
     sector: row.sector,
     diagnosis: row.diagnosis || '',
@@ -222,7 +222,7 @@ const App: React.FC = () => {
     pharmacyNote: row.pharmacy_note,
     prescriberNotes: row.prescriber_notes,
     incisionRelation: row.incision_relation,
-    procedureDate: row.procedure_date ? format(new Date(row.procedure_date), 'dd/MM/yyyy') : undefined,
+    procedureDate: row.procedure_date ? formatDateBR(row.procedure_date) : undefined,
     operativeTime: row.operative_time,
     antibiotics: row.antibiotics || [],
     isEvaluated: row.is_evaluated,
@@ -697,8 +697,9 @@ const App: React.FC = () => {
     }
   };
 
-  const handleDeletePatient = async (id: string) => {
-    if (!window.confirm("Confirmar exclusão deste paciente do banco de dados?")) return;
+  const handleDeletePatient = async (id: string, justification?: string) => {
+    const targetPatient = patients.find(p => p.id === id);
+    const userName = currentUser.name || user?.name || 'Usuário';
 
     // Optimistic
     setPatients(prev => prev.filter(p => p.id !== id));
@@ -710,6 +711,12 @@ const App: React.FC = () => {
         console.error('Error deleting patient:', error);
         alert(`Erro ao excluir paciente: ${error.message} - ${error.details || ''}`);
         fetchPatients();
+      } else if (targetPatient) {
+        setSystemAlert({
+          message: `Paciente ${targetPatient.name} excluído por ${userName}. Motivo: ${justification || 'Não informado'}`,
+          type: 'info'
+        });
+        setTimeout(() => setSystemAlert(null), 8000);
       }
     }
   };

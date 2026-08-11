@@ -21,7 +21,7 @@ import PatientCard from './PatientCard';
 import PatientRegistration from './PatientRegistration';
 import BulkImport from './BulkImport';
 import Reports from './Reports';
-import UserManagement from './UserManagement';
+import DeletePatientModal from './DeletePatientModal';
 import { getDaysRemaining, calculateEndDate } from '../utils';
 import { getMenuItems, DEFAULT_SECTORS } from '../constants';
 
@@ -49,7 +49,7 @@ interface DashboardProps {
   setLoginBgOpacity?: (val: string) => void;
   onLogout: () => void;
   onUpdatePatient: (p: Patient) => void;
-  onDeletePatient: (id: string) => void;
+  onDeletePatient: (id: string, justification?: string) => void;
   onAddPatient: (p: Patient) => void;
   onUpdatePatientsOrder: (updatedPatients: { id: string, order: number }[]) => void;
   onBulkAddPatients: (patients: Patient[]) => void;
@@ -107,6 +107,19 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('sva_active_tab') || 'inicio');
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [deleteTargetPatient, setDeleteTargetPatient] = useState<Patient | null>(null);
+
+  const globalSearchResults = useMemo(() => {
+    if (!searchTerm.trim()) return [];
+    const term = searchTerm.toLowerCase().trim();
+    return patients.filter(p =>
+      p.name.toLowerCase().includes(term) ||
+      (p.bed || '').toLowerCase().includes(term) ||
+      (p.sector || '').toLowerCase().includes(term) ||
+      (p.diagnosis || '').toLowerCase().includes(term) ||
+      p.antibiotics.some(a => a.name.toLowerCase().includes(term))
+    );
+  }, [patients, searchTerm]);
   const [infectoSubTab, setInfectoSubTab] = useState<'todos' | 'pendentes' | 'autorizados' | 'nao_autorizados'>(() =>
     (localStorage.getItem('sva_infecto_subtab') as any) || 'pendentes'
   );
@@ -534,7 +547,77 @@ const Dashboard: React.FC<DashboardProps> = ({
 
         <main className="flex-1 overflow-y-auto p-3 md:p-6 relative custom-scrollbar">
           {activeTab === 'inicio' && (
-            <div className="max-w-7xl mx-auto space-y-3 animate-in fade-in text-left">
+            <div className="max-w-7xl mx-auto space-y-4 animate-in fade-in text-left">
+              
+              {/* Barra de Busca Geral no Painel Principal */}
+              <div className="bg-white dark:bg-slate-800 p-4 md:p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row items-center gap-3 transition-colors">
+                <div className="relative flex-1 w-full">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 dark:text-blue-400" size={22} />
+                  <input
+                    type="text"
+                    placeholder="🔍 Busca Geral: Digite nome do paciente, leito, setor, diagnóstico ou medicamento..."
+                    className="w-full pl-12 pr-10 py-3.5 bg-slate-50 dark:bg-slate-900/60 rounded-2xl font-bold text-sm outline-none focus:bg-white dark:focus:bg-slate-900 border-2 border-transparent focus:border-blue-500 transition-all text-slate-900 dark:text-white shadow-inner"
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+                      title="Limpar busca"
+                    >
+                      <X size={18} />
+                    </button>
+                  )}
+                </div>
+                {searchTerm && (
+                  <span className="text-xs font-black px-4 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 shrink-0 border border-blue-100 dark:border-blue-800">
+                    {globalSearchResults.length} paciente(s) encontrado(s)
+                  </span>
+                )}
+              </div>
+
+              {/* Resultados da Busca Geral no Painel Principal */}
+              {searchTerm.trim() ? (
+                <div className="space-y-4 py-2 animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                      <Search className="text-blue-500" size={18} /> Resultados da Busca em Todo o Hospital
+                    </h3>
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="text-xs font-bold text-slate-400 hover:text-red-500 uppercase transition-colors"
+                    >
+                      Limpar Busca ✖
+                    </button>
+                  </div>
+
+                  {globalSearchResults.length === 0 ? (
+                    <EmptyState
+                      title="Nenhum paciente encontrado"
+                      message={`Nenhum paciente no hospital corresponde a "${searchTerm}".`}
+                    />
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {globalSearchResults.map((p, index) => (
+                        <PatientCard
+                          key={p.id}
+                          patient={p}
+                          role={user.role}
+                          activeTab="inicio"
+                          onUpdate={onUpdatePatient}
+                          onDelete={(id, justification) => onDeletePatient(id, justification)}
+                          isDarkMode={isDarkMode}
+                          configAtbDayLock={configAtbDayLock}
+                          configAtbDayChangeTime={configAtbDayChangeTime}
+                          configAtbDayChangeTimeUTI={configAtbDayChangeTimeUTI}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
               <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
                 {[
                   { label: 'Pacientes Ativos', value: stats.ativos, icon: <Users size={20} />, color: 'text-blue-600', tab: null },
@@ -583,7 +666,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                         <div className="flex gap-2">
                           {user.role === 'ADMINISTRADOR' && (
-                            <button onClick={(e) => { e.stopPropagation(); if(window.confirm(`Excluir paciente ${p.name}?`)) onDeletePatient(p.id); }} className="p-3 bg-slate-50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-500 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-colors" title="Excluir Paciente">
+                            <button onClick={(e) => { e.stopPropagation(); setDeleteTargetPatient(p); }} className="p-3 bg-slate-50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-500 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-colors" title="Excluir Paciente (Requer Justificativa)">
                               <X size={24} />
                             </button>
                           )}
@@ -842,6 +925,14 @@ const Dashboard: React.FC<DashboardProps> = ({
           onCancel={() => setIsBulkImportOpen(false)}
         />
       )}
+
+      <DeletePatientModal
+        patient={deleteTargetPatient}
+        isOpen={!!deleteTargetPatient}
+        onClose={() => setDeleteTargetPatient(null)}
+        onConfirmDelete={(id, justification) => onDeletePatient(id, justification)}
+        userName={user.name}
+      />
     </div>
   );
 };

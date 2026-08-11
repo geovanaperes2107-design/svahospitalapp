@@ -1,9 +1,27 @@
 
 import { differenceInDays, addDays, parseISO, format, startOfDay } from 'date-fns';
 
-export const parseAnyDate = (dateStr?: string): Date => {
-  if (!dateStr) return new Date();
-  const trimmed = dateStr.trim();
+export const getTodayISO = (): string => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+export const getCurrentYearMonth = (): string => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+};
+
+export const parseAnyDate = (dateInput?: string | Date | null): Date => {
+  if (!dateInput) return startOfDay(new Date());
+  if (dateInput instanceof Date) return startOfDay(dateInput);
+
+  const trimmed = String(dateInput).trim();
+  if (!trimmed) return startOfDay(new Date());
 
   // If DD/MM/YYYY format (e.g. 03/08/2026)
   if (trimmed.includes('/')) {
@@ -18,9 +36,10 @@ export const parseAnyDate = (dateStr?: string): Date => {
     }
   }
 
-  // If YYYY-MM-DD format (e.g. 2026-08-03)
+  // If YYYY-MM-DD format or ISO timestamp (e.g. 2026-08-03 or 2026-08-03T00:00:00.000Z)
   if (trimmed.includes('-')) {
-    const parts = trimmed.split('T')[0].split('-');
+    const datePart = trimmed.split('T')[0].split(' ')[0];
+    const parts = datePart.split('-');
     if (parts.length === 3) {
       const year = parseInt(parts[0], 10);
       const month = parseInt(parts[1], 10) - 1;
@@ -32,7 +51,19 @@ export const parseAnyDate = (dateStr?: string): Date => {
   }
 
   const parsed = parseISO(trimmed);
-  return isNaN(parsed.getTime()) ? new Date() : parsed;
+  return isNaN(parsed.getTime()) ? startOfDay(new Date()) : startOfDay(parsed);
+};
+
+export const formatDateBR = (dateInput?: string | Date | null): string => {
+  if (!dateInput) return '';
+  const d = parseAnyDate(dateInput);
+  return format(d, 'dd/MM/yyyy');
+};
+
+export const formatDateISO = (dateInput?: string | Date | null): string => {
+  if (!dateInput) return getTodayISO();
+  const d = parseAnyDate(dateInput);
+  return format(d, 'yyyy-MM-dd');
 };
 
 export const calculateEndDate = (startDate: string, duration: string | number): string => {

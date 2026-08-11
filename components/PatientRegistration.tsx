@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UserPlus, Plus, Trash2, Calendar, Save, AlertCircle, Clock, Pill, X } from 'lucide-react';
 import { Patient, Antibiotic, AntibioticStatus, InfectoStatus, TreatmentType, MedicationCategory } from '../types';
 import { DEFAULT_SECTORS, MEDICATION_LISTS, FREQUENCY_OPTIONS, DURATION_OPTIONS } from '../constants';
-import { calculateEndDate, generateUUID } from '../utils';
+import { calculateEndDate, generateUUID, getTodayISO } from '../utils';
 
 interface PatientRegistrationProps {
   onAdd: (patient: Patient) => void;
@@ -35,7 +35,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
       name: '',
       dose: '',
       frequency: '24/24',
-      startDate: new Date().toISOString().split('T')[0],
+      startDate: getTodayISO(),
       durationDays: 7,
       status: AntibioticStatus.EM_USO,
       times: ['08:00'],
@@ -72,7 +72,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
           name: '',
           dose: '',
           frequency: formData.sector === 'Centro Cirúrgico' ? 'Dose Única' : '08/08',
-          startDate: new Date().toISOString().split('T')[0],
+          startDate: getTodayISO(),
           durationDays: formData.sector === 'Centro Cirúrgico' ? 1 : 7,
           status: formData.sector === 'Centro Cirúrgico' ? AntibioticStatus.FINALIZADO : AntibioticStatus.EM_USO,
           times: ['08:00'],
@@ -130,7 +130,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
         }] : [])
       ],
       antibiotics: atbs as Antibiotic[],
-      procedureDate: formData.sector === 'Centro Cirúrgico' ? (formData.procedureDate || new Date().toISOString().split('T')[0]) : undefined
+      procedureDate: formData.sector === 'Centro Cirúrgico' ? (formData.procedureDate || getTodayISO()) : undefined
     };
 
     onAdd(newPatient);
@@ -157,7 +157,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
         name: '',
         dose: '',
         frequency: '24/24',
-        startDate: new Date().toISOString().split('T')[0],
+        startDate: getTodayISO(),
         durationDays: 7,
         status: AntibioticStatus.EM_USO,
         times: ['08:00'],
@@ -233,7 +233,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
             <div className="col-span-1 space-y-1.5 animate-in fade-in slide-in-from-top-2">
               <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-1">Data do Procedimento</label>
               <input type="date" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs focus:ring-4 focus:ring-emerald-50 dark:focus:ring-emerald-900/20 focus:border-emerald-500 outline-none shadow-inner text-slate-900 dark:text-white"
-                value={formData.procedureDate || new Date().toISOString().split('T')[0]} onChange={e => setFormData({ ...formData, procedureDate: e.target.value })} />
+                value={formData.procedureDate || getTodayISO()} onChange={e => setFormData({ ...formData, procedureDate: e.target.value })} />
             </div>
           )}
           <div className="col-span-4 space-y-1.5">

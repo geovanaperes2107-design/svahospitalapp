@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { Patient, AntibioticStatus, IncisionRelation, TreatmentType, InfectoStatus, MedicationCategory } from '../types';
 import { DDD_MAP, DEFAULT_SECTORS, ANTIBIOTICS_LIST } from '../constants';
-import { calculateEndDate, getDaysRemaining, getATBDay, parseAnyDate } from '../utils';
+import { calculateEndDate, getDaysRemaining, getATBDay, parseAnyDate, formatDateBR } from '../utils';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -1073,7 +1073,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                             {p.antibiotics.filter(a => a.category === MedicationCategory.ANTIMICROBIANO).map(a => a.name).join(', ')}
                           </td>
                           <td className="px-4 py-3 text-center text-slate-800 dark:text-slate-200 font-black text-[11px]">
-                            {p.antibiotics[0]?.startDate ? new Date(p.antibiotics[0].startDate).toLocaleDateString('pt-BR') : '-'}
+                            {p.antibiotics[0]?.startDate ? formatDateBR(p.antibiotics[0].startDate) : '-'}
                           </td>
                           <td className="px-4 py-2 text-center">
                             <span className={`px-2 py-1 rounded-lg font-black uppercase text-[8px] ${p.infectoStatus === InfectoStatus.AUTORIZADO ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' :
@@ -1425,7 +1425,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                           <td className="px-4 py-3 leading-tight"><span className="font-black text-slate-900 text-sm">{patient.name}</span><br /><span className="text-[10px] text-slate-600 uppercase font-black">Leito {patient.bed}</span></td>
                           <td className="px-4 py-3 text-slate-800 uppercase font-black text-xs">{patient.sector}</td>
                           <td className="px-4 py-3 font-black text-emerald-700 leading-tight text-sm">{atb.name}</td>
-                          <td className="px-4 py-3 text-slate-600 text-xs font-bold">{new Date(atb.startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}</td>
+                          <td className="px-4 py-3 text-slate-600 text-xs font-bold">{formatDateBR(atb.startDate)} - {formatDateBR(endDate)}</td>
                           <td className="px-4 py-3 text-center"><span className={`px-3 py-1 rounded-lg font-black text-[9px] uppercase ${statusColor}`}>{atb.status}</span></td>
                         </tr>
                       );

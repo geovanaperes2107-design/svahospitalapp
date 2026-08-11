@@ -24,14 +24,15 @@ import {
 import { Patient, UserRole, AntibioticStatus, InfectoStatus, Antibiotic, HistoryEntry, TreatmentType, IncisionRelation, MedicationCategory } from '../types';
 import { DEFAULT_SECTORS, ANTIBIOTICS_LIST, FREQUENCY_OPTIONS, MEDICATION_LISTS } from '../constants';
 import { format, differenceInDays, parseISO, startOfDay, addDays } from 'date-fns';
-import { calculateEndDate, parseAnyDate, isD0Frequency } from '../utils';
+import { calculateEndDate, parseAnyDate, isD0Frequency, formatDateBR, formatDateISO, getTodayISO } from '../utils';
+import DeletePatientModal from './DeletePatientModal';
 
 interface PatientCardProps {
   patient: Patient;
   role: UserRole;
   activeTab: string;
   onUpdate: (updatedPatient: Patient) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string, justification?: string) => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   canMoveUp?: boolean;
@@ -94,19 +95,22 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
 
   const [tempBed, setTempBed] = useState(patient.bed || ''); // Estado para edição de leito
   const [tempDiagnosis, setTempDiagnosis] = useState(patient.diagnosis || '');
+  const [tempName, setTempName] = useState(patient.name || ''); // Estado para edição do nome
   const [tempPharmacyNote, setTempPharmacyNote] = useState(patient.pharmacyNote || '');
   const [tempPrescriberNotes, setTempPrescriberNotes] = useState(patient.prescriberNotes || '');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // State for per-antibiotic comments in Infecto panel
   const [atbInfectoComments, setAtbInfectoComments] = useState<Record<string, string>>({});
 
-  // Inicializa o leito temporário ao abrir modal de edição
+  // Inicializa os dados temporários ao abrir modal de edição
   useEffect(() => {
     if (editMode?.type === 'editar') {
       setTempBed(patient.bed || '');
       setTempDiagnosis(patient.diagnosis || '');
+      setTempName(patient.name || '');
     }
-  }, [editMode, patient.bed, patient.diagnosis]);
+  }, [editMode, patient.bed, patient.diagnosis, patient.name]);
 
   // Sincroniza notas temporárias quando o menu de detalhes é aberto
   useEffect(() => {
@@ -205,10 +209,20 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
         ? `${updatedPatient.prescriberNotes}\n${swapNote}`
         : swapNote;
     } else if (editMode?.type === 'editar') {
+      // If tempName has changed, update patient name and record in history
+      if (tempName && tempName.trim().toUpperCase() !== patient.name.trim().toUpperCase()) {
+        const oldName = patient.name;
+        const newName = tempName.trim().toUpperCase();
+        updatedPatient.name = newName;
+        const nameLog = `Nome alterado de "${oldName}" para "${newName}" por ${role}`;
+        updateLog = updateLog ? `${updateLog} | ${nameLog}` : nameLog;
+      }
+
       // If tempBed has changed, update patient bed
       if (tempBed !== patient.bed) {
         updatedPatient.bed = tempBed;
-        updateLog = `Leito: ${patient.bed} -> ${tempBed}`;
+        const bedLog = `Leito: ${patient.bed} -> ${tempBed}`;
+        updateLog = updateLog ? `${updateLog} | ${bedLog}` : bedLog;
       }
 
       // If tempDiagnosis has changed, update patient diagnosis
@@ -446,11 +460,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                 </div>
               )}
               {!isInfectoPanel && role !== UserRole.VISUALIZADOR && (
-                <button onClick={() => {
-                  if (window.confirm(`Deseja realmente excluir o paciente ${patient.name}? Esta ação não pode ser desfeita.`)) {
-                    onDelete(patient.id);
-                  }
-                }} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg text-slate-300 hover:text-red-600 transition-colors ml-1" title="Excluir Paciente">
+                <button onClick={() => setShowDeleteModal(true)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg text-slate-300 hover:text-red-600 transition-colors ml-1" title="Excluir Paciente (Requer Justificativa)">
                   <Trash2 size={18} />
                 </button>
               )}
@@ -834,11 +844,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                             />
                           </div>
                           <div className="w-3/4">
-                            <label className="text-[8px] font-black uppercase text-slate-400">Paciente (Ref. Apenas)</label>
+                            <label className="text-[8px] font-black uppercase text-slate-400">Nome do Paciente</label>
                             <input
-                              disabled
-                              className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl font-bold text-[10px] outline-none text-slate-400 uppercase"
-                              value={patient.name}
+                              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl font-bold text-xs outline-none focus:border-blue-500 uppercase text-slate-900 dark:text-white"
+                              value={tempName}
+                              onChange={e => setTempName(e.target.value)}
+                              placeholder="Nome do Paciente"
                             />
                           </div>
                         </div>
@@ -935,6 +946,14 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
           </div>
         </div>
       )}
+
+      <DeletePatientModal
+        patient={patient}
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirmDelete={(id, justification) => onDelete(id, justification)}
+        userName={role}
+      />
     </div>
   );
 };
