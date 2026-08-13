@@ -393,9 +393,9 @@ const Dashboard: React.FC<DashboardProps> = ({
       p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0)
     );
 
-    const finalizedCount = patients.filter(p =>
-      p.antibiotics.some(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.EVADIDO, AntibioticStatus.OBITO].includes(a.status))
-    ).length;
+    const finalizedCount = patients.reduce((acc, p) =>
+      acc + p.antibiotics.filter(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.EVADIDO, AntibioticStatus.OBITO].includes(a.status)).length, 0
+    );
 
     const sectorCounts: Record<string, number> = {};
     activeSectors.forEach(sector => {

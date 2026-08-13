@@ -392,7 +392,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
     return {
       totalPatients: totalPatientsInPeriod.size,
       activePatients: currentActivePatients.size,
-      substituted: totalSubstituted, finalized: totalFinalized, suspended: totalSuspended, obitos: totalObitos,
+      substituted: totalSubstituted, finalized: (totalFinalized + totalSuspended + totalSubstituted + totalObitos), suspended: totalSuspended, obitos: totalObitos,
       prolonged: prolongedCount,
       avgDuration: medsCount > 0 ? (totalDuration / medsCount).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00',
       therapeutic: therapeuticCount, prophylactic: prophylacticCount, oral: oralCount, iv: ivCount, vencidos: vencidosCount
