@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { safeJsonParse, generateUUID, isValidUUID, formatDateBR, formatDateISO, parseAnyDate } from './utils';
+import { safeJsonParse, generateUUID, isValidUUID, formatDateBR, formatDateISO, parseAnyDate, getTodayISO } from './utils';
 
 const DEFAULT_ATB_COSTS: Record<string, number> = {
   'MEROPENEM PO P/ SOL INJ 1G': 85.00,
@@ -60,6 +60,10 @@ const App: React.FC = () => {
   const [activeSectors, setActiveSectorsState] = useState<string[]>(() =>
     safeJsonParse(localStorage.getItem('sva_active_sectors'), DEFAULT_SECTORS)
   );
+  const [lastSectorResets, setLastSectorResetsState] = useState<Record<string, string>>(() =>
+    safeJsonParse(localStorage.getItem('sva_last_sector_resets'), {})
+  );
+  const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
 
   // --- HELPER PARA SALVAR CONFIGURAÇÕES NO SUPABASE E LOCALSTORAGE ---
   const saveSetting = async (key: string, value: any, localStorageKey: string) => {
@@ -201,7 +205,21 @@ const App: React.FC = () => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const [systemAlert, setSystemAlert] = useState<{ message: string, type: 'info' | 'warning' | 'success' } | null>(null);
+  const [systemAlert, setSystemAlert] = useState<{ id?: string; message: string; type: 'info' | 'warning' | 'success' } | null>(null);
+
+  const triggerSystemAlert = useCallback((alertObj: { id?: string; message: string; type: 'info' | 'warning' | 'success' }, durationMs = 10000) => {
+    const alertId = alertObj.id || `${alertObj.type}_${alertObj.message}`;
+    const dismissedAlerts = safeJsonParse(localStorage.getItem('sva_dismissed_alerts'), [] as string[]);
+    if (dismissedAlerts.includes(alertId)) {
+      return;
+    }
+    setSystemAlert({ ...alertObj, id: alertId });
+    if (durationMs > 0) {
+      setTimeout(() => {
+        setSystemAlert(current => (current?.id === alertId ? null : current));
+      }, durationMs);
+    }
+  }, []);
 
   const [users, setUsers] = useState<User[]>([]);
 
@@ -226,7 +244,7 @@ const App: React.FC = () => {
     operativeTime: row.operative_time,
     antibiotics: row.antibiotics || [],
     isEvaluated: row.is_evaluated,
-    lastEvaluationDate: row.last_evaluation_date,
+    lastEvaluationDate: row.last_evaluation_date ? formatDateBR(row.last_evaluation_date) : undefined,
     history: row.history || []
   });
 
@@ -235,7 +253,7 @@ const App: React.FC = () => {
     const parseDate = (dateStr?: string) => {
       if (!dateStr) return null;
       const parts = dateStr.split('/');
-      if (parts.length !== 3) return null;
+      if (parts.length !== 3) return dateStr;
       return `${parts[2]}-${parts[1]}-${parts[0]}`;
     };
 
@@ -255,7 +273,7 @@ const App: React.FC = () => {
       operative_time: p.operativeTime,
       antibiotics: p.antibiotics,
       is_evaluated: p.isEvaluated,
-      last_evaluation_date: p.lastEvaluationDate,
+      last_evaluation_date: p.lastEvaluationDate ? formatDateISO(p.lastEvaluationDate) : null,
       history: p.history
     };
   };
@@ -331,32 +349,43 @@ const App: React.FC = () => {
   }, []);
 
   const fetchSettings = useCallback(async () => {
-    const { data, error } = await supabase.from('system_settings').select('*');
-    if (error) {
-      console.error('Error fetching settings:', error);
-    } else if (data) {
-      data.forEach(s => {
-        switch (s.key) {
-          case 'hospital_name': setHospitalNameState(s.value); break;
-          case 'bg_image': setBgImageState(s.value); break;
-          case 'login_bg_image': setLoginBgImageState(s.value); break;
-          case 'report_email': setReportEmailState(s.value); break;
-          case 'patient_days': setPatientDaysState(Number(s.value)); break;
-          case 'atb_costs': setAtbCostsState(s.value); break;
-          case 'config_notify_reset': setConfigNotifyResetState(s.value); break;
-          case 'config_notify_pending': setConfigNotifyPendingState(s.value); break;
-          case 'config_notify_expired': setConfigNotifyExpiredState(s.value); break;
-          case 'config_reset_time': setConfigResetTimeState(s.value); break;
-          case 'config_reset_time_uti': setConfigResetTimeUTIState(s.value); break;
-          case 'config_pending_time_clinicas': setConfigPendingTimeClinicasState(s.value); break;
-          case 'config_pending_time_uti_alert': setConfigPendingTimeUTIState(s.value); break;
-          case 'config_atb_day_change_time': setConfigAtbDayChangeTimeState(s.value); break;
-          case 'config_atb_day_change_time_uti': setConfigAtbDayChangeTimeUTIState(s.value); break;
-          case 'active_sectors': setActiveSectorsState(s.value); break;
-        }
-        // Sync to localStorage too
-        localStorage.setItem(`sva_${s.key}`, typeof s.value === 'string' ? s.value : JSON.stringify(s.value));
-      });
+    try {
+      const { data, error } = await supabase.from('system_settings').select('*');
+      if (error) {
+        console.error('Error fetching settings:', error);
+      } else if (data) {
+        data.forEach(s => {
+          switch (s.key) {
+            case 'hospital_name': setHospitalNameState(s.value); break;
+            case 'bg_image': setBgImageState(s.value); break;
+            case 'login_bg_image': setLoginBgImageState(s.value); break;
+            case 'report_email': setReportEmailState(s.value); break;
+            case 'patient_days': setPatientDaysState(Number(s.value)); break;
+            case 'atb_costs': setAtbCostsState(s.value); break;
+            case 'config_notify_reset': setConfigNotifyResetState(s.value); break;
+            case 'config_notify_pending': setConfigNotifyPendingState(s.value); break;
+            case 'config_notify_expired': setConfigNotifyExpiredState(s.value); break;
+            case 'config_reset_time': setConfigResetTimeState(s.value); break;
+            case 'config_reset_time_uti': setConfigResetTimeUTIState(s.value); break;
+            case 'config_pending_time_clinicas': setConfigPendingTimeClinicasState(s.value); break;
+            case 'config_pending_time_uti_alert': setConfigPendingTimeUTIState(s.value); break;
+            case 'config_atb_day_change_time': setConfigAtbDayChangeTimeState(s.value); break;
+            case 'config_atb_day_change_time_uti': setConfigAtbDayChangeTimeUTIState(s.value); break;
+            case 'active_sectors': setActiveSectorsState(s.value); break;
+            case 'last_sector_resets': {
+              const resets = typeof s.value === 'string' ? safeJsonParse(s.value, {}) : (s.value || {});
+              setLastSectorResetsState(resets);
+              break;
+            }
+          }
+          // Sync to localStorage too
+          localStorage.setItem(`sva_${s.key}`, typeof s.value === 'string' ? s.value : JSON.stringify(s.value));
+        });
+      }
+    } catch (err) {
+      console.error('Exception in fetchSettings:', err);
+    } finally {
+      setIsSettingsLoaded(true);
     }
   }, []);
 
@@ -491,54 +520,62 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const checkScheduledTasks = () => {
-      const now = new Date();
-      const todayStr = format(now, 'yyyy-MM-dd');
+      if (!isSettingsLoaded) return;
 
-      // Reset evaluations por Setor
+      const now = new Date();
+      const todayISO = getTodayISO();
+      const todayBR = formatDateBR(now);
+
+      // Reset evaluations por Setor (Sincronizado via Supabase system_settings)
       if (configNotifyReset) {
-        const lastResetDateMap = safeJsonParse(localStorage.getItem('sva_sector_resets'), {} as Record<string, string>);
+        const lastResetDateMap = { ...lastSectorResets };
         const sectorsToReset: string[] = [];
 
         // Verifica Enfermaria (Geral)
         const [hGen, mGen] = configResetTime.split(':').map(Number);
         const isPastGenTime = now.getHours() > hGen || (now.getHours() === hGen && now.getMinutes() >= mGen);
-        if (lastResetDateMap['GERAL'] !== todayStr && isPastGenTime) {
+        if (lastResetDateMap['GERAL'] !== todayISO && isPastGenTime) {
           sectorsToReset.push('GERAL');
-          lastResetDateMap['GERAL'] = todayStr;
+          lastResetDateMap['GERAL'] = todayISO;
         }
 
         // Verifica UTI
         const [hUTI, mUTI] = configResetTimeUTI.split(':').map(Number);
         const isPastUTITime = now.getHours() > hUTI || (now.getHours() === hUTI && now.getMinutes() >= mUTI);
-        if (lastResetDateMap['UTI'] !== todayStr && isPastUTITime) {
+        if (lastResetDateMap['UTI'] !== todayISO && isPastUTITime) {
           sectorsToReset.push('UTI');
-          lastResetDateMap['UTI'] = todayStr;
+          lastResetDateMap['UTI'] = todayISO;
         }
 
         if (sectorsToReset.length > 0) {
-          let query = supabase.from('pacientes').update({ is_evaluated: false });
+          // Grava imediatamente em lastSectorResets no Supabase para impedir que outros painéis/dispositivos tentem resetar hoje
+          setLastSectorResetsState(lastResetDateMap);
+          saveSetting('last_sector_resets', lastResetDateMap, 'sva_last_sector_resets');
 
-          // Divide os setores do sistema entre UTI e Geral baseando-se no nome
           const utiSectors = activeSectors.filter(s => s.toUpperCase().includes('UTI'));
           const generalSectors = activeSectors.filter(s => !s.toUpperCase().includes('UTI'));
 
+          let query = supabase.from('pacientes').update({ is_evaluated: false });
+
           if (sectorsToReset.includes('GERAL') && sectorsToReset.includes('UTI')) {
-            // Reset global - remove filtro para afetar todos
+            // Reset global
           } else if (sectorsToReset.includes('UTI')) {
             query = query.in('sector', utiSectors);
           } else {
             query = query.in('sector', generalSectors);
           }
 
+          // Proteção adicional: NÃO desmarca pacientes avaliados HOJE (verifica ISO YYYY-MM-DD e BR DD/MM/YYYY)
+          query = query.or(`last_evaluation_date.is.null,and(last_evaluation_date.neq.${todayISO},last_evaluation_date.neq.${todayBR})`);
+
           query.then(({ error }) => {
             if (!error) {
               fetchPatients();
-              localStorage.setItem('sva_sector_resets', JSON.stringify(lastResetDateMap));
-              setSystemAlert({
+              triggerSystemAlert({
+                id: `reset_${todayISO}_${sectorsToReset.join('_')}`,
                 message: `Reset de avaliações concluído para: ${sectorsToReset.join(', ')}`,
                 type: 'info'
               });
-              setTimeout(() => setSystemAlert(null), 10000);
             }
           });
         }
@@ -551,14 +588,18 @@ const App: React.FC = () => {
         const isPastClinTime = now.getHours() > hClin || (now.getHours() === hClin && now.getMinutes() >= mClin);
         const lastAlertGen = localStorage.getItem('sva_last_night_alert_clinicas');
 
-        if (lastAlertGen !== todayStr && isPastClinTime) {
+        if (lastAlertGen !== todayISO && isPastClinTime) {
           const pendentesClinicas = patients.filter(p => !p.isEvaluated && !p.sector?.includes('UTI'));
           if (pendentesClinicas.length > 0) {
             const names = pendentesClinicas.map(p => p.name).slice(0, 3).join(', ');
             const remaining = pendentesClinicas.length - 3;
             const msg = remaining > 0 ? ` e outros ${remaining} pacientes` : '';
-            setSystemAlert({ message: `Pendentes Clínicas (${configPendingTimeClinicas}): ${names}${msg}`, type: 'warning' });
-            localStorage.setItem('sva_last_night_alert_clinicas', todayStr);
+            triggerSystemAlert({
+              id: `pending_clinicas_${todayISO}`,
+              message: `Pendentes Clínicas (${configPendingTimeClinicas}): ${names}${msg}`,
+              type: 'warning'
+            });
+            localStorage.setItem('sva_last_night_alert_clinicas', todayISO);
           }
         }
 
@@ -567,14 +608,18 @@ const App: React.FC = () => {
         const isPastUtiAlertTime = now.getHours() > hUtiAlert || (now.getHours() === hUtiAlert && now.getMinutes() >= mUtiAlert);
         const lastAlertUti = localStorage.getItem('sva_last_night_alert_uti');
 
-        if (lastAlertUti !== todayStr && isPastUtiAlertTime) {
+        if (lastAlertUti !== todayISO && isPastUtiAlertTime) {
           const pendentesUti = patients.filter(p => !p.isEvaluated && p.sector?.includes('UTI'));
           if (pendentesUti.length > 0) {
             const names = pendentesUti.map(p => p.name).slice(0, 3).join(', ');
             const remaining = pendentesUti.length - 3;
             const msg = remaining > 0 ? ` e outros ${remaining} pacientes` : '';
-            setSystemAlert({ message: `Pendentes UTI (${configPendingTimeUTI}): ${names}${msg}`, type: 'warning' });
-            localStorage.setItem('sva_last_night_alert_uti', todayStr);
+            triggerSystemAlert({
+              id: `pending_uti_${todayISO}`,
+              message: `Pendentes UTI (${configPendingTimeUTI}): ${names}${msg}`,
+              type: 'warning'
+            });
+            localStorage.setItem('sva_last_night_alert_uti', todayISO);
           }
         }
       }
@@ -585,19 +630,22 @@ const App: React.FC = () => {
       const isReportTime = now.getHours() >= 23;
       const lastReportDate = localStorage.getItem('sva_last_monthly_report');
 
-      if (isLastDay && isReportTime && lastReportDate !== todayStr) {
+      if (isLastDay && isReportTime && lastReportDate !== todayISO) {
         console.log(`[SVA] Gerando relatório PDF mensal...`);
         generateMonthlyReport();
-        localStorage.setItem('sva_last_monthly_report', todayStr);
-        setSystemAlert({ message: `Relatório mensal gerado e pronto para envio para ${reportEmail}`, type: 'success' });
-        setTimeout(() => setSystemAlert(null), 10000);
+        localStorage.setItem('sva_last_monthly_report', todayISO);
+        triggerSystemAlert({
+          id: `monthly_report_${todayISO}`,
+          message: `Relatório mensal gerado e pronto para envio para ${reportEmail}`,
+          type: 'success'
+        });
       }
     };
 
     checkScheduledTasks();
     const interval = setInterval(checkScheduledTasks, 60000);
     return () => clearInterval(interval);
-  }, [patients, reportEmail, atbCosts, hospitalName, configNotifyReset, configNotifyPending, configResetTime, configResetTimeUTI, configPendingTimeClinicas, configPendingTimeUTI]);
+  }, [isSettingsLoaded, patients, reportEmail, atbCosts, hospitalName, configNotifyReset, configNotifyPending, configResetTime, configResetTimeUTI, configPendingTimeClinicas, configPendingTimeUTI, lastSectorResets, triggerSystemAlert]);
 
   useEffect(() => {
     // Only save settings to local storage, NOT patients OR users anymore

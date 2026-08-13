@@ -322,6 +322,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
       ...patient,
       incisionRelation: relation,
       isEvaluated: true,
+      lastEvaluationDate: formatDateISO(new Date()),
       antibiotics: updatedAntibiotics,
       history: addHistory('CC Registro', `Relação com incisão: ${relation}`)
     });
@@ -429,43 +430,41 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
             </div>
           )}
 
-          {!isInfectoPanel && (
-            <div className="flex gap-1.5 ml-auto no-print">
-              {!isInfectoPanel && canModifyATB && (
-                <button onClick={() => {
-                  setNewAtb({
-                    name: '',
-                    dose: '',
-                    freq: '08/08',
-                    times: '',
-                    duration: 7,
-                    start: format(new Date(), 'yyyy-MM-dd'),
-                    justification: '',
-                    route: 'EV'
-                  });
-                  setEditMode({ type: 'novo' });
-                }} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg text-slate-400 dark:text-slate-500 transition-colors" title="Adicionar ATB">
-                  <PlusCircle size={18} />
-                </button>
-              )}
-              {canManageAssistencia && (
-                <button onClick={() => setShowMenu(!showMenu)} className={`p-2 rounded-lg transition-colors ${showMenu ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30' : 'hover:bg-slate-100 dark:hover:bg-slate-700/50 text-slate-400 dark:text-slate-500'}`} title="Histórico e Notas">
-                  <MoreVertical size={18} />
-                </button>
-              )}
-              {!isInfectoPanel && isAdmin && (
-                <div className="flex flex-col gap-0.5 ml-1">
-                  <button onClick={onMoveUp} disabled={!canMoveUp} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-300 disabled:opacity-30"><ChevronUp size={14} /></button>
-                  <button onClick={onMoveDown} disabled={!canMoveDown} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-300 disabled:opacity-30"><ChevronDown size={14} /></button>
-                </div>
-              )}
-              {!isInfectoPanel && role !== UserRole.VISUALIZADOR && (
-                <button onClick={() => setShowDeleteModal(true)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg text-slate-300 hover:text-red-600 transition-colors ml-1" title="Excluir Paciente (Requer Justificativa)">
-                  <Trash2 size={18} />
-                </button>
-              )}
-            </div>
-          )}
+          <div className="flex gap-1.5 ml-auto no-print">
+            {!isInfectoPanel && canModifyATB && (
+              <button onClick={() => {
+                setNewAtb({
+                  name: '',
+                  dose: '',
+                  freq: '08/08',
+                  times: '',
+                  duration: 7,
+                  start: format(new Date(), 'yyyy-MM-dd'),
+                  justification: '',
+                  route: 'EV'
+                });
+                setEditMode({ type: 'novo' });
+              }} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg text-slate-400 dark:text-slate-500 transition-colors" title="Adicionar ATB">
+                <PlusCircle size={18} />
+              </button>
+            )}
+            {canManageAssistencia && (
+              <button onClick={() => setShowMenu(!showMenu)} className={`p-2 rounded-lg transition-colors ${showMenu ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30' : 'hover:bg-slate-100 dark:hover:bg-slate-700/50 text-slate-400 dark:text-slate-500'}`} title="Histórico e Notas">
+                <MoreVertical size={18} />
+              </button>
+            )}
+            {!isInfectoPanel && isAdmin && (
+              <div className="flex flex-col gap-0.5 ml-1">
+                <button onClick={onMoveUp} disabled={!canMoveUp} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-300 disabled:opacity-30"><ChevronUp size={14} /></button>
+                <button onClick={onMoveDown} disabled={!canMoveDown} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-300 disabled:opacity-30"><ChevronDown size={14} /></button>
+              </div>
+            )}
+            {!isInfectoPanel && role !== UserRole.VISUALIZADOR && (
+              <button onClick={() => setShowDeleteModal(true)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg text-slate-300 hover:text-red-600 transition-colors ml-1" title="Excluir Paciente (Requer Justificativa)">
+                <Trash2 size={18} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -740,7 +739,17 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
         })}
 
         <div className="flex justify-end items-center gap-2 pt-1 uppercase text-[9px] font-black">
-          <button onClick={() => onUpdate({ ...patient, isEvaluated: !patient.isEvaluated })} className={`px-4 py-1 rounded-full font-black uppercase shadow transition-all ${isEvaluatedEffective ? 'bg-purple-600 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'}`}>
+          <button 
+            onClick={() => {
+              const nextIsEvaluated = !patient.isEvaluated;
+              onUpdate({ 
+                ...patient, 
+                isEvaluated: nextIsEvaluated,
+                lastEvaluationDate: nextIsEvaluated ? formatDateISO(new Date()) : patient.lastEvaluationDate
+              });
+            }} 
+            className={`px-4 py-1 rounded-full font-black uppercase shadow transition-all ${isEvaluatedEffective ? 'bg-purple-600 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'}`}
+          >
             {isEvaluatedEffective ? '✓ AVALIADO' : 'MARCAR COMO AVALIADO'}
           </button>
         </div>

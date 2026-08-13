@@ -22,7 +22,7 @@ import PatientRegistration from './PatientRegistration';
 import BulkImport from './BulkImport';
 import Reports from './Reports';
 import DeletePatientModal from './DeletePatientModal';
-import { getDaysRemaining, calculateEndDate } from '../utils';
+import { getDaysRemaining, calculateEndDate, safeJsonParse } from '../utils';
 import { getMenuItems, DEFAULT_SECTORS } from '../constants';
 
 interface DashboardProps {
@@ -447,7 +447,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     if (configNotifyReset) {
       const todayStr = new Date().toISOString().split('T')[0];
-      const savedResets = localStorage.getItem('sva_sector_resets');
+      const savedResets = localStorage.getItem('sva_last_sector_resets');
       let lastResetDateMap: Record<string, string> = {};
       try {
         if (savedResets) lastResetDateMap = JSON.parse(savedResets);
@@ -878,7 +878,17 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </div>
               </div>
               <button
-                onClick={(e) => { e.stopPropagation(); setSystemAlert(null); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (systemAlert?.id) {
+                    const dismissed = safeJsonParse(localStorage.getItem('sva_dismissed_alerts'), [] as string[]);
+                    if (!dismissed.includes(systemAlert.id)) {
+                      dismissed.push(systemAlert.id);
+                      localStorage.setItem('sva_dismissed_alerts', JSON.stringify(dismissed));
+                    }
+                  }
+                  setSystemAlert(null);
+                }}
                 className="p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors ml-4"
               >
                 <X size={16} />
