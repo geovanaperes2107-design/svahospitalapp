@@ -387,12 +387,14 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
       if (hasActiveAtb) currentActivePatients.add(p.id);
     });
 
-    const vencidosCount = filteredPatients.filter(p => p.sector !== 'Centro Cirúrgico' && !p.sector.includes('Centro Cir') && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0)).length;
+    const finalizedPatientsCount = filteredPatients.filter(p =>
+      p.antibiotics.some(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.EVADIDO, AntibioticStatus.OBITO].includes(a.status))
+    ).length;
 
     return {
       totalPatients: totalPatientsInPeriod.size,
       activePatients: currentActivePatients.size,
-      substituted: totalSubstituted, finalized: (totalFinalized + totalSuspended + totalSubstituted + totalObitos), suspended: totalSuspended, obitos: totalObitos,
+      substituted: totalSubstituted, finalized: (totalFinalized + totalSuspended + totalSubstituted + totalObitos), finalizedPatients: finalizedPatientsCount, suspended: totalSuspended, obitos: totalObitos,
       prolonged: prolongedCount,
       avgDuration: medsCount > 0 ? (totalDuration / medsCount).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00',
       therapeutic: therapeuticCount, prophylactic: prophylacticCount, oral: oralCount, iv: ivCount, vencidos: vencidosCount
@@ -1398,8 +1400,8 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-6xl font-black leading-none tracking-tighter">{stats.finalized}</p>
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] mt-1">Finalizados</p>
+                <p className="text-5xl md:text-6xl font-black leading-none tracking-tighter">{stats.finalizedPatients}</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] mt-1.5 opacity-90">{stats.finalizedPatients} Pacientes ({stats.finalized} ATBs)</p>
               </div>
             </div>
 

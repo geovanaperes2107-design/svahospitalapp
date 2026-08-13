@@ -393,9 +393,13 @@ const Dashboard: React.FC<DashboardProps> = ({
       p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0)
     );
 
-    const finalizedCount = patients.reduce((acc, p) =>
+    const finalizedAtbCount = patients.reduce((acc, p) =>
       acc + p.antibiotics.filter(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.EVADIDO, AntibioticStatus.OBITO].includes(a.status)).length, 0
     );
+
+    const finalizedPatientsCount = patients.filter(p =>
+      p.antibiotics.some(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.EVADIDO, AntibioticStatus.OBITO].includes(a.status))
+    ).length;
 
     const sectorCounts: Record<string, number> = {};
     activeSectors.forEach(sector => {
@@ -418,7 +422,8 @@ const Dashboard: React.FC<DashboardProps> = ({
       expiredList: expiredPatients,
       novos: newCycles,
       adesao: adesaoCalc,
-      finalizados: finalizedCount,
+      finalizados: finalizedAtbCount,
+      finalizedPatients: finalizedPatientsCount,
       sectorCounts
     };
   }, [patients, activeSectors]);
@@ -622,7 +627,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   { label: 'Aguardando Aval.', value: unevaluatedPatients.length, icon: <Clock size={20} />, color: 'text-orange-500', tab: 'pendentes' },
                   { label: 'Novos Ciclos', value: stats.novos, icon: <Clock size={20} />, color: 'text-blue-500', tab: null },
                   { label: 'Adesão', value: `${stats.adesao}%`, icon: <CheckCircle2 size={20} />, color: 'text-indigo-500', tab: null },
-                  { label: 'Encerrados', value: stats.finalizados, icon: <ClipboardList size={20} />, color: 'text-slate-600', tab: 'finalizados' },
+                  { label: 'Encerrados', value: stats.finalizedPatients, subtitle: `${stats.finalizados} ATBs`, icon: <ClipboardList size={20} />, color: 'text-slate-600', tab: 'finalizados' },
                 ].map((s, i) => (
                   <div
                     key={i}
@@ -640,7 +645,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                       <div className={`p-1.5 rounded-xl bg-slate-50 dark:bg-slate-900/50 ${s.color} group-hover:scale-110 transition-transform`}>{React.cloneElement(s.icon as React.ReactElement, { size: 18 })}</div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="text-3xl font-black text-slate-900 dark:text-white leading-none tracking-tight">{s.value}</p>
+                      <div>
+                        <p className="text-3xl font-black text-slate-900 dark:text-white leading-none tracking-tight">{s.value}</p>
+                        {s.subtitle && <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 mt-1 uppercase">{s.subtitle}</p>}
+                      </div>
                       {s.tab && (
                         <span className="text-[8px] font-black uppercase text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">Ver lista ➔</span>
                       )}
