@@ -387,6 +387,12 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
       if (hasActiveAtb) currentActivePatients.add(p.id);
     });
 
+    const vencidosCount = filteredPatients.filter(p =>
+      p.sector !== 'Centro Cirúrgico' &&
+      !p.sector?.includes('Centro Cir') &&
+      p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0)
+    ).length;
+
     const finalizedPatientsCount = filteredPatients.filter(p =>
       p.antibiotics.some(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.EVADIDO, AntibioticStatus.OBITO].includes(a.status))
     ).length;
