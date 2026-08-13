@@ -297,9 +297,19 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({ onAdd, onCanc
                     </select>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500">Data de Início</label>
+                    <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 flex justify-between items-center">
+                      <span>Data de Início</span>
+                      <button
+                        type="button"
+                        onClick={() => updateAtb(idx, { startDate: getTodayISO() })}
+                        className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 hover:underline uppercase bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded transition-all"
+                        title="Definir para a data de hoje"
+                      >
+                        Hoje
+                      </button>
+                    </label>
                     <input type="date" className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl font-bold text-xs outline-none shadow-sm text-slate-900 dark:text-white"
-                      value={atb.startDate} onChange={e => updateAtb(idx, { startDate: e.target.value })} />
+                      value={atb.startDate || getTodayISO()} onChange={e => updateAtb(idx, { startDate: e.target.value })} />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500">Horários</label>

@@ -910,8 +910,18 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
 
               {(editMode.type === 'novo' || editMode.type === 'troca' || editMode.type === 'tempo' || (editMode.type === 'editar' && editMode.atbId)) && (
                 <div className="space-y-0.5">
-                  <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                    <Calendar size={12} className="text-blue-500" /> Data de Início do ATB
+                  <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <Calendar size={12} className="text-blue-500" /> Data de Início do ATB
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setNewAtb({ ...newAtb, start: format(new Date(), 'yyyy-MM-dd') })}
+                      className="text-[8px] font-black text-blue-600 dark:text-blue-400 hover:underline uppercase bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded transition-all"
+                      title="Definir para a data de hoje"
+                    >
+                      Hoje
+                    </button>
                   </label>
                   <input
                     type="date"
