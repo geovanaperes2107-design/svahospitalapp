@@ -244,11 +244,10 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (['inicio', 'cadastro', 'relatorios', 'usuarios'].includes(activeTab)) return false;
 
     if (activeTab === 'finalizados') {
-      const hasNoActiveAtb = !p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO);
       const hasFinishedAtb = p.antibiotics.some(a =>
         [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.EVADIDO, AntibioticStatus.OBITO].includes(a.status)
       );
-      return hasNoActiveAtb && hasFinishedAtb && matchesSearch;
+      return hasFinishedAtb && matchesSearch;
     }
 
     if (activeTab === 'Centro Cirúrgico') {
@@ -395,9 +394,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     );
 
     const finalizedCount = patients.filter(p =>
-      !isCC(p.sector) &&
-      !p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO) &&
-      p.antibiotics.some(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.OBITO].includes(a.status))
+      p.antibiotics.some(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.EVADIDO, AntibioticStatus.OBITO].includes(a.status))
     ).length;
 
     const sectorCounts: Record<string, number> = {};

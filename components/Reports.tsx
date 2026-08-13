@@ -235,7 +235,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
     if (type === 'finalized') {
       title = 'Pacientes com ATBs Finalizados / Encerrados';
       color = 'emerald';
-      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.status === AntibioticStatus.FINALIZADO || a.status === AntibioticStatus.TROCADO);
+      filterFn = p => p.antibiotics.some(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.EVADIDO, AntibioticStatus.OBITO].includes(a.status));
     } else if (type === 'suspended') {
       title = 'Pacientes com ATBs Suspensos';
       color = 'amber';
@@ -1411,7 +1411,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                 <tbody className="divide-y divide-slate-100 text-sm">
                   {filteredPatients
                     .flatMap(p => p.antibiotics
-                      .filter(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.OBITO].includes(a.status) && (atbFilter === 'Todos' || atbFilter === 'Todos os ATBs' || a.name === atbFilter))
+                      .filter(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.EVADIDO, AntibioticStatus.OBITO].includes(a.status) && (atbFilter === 'Todos' || atbFilter === 'Todos os ATBs' || a.name === atbFilter))
                       .map(a => ({ patient: p, atb: a }))
                     )
                     .map(({ patient, atb }) => {
@@ -1430,7 +1430,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                         </tr>
                       );
                     })}
-                  {filteredPatients.flatMap(p => p.antibiotics.filter(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.OBITO].includes(a.status))).length === 0 && (
+                  {filteredPatients.flatMap(p => p.antibiotics.filter(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.EVADIDO, AntibioticStatus.OBITO].includes(a.status))).length === 0 && (
                     <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-400 font-black text-sm uppercase italic">Nenhum antibiótico encerrado encontrado neste período</td></tr>
                   )}
                 </tbody>
