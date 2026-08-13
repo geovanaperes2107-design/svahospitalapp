@@ -627,7 +627,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   { label: 'Aguardando Aval.', value: unevaluatedPatients.length, icon: <Clock size={20} />, color: 'text-orange-500', tab: 'pendentes' },
                   { label: 'Novos Ciclos', value: stats.novos, icon: <Clock size={20} />, color: 'text-blue-500', tab: null },
                   { label: 'Adesão', value: `${stats.adesao}%`, icon: <CheckCircle2 size={20} />, color: 'text-indigo-500', tab: null },
-                  { label: 'Encerrados', value: stats.finalizedPatients, subtitle: `${stats.finalizados} ATBs`, icon: <ClipboardList size={20} />, color: 'text-slate-600', tab: 'finalizados' },
+                  { label: 'Encerrados', value: stats.finalizedPatients, subtitle: `${stats.finalizedPatients} Pac. • ${stats.finalizados} ATBs`, icon: <ClipboardList size={20} />, color: 'text-slate-600', tab: 'finalizados' },
                 ].map((s, i) => (
                   <div
                     key={i}
@@ -638,7 +638,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                       }
                     }}
                     className={`bg-white dark:bg-slate-800 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all flex flex-col justify-between h-32 group ${s.tab ? 'cursor-pointer hover:border-orange-300 dark:hover:border-orange-500/50 hover:scale-[1.02]' : ''}`}
-                    title={s.tab ? `Clique para abrir o relatório de ${s.label}` : ''}
+                    title={s.label === 'Encerrados' ? `Encerrados: ${stats.finalizedPatients} Pacientes com ${stats.finalizados} prescrições encerradas (Finalizados, Suspensos, Trocados, Óbitos e Centro Cirúrgico)` : s.tab ? `Clique para abrir o relatório de ${s.label}` : ''}
                   >
                     <div className="flex justify-between items-start">
                       <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">{s.label}</p>

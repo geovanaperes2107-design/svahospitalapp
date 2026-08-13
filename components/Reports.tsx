@@ -1401,14 +1401,19 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
               <div className="flex items-center gap-6">
                 <div className="bg-white/20 p-4 rounded-2xl"><CheckCircle2 size={32} /></div>
                 <div>
-                  <h2 className="text-2xl font-black uppercase leading-none tracking-tighter">Tratamentos Concluídos</h2>
-                  <p className="text-xs font-black opacity-80 uppercase tracking-widest mt-2">Histórico de Antibióticos Finalizados</p>
+                  <h2 className="text-2xl font-black uppercase leading-none tracking-tighter">Tratamentos Concluídos / Encerrados</h2>
+                  <p className="text-xs font-black opacity-90 uppercase tracking-widest mt-2">Histórico de Prescrições (Finalizados, Suspensos, Trocas, Óbitos e Centro Cirúrgico)</p>
                 </div>
               </div>
               <div className="text-right">
                 <p className="text-5xl md:text-6xl font-black leading-none tracking-tighter">{stats.finalizedPatients}</p>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] mt-1.5 opacity-90">{stats.finalizedPatients} Pacientes ({stats.finalized} ATBs)</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] mt-1.5 opacity-90">{stats.finalizedPatients} Pacientes • {stats.finalized} Prescrições ATB</p>
               </div>
+            </div>
+
+            <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 rounded-2xl p-4 text-emerald-900 dark:text-emerald-300 text-xs font-bold flex flex-col md:flex-row items-start md:items-center justify-between gap-2 shadow-sm">
+              <span>💡 <strong>Composição do Indicador:</strong> Inclui todos os pacientes com tratamentos concluídos, suspensos, trocados, óbitos e procedimentos encerrados do Centro Cirúrgico.</span>
+              <span className="bg-emerald-200 dark:bg-emerald-900/60 text-emerald-950 dark:text-emerald-200 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0">{stats.finalizedPatients} Pacientes ({stats.finalized} Prescrições)</span>
             </div>
 
             <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden">
