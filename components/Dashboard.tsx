@@ -619,6 +619,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                           configAtbDayLock={configAtbDayLock}
                           configAtbDayChangeTime={configAtbDayChangeTime}
                           configAtbDayChangeTimeUTI={configAtbDayChangeTimeUTI}
+                          activeSectors={activeSectors}
                         />
                       ))}
                     </div>
@@ -866,6 +867,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                       onDragEnd={handleDragEnd}
                       isDragging={draggedPatientId === p.id}
                       isDragOver={dragOverPatientId === p.id}
+                      activeSectors={activeSectors}
                     />
                   ))
                 )}

@@ -48,9 +48,11 @@ interface PatientCardProps {
   configAtbDayLock?: boolean;
   configAtbDayChangeTime?: string;
   configAtbDayChangeTimeUTI?: string;
+  activeSectors?: string[];
 }
 
-const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onUpdate, onDelete, onMoveUp, onMoveDown, canMoveUp, canMoveDown, isDarkMode, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, isDragOver, configAtbDayLock, configAtbDayChangeTime, configAtbDayChangeTimeUTI }) => {
+const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onUpdate, onDelete, onMoveUp, onMoveDown, canMoveUp, canMoveDown, isDarkMode, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, isDragOver, configAtbDayLock, configAtbDayChangeTime, configAtbDayChangeTimeUTI, activeSectors }) => {
+  const sectorsToDisplay = activeSectors && activeSectors.length > 0 ? activeSectors : DEFAULT_SECTORS;
   const [showMenu, setShowMenu] = useState(false);
   const [showSectorMenu, setShowSectorMenu] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState<string | null>(null);
@@ -437,7 +439,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                   <div className="px-3 py-2 border-b border-slate-50 dark:border-slate-700 mb-1">
                     <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Alterar Setor</p>
                   </div>
-                  {DEFAULT_SECTORS.map(s => (
+                  {sectorsToDisplay.map(s => (
                     <button key={s} onClick={() => { onUpdate({ ...patient, sector: s }); setShowSectorMenu(false); }} className={`text-left px-4 py-2.5 text-[11px] font-black uppercase hover:bg-slate-50 rounded-xl transition-colors ${patient.sector === s ? 'text-blue-600 bg-blue-50/50' : 'text-slate-600'}`}>
                       {s}
                     </button>
