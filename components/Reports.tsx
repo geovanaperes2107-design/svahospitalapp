@@ -222,6 +222,24 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
     });
   }, [patients, filterMonth, sectorFilter, atbFilter]);
 
+  const isAtbProlonged = (p: Patient, a: Antibiotic): boolean => {
+    const currentDay = getATBDay(a.startDate, a.frequency);
+    const duration = Number(a.durationDays) || 0;
+    const isExtendedFlag = Boolean(a.isExtended || (a.cycleOffset && a.cycleOffset > 0) || a.lastAdjustmentDate);
+    const hasHistoryLog = Boolean(p.history?.some(h =>
+      h.action === 'Ajuste Dados' ||
+      (h.details && (
+        h.details.toLowerCase().includes('tempo') ||
+        h.details.toLowerCase().includes('prorrogad') ||
+        h.details.toLowerCase().includes('ajuste') ||
+        h.details.toLowerCase().includes('duração') ||
+        h.details.toLowerCase().includes('duracao') ||
+        h.details.toLowerCase().includes('dia')
+      ))
+    ));
+    return currentDay > 14 || duration > 7 || isExtendedFlag || hasHistoryLog;
+  };
+
   const openCardModal = (type: 'finalized' | 'suspended' | 'substituted' | 'obitos' | 'prolonged' | 'active' | 'total' | 'therapeutic' | 'prophylactic' | 'oral' | 'ev' | 'vencidos' | 'censo_authorized' | 'censo_not_authorized' | 'censo_pending') => {
     let title = '';
     let color = 'blue';
@@ -249,9 +267,9 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
       color = 'slate';
       filterFn = p => nonCC(p) && p.antibiotics.some(a => a.status === AntibioticStatus.OBITO);
     } else if (type === 'prolonged') {
-      title = 'Pacientes em Uso Prolongado (>14 dias)';
+      title = 'Tratamentos Prolongados / Prorrogados';
       color = 'red';
-      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getATBDay(a.startDate, a.frequency) > 14);
+      filterFn = p => nonCC(p) && p.antibiotics.some(a => isAtbProlonged(p, a));
     } else if (type === 'active') {
       title = 'Pacientes com ATB Ativo (Em Uso)';
       color = 'emerald';
@@ -302,7 +320,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
         type === 'suspended' ? a.status === AntibioticStatus.SUSPENSO :
         type === 'substituted' ? a.status === AntibioticStatus.TROCADO :
         type === 'obitos' ? a.status === AntibioticStatus.OBITO :
-        type === 'prolonged' ? (a.status === AntibioticStatus.EM_USO && getATBDay(a.startDate, a.frequency) > 14) :
+        type === 'prolonged' ? isAtbProlonged(p, a) :
         type === 'active' ? a.status === AntibioticStatus.EM_USO :
         type === 'oral' ? isOral(a) :
         type === 'ev' ? !isOral(a) :
@@ -375,7 +393,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
           if (a.status === AntibioticStatus.SUSPENSO) totalSuspended++;
           if (a.status === AntibioticStatus.OBITO) totalObitos++;
 
-          if (getATBDay(a.startDate) > 14) prolongedCount++;
+          if (isAtbProlonged(p, a)) prolongedCount++;
           // Garante que durationDays seja tratado como número para evitar concatenação de strings
           const dDays = Number(a.durationDays) || 0;
           totalDuration += dDays;
@@ -908,7 +926,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
             <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 mb-2">
               <Card label="Atd. Geral de Pacientes" value={stats.totalPatients} icon={<Users size={12} />} color="blue" onClick={() => openCardModal('total')} />
               <Card label="Pacientes com ATB Ativo" value={stats.activePatients} icon={<Pill size={12} />} color="emerald" onClick={() => openCardModal('active')} />
-              <Card label="Prolongados (>14d)" value={stats.prolonged} icon={<AlertTriangle size={12} />} color="red" onClick={() => openCardModal('prolonged')} />
+              <Card label="Prolongados / Prorrogados" value={stats.prolonged} icon={<AlertTriangle size={12} />} color="red" onClick={() => openCardModal('prolonged')} />
               <Card label="Média de Dias" value={stats.avgDuration} icon={<Timer size={12} />} color="slate" />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">

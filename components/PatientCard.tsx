@@ -248,14 +248,18 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
         updateLog = updateLog ? `${updateLog} | ${atbLog}` : atbLog;
       }
     } else if (editMode?.type === 'tempo') {
+      const atbToUpdate = updatedAtbs.find(a => a.id === editMode.atbId);
+      const oldDays = atbToUpdate?.durationDays || 7;
       updatedAtbs = updatedAtbs.map(a => a.id === editMode.atbId ? {
         ...a,
         durationDays: isCC ? 1 : newAtb.duration,
         justification: newAtb.justification,
         times: newAtb.times.split(',').map(t => t.trim()).filter(t => t !== ''),
-        startDate: newAtb.start || a.startDate
+        startDate: newAtb.start || a.startDate,
+        isExtended: true,
+        lastAdjustmentDate: format(new Date(), 'yyyy-MM-dd')
       } : a);
-      updateLog = `Tempo/Início alterado. Motivo: ${newAtb.justification}`;
+      updateLog = `Tempo/Início alterado de ${oldDays}d para ${newAtb.duration}d. Motivo: ${newAtb.justification}`;
     }
 
     // Recalculate patient status if necessary
