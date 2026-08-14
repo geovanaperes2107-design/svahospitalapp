@@ -22,6 +22,7 @@ import PatientRegistration from './PatientRegistration';
 import BulkImport from './BulkImport';
 import Reports from './Reports';
 import DeletePatientModal from './DeletePatientModal';
+import UserManagement from './UserManagement';
 import { getDaysRemaining, calculateEndDate, getATBDay, isAtbVencido, safeJsonParse } from '../utils';
 import { getMenuItems, DEFAULT_SECTORS } from '../constants';
 
