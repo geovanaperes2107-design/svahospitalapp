@@ -168,7 +168,10 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
       return MedicationCategory.ANTIMICROBIANO;
     };
 
+    let historyAction = 'Ajuste Dados';
+
     if (editMode?.type === 'novo') {
+      historyAction = 'Novo ATB';
       const atbObj: Antibiotic = {
         id: 'atb-' + Math.random().toString(36).substr(2, 9),
         category: getInferredCategory(newAtb.name),
@@ -186,6 +189,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
       updatedAtbs.push(atbObj);
       updateLog = `Adicionado ATB: ${newAtb.name}`;
     } else if (editMode?.type === 'troca') {
+      historyAction = 'Substituição de ATB';
       updatedAtbs = updatedAtbs.map(a => a.id === editMode.atbId ? { ...a, status: AntibioticStatus.TROCADO, swapReason: newAtb.justification } : a);
       const atbObj: Antibiotic = {
         id: 'atb-' + Math.random().toString(36).substr(2, 9),
@@ -202,13 +206,15 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
         infectoStatus: InfectoStatus.PENDENTE // New ATBs start as pending
       };
       updatedAtbs.push(atbObj);
-      updateLog = `Substituição: ${newAtb.name} substituiu ${editMode.oldAtbName}. Motivo: ${newAtb.justification}`;
+      const reasonPart = newAtb.justification ? `. Motivo: ${newAtb.justification}` : '';
+      updateLog = `${newAtb.name} substituiu ${editMode.oldAtbName || 'ATB anterior'}${reasonPart}`;
       
-      const swapNote = `[SUBSTITUIÇÃO DE ATB] ${newAtb.name} substituiu ${editMode.oldAtbName}. Motivo: ${newAtb.justification}`;
+      const swapNote = `[SUBSTITUIÇÃO DE ATB] ${newAtb.name} substituiu ${editMode.oldAtbName || 'ATB anterior'}${reasonPart}`;
       updatedPatient.prescriberNotes = updatedPatient.prescriberNotes
         ? `${updatedPatient.prescriberNotes}\n${swapNote}`
         : swapNote;
     } else if (editMode?.type === 'editar') {
+      historyAction = 'Edição de Dados';
       // If tempName has changed, update patient name and record in history
       if (tempName && tempName.trim().toUpperCase() !== patient.name.trim().toUpperCase()) {
         const oldName = patient.name;
@@ -248,6 +254,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
         updateLog = updateLog ? `${updateLog} | ${atbLog}` : atbLog;
       }
     } else if (editMode?.type === 'tempo') {
+      historyAction = 'Ajuste Duração/Início';
       const atbToUpdate = updatedAtbs.find(a => a.id === editMode.atbId);
       const oldDays = atbToUpdate?.durationDays || 7;
       updatedAtbs = updatedAtbs.map(a => a.id === editMode.atbId ? {
@@ -263,7 +270,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
     }
 
     // Recalculate patient status if necessary
-    onUpdate({ ...updatedPatient, antibiotics: updatedAtbs, history: addHistory('Ajuste Dados', updateLog || 'Alteração manual') });
+    onUpdate({ ...updatedPatient, antibiotics: updatedAtbs, history: addHistory(historyAction, updateLog || 'Alteração manual') });
     setEditMode(null);
     setNewAtb({ name: '', dose: '', freq: '08/08', times: '', duration: 7, start: format(new Date(), 'yyyy-MM-dd'), justification: '', route: 'EV' });
     localStorage.removeItem(`sva_draft_atb_editmode_${patient.id}`); // Limpa rascunho
@@ -350,8 +357,14 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
   };
 
   const handleStatusChange = (atbId: string, newStatus: AntibioticStatus) => {
+    const targetAtb = patient.antibiotics.find(a => a.id === atbId);
     const updatedAtbs = patient.antibiotics.map(a => a.id === atbId ? { ...a, status: newStatus } : a);
-    onUpdate({ ...patient, antibiotics: updatedAtbs, history: addHistory('Status ATB', `ATB ${newStatus}`) });
+    const atbName = targetAtb?.name || 'ATB';
+    const actionLabel = newStatus === AntibioticStatus.TROCADO ? 'Substituição de ATB' : 'Status ATB';
+    const logDetails = newStatus === AntibioticStatus.TROCADO 
+      ? `ATB ${atbName} marcado como TROCADO`
+      : `${atbName}: status alterado para ${newStatus}`;
+    onUpdate({ ...patient, antibiotics: updatedAtbs, history: addHistory(actionLabel, logDetails) });
     setShowStatusMenu(null);
   };
 
@@ -815,15 +828,20 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
             <div className="bg-slate-900 text-white/50 rounded-[32px] p-8 shadow-inner space-y-6">
               <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-white">Histórico Completo</h4>
               <div className="max-h-48 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-                {patient.history.length > 0 ? patient.history.map((h, i) => (
-                  <div key={i} className="flex justify-between items-start text-xs border-b border-white/5 pb-3 last:border-0">
-                    <div className="text-left pr-6">
-                      <span className="text-white font-black uppercase block">{h.action}</span>
-                      <span className="font-medium italic text-slate-400">{h.details}</span>
+                {patient.history.length > 0 ? patient.history.map((h, i) => {
+                  const isSub = h.action?.includes('Substituição') || h.details?.includes('substitui');
+                  return (
+                    <div key={i} className={`flex justify-between items-start text-xs border-b border-white/5 pb-3 last:border-0 ${isSub ? 'bg-amber-500/10 p-2 rounded-xl border border-amber-500/30' : ''}`}>
+                      <div className="text-left pr-6">
+                        <span className={`font-black uppercase block ${isSub ? 'text-amber-400 font-extrabold text-xs flex items-center gap-1' : 'text-white'}`}>
+                          {isSub && '🧬 '}{h.action}
+                        </span>
+                        <span className={`font-medium italic ${isSub ? 'text-amber-200' : 'text-slate-400'}`}>{h.details}</span>
+                      </div>
+                      <span className="text-[10px] font-bold shrink-0 text-slate-500 mt-1">{h.date}</span>
                     </div>
-                    <span className="text-[10px] font-bold shrink-0 text-slate-500 mt-1">{h.date}</span>
-                  </div>
-                )) : <p className="text-sm italic">Sem registros de histórico.</p>}
+                  );
+                }) : <p className="text-sm italic">Sem registros de histórico.</p>}
               </div>
             </div>
           </div>
