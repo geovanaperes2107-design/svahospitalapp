@@ -223,21 +223,26 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
   }, [patients, filterMonth, sectorFilter, atbFilter]);
 
   const isAtbProlonged = (p: Patient, a: Antibiotic): boolean => {
-    const currentDay = getATBDay(a.startDate, a.frequency);
-    const duration = Number(a.durationDays) || 0;
+    // 1. Flag explícita de prorrogação no antibiótico
     const isExtendedFlag = Boolean(a.isExtended || (a.cycleOffset && a.cycleOffset > 0) || a.lastAdjustmentDate);
-    const hasHistoryLog = Boolean(p.history?.some(h =>
-      h.action === 'Ajuste Dados' ||
-      (h.details && (
-        h.details.toLowerCase().includes('tempo') ||
+
+    // 2. Registro explícito de alteração de tempo no histórico do paciente
+    const hasHistoryTimeLog = Boolean(p.history?.some(h =>
+      h.details && (
+        h.details.toLowerCase().includes('tempo/início alterado') ||
+        h.details.toLowerCase().includes('tempo alterado') ||
+        h.details.toLowerCase().includes('duração alterada') ||
+        h.details.toLowerCase().includes('duracao alterada') ||
         h.details.toLowerCase().includes('prorrogad') ||
-        h.details.toLowerCase().includes('ajuste') ||
-        h.details.toLowerCase().includes('duração') ||
-        h.details.toLowerCase().includes('duracao') ||
-        h.details.toLowerCase().includes('dia')
-      ))
+        h.details.toLowerCase().includes('alterado de')
+      )
     ));
-    return currentDay > 14 || duration > 7 || isExtendedFlag || hasHistoryLog;
+
+    // 3. Antibiótico em uso com tempo decorrido superior a 7 dias (>D7)
+    const daysInUse = getATBDay(a.startDate, a.frequency);
+    const isOverD7 = a.status === AntibioticStatus.EM_USO && daysInUse > 7;
+
+    return isExtendedFlag || hasHistoryTimeLog || isOverD7;
   };
 
   const openCardModal = (type: 'finalized' | 'suspended' | 'substituted' | 'obitos' | 'prolonged' | 'active' | 'total' | 'therapeutic' | 'prophylactic' | 'oral' | 'ev' | 'vencidos' | 'censo_authorized' | 'censo_not_authorized' | 'censo_pending') => {
@@ -267,7 +272,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
       color = 'slate';
       filterFn = p => nonCC(p) && p.antibiotics.some(a => a.status === AntibioticStatus.OBITO);
     } else if (type === 'prolonged') {
-      title = 'Tratamentos Prolongados / Prorrogados';
+      title = 'Tratamentos Prolongados (>D7 / Prorrogados)';
       color = 'red';
       filterFn = p => nonCC(p) && p.antibiotics.some(a => isAtbProlonged(p, a));
     } else if (type === 'active') {
@@ -926,7 +931,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
             <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 mb-2">
               <Card label="Atd. Geral de Pacientes" value={stats.totalPatients} icon={<Users size={12} />} color="blue" onClick={() => openCardModal('total')} />
               <Card label="Pacientes com ATB Ativo" value={stats.activePatients} icon={<Pill size={12} />} color="emerald" onClick={() => openCardModal('active')} />
-              <Card label="Prolongados / Prorrogados" value={stats.prolonged} icon={<AlertTriangle size={12} />} color="red" onClick={() => openCardModal('prolonged')} />
+              <Card label="Prolongados (>D7 / Prorrogados)" value={stats.prolonged} icon={<AlertTriangle size={12} />} color="red" onClick={() => openCardModal('prolonged')} />
               <Card label="Média de Dias" value={stats.avgDuration} icon={<Timer size={12} />} color="slate" />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
