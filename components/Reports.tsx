@@ -223,26 +223,20 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
   }, [patients, filterMonth, sectorFilter, atbFilter]);
 
   const isAtbProlonged = (p: Patient, a: Antibiotic): boolean => {
-    // 1. Flag explícita de prorrogação no antibiótico
-    const isExtendedFlag = Boolean(a.isExtended || (a.cycleOffset && a.cycleOffset > 0) || a.lastAdjustmentDate);
+    // Apenas antibióticos em uso
+    if (a.status !== AntibioticStatus.EM_USO) return false;
 
-    // 2. Registro explícito de alteração de tempo no histórico do paciente
-    const hasHistoryTimeLog = Boolean(p.history?.some(h =>
-      h.details && (
-        h.details.toLowerCase().includes('tempo/início alterado') ||
-        h.details.toLowerCase().includes('tempo alterado') ||
-        h.details.toLowerCase().includes('duração alterada') ||
-        h.details.toLowerCase().includes('duracao alterada') ||
-        h.details.toLowerCase().includes('prorrogad') ||
-        h.details.toLowerCase().includes('alterado de')
-      )
-    ));
-
-    // 3. Antibiótico em uso com tempo decorrido superior a 7 dias (>D7)
     const daysInUse = getATBDay(a.startDate, a.frequency);
-    const isOverD7 = a.status === AntibioticStatus.EM_USO && daysInUse > 7;
+    const totalDuration = Number(a.durationDays) || 7;
 
-    return isExtendedFlag || hasHistoryTimeLog || isOverD7;
+    // 1. O paciente já está em D8 ou superior (>D7: D8, D9, D10, D11, D12, D14, D21...)
+    if (daysInUse > 7) return true;
+
+    // 2. A duração total do tratamento foi estendida/prorrogada para mais de 7 dias (ex: D10, D14)
+    const isExtendedFlag = Boolean(a.isExtended || (a.cycleOffset && a.cycleOffset > 0) || a.lastAdjustmentDate);
+    if (totalDuration > 7 && isExtendedFlag) return true;
+
+    return false;
   };
 
   const openCardModal = (type: 'finalized' | 'suspended' | 'substituted' | 'obitos' | 'prolonged' | 'active' | 'total' | 'therapeutic' | 'prophylactic' | 'oral' | 'ev' | 'vencidos' | 'censo_authorized' | 'censo_not_authorized' | 'censo_pending') => {
@@ -334,7 +328,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
         true
       ));
 
-      if (filteredAtbs.length === 0) {
+      if (filteredAtbs.length === 0 && type !== 'prolonged') {
         const activeAtbs = p.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO);
         filteredAtbs = activeAtbs.length > 0 ? activeAtbs : p.antibiotics;
       }
@@ -357,7 +351,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
           day: getATBDay(a.startDate, a.frequency)
         }))
       };
-    });
+    }).filter(p => p.atbs.length > 0);
 
     setModalSearchTerm('');
     setCardModalData({ title, color, type, patientsList });
