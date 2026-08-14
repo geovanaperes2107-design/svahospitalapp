@@ -188,7 +188,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
       sector: string;
       diagnosis: string;
       treatmentType?: string;
-      atbs: Array<{ name: string; dose: string; frequency: string; durationDays: number; status: string; startDate: string; route?: string }>;
+      atbs: Array<{ name: string; dose: string; frequency: string; durationDays: number; status: string; startDate: string; route?: string; day?: number }>;
     }>;
   } | null>(null);
   const [modalSearchTerm, setModalSearchTerm] = useState('');
@@ -350,10 +350,11 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
           name: a.name,
           dose: a.dose,
           frequency: a.frequency,
-          durationDays: a.durationDays,
+          durationDays: Number(a.durationDays) || 7,
           status: a.status,
           startDate: a.startDate,
-          route: a.route
+          route: a.route,
+          day: getATBDay(a.startDate, a.frequency)
         }))
       };
     });
@@ -1675,6 +1676,11 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                               {p.atbs.map((a, idx) => (
                                 <div key={idx} className="flex items-center gap-2 text-[11px] bg-slate-50 dark:bg-slate-900/70 p-2 rounded-xl border border-slate-200 dark:border-slate-700">
                                   <span className="font-black text-blue-700 dark:text-blue-400 uppercase">{a.name}</span>
+                                  {a.day !== undefined && a.day > 0 && (
+                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-2xs">
+                                      D{a.day}
+                                    </span>
+                                  )}
                                   <span className="text-slate-600 dark:text-slate-400 font-bold">({a.dose} — {a.frequency}{a.route ? ` — ${a.route}` : ''})</span>
                                   <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase ml-auto border ${
                                     a.status === AntibioticStatus.EM_USO ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' :
