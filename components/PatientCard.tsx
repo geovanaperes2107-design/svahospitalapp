@@ -372,9 +372,9 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
     >
 
       {/* 🔝 HEADER OTIMIZADO */}
-      <div className={`px-4 py-3 flex items-start justify-between border-b rounded-t-xl transition-colors ${isEvaluatedEffective ? 'border-purple-200 bg-purple-100/50' : 'border-black/5 bg-white/40'}`}>
-        <div className="flex gap-4 items-start flex-1 text-left">
-          <div className="bg-white px-2 py-1.5 rounded-xl border border-black/5 shadow-sm min-w-[64px] text-center flex items-center gap-1.5">
+      <div className={`px-4 py-3 flex items-start justify-between border-b rounded-t-xl transition-colors gap-2 min-w-0 ${isEvaluatedEffective ? 'border-purple-200 bg-purple-100/50' : 'border-black/5 bg-white/40'}`}>
+        <div className="flex gap-4 items-start flex-1 text-left min-w-0">
+          <div className="bg-white px-2 py-1.5 rounded-xl border border-black/5 shadow-sm min-w-[64px] text-center flex items-center gap-1.5 shrink-0">
             {!isInfectoPanel && <GripVertical size={16} className="text-slate-300 -ml-1 cursor-grab active:cursor-grabbing" />}
             <div>
               <span className="text-2xl font-black block leading-none text-slate-800">{patient.bed}</span>
@@ -413,7 +413,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0 ml-2">
           {!isInfectoPanel && (
             <div className="relative">
               <button onClick={() => setShowSectorMenu(!showSectorMenu)} className="px-2 py-1 bg-white rounded-lg border border-slate-200 text-[9px] font-black uppercase flex items-center gap-1 hover:bg-slate-50 text-slate-700">
@@ -522,9 +522,9 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
 
           return (
             <div key={atb.id} className="rounded-xl p-2 border border-black/5 bg-white/60 hover:bg-white/80 transition-all flex flex-col gap-2 shadow-inner">
-              <div className="flex justify-between items-center">
-                <div className="text-left flex items-center gap-2.5">
-                  <div className="relative">
+              <div className="flex justify-between items-center gap-2 min-w-0">
+                <div className="text-left flex items-center gap-2.5 min-w-0 flex-1 flex-wrap md:flex-nowrap">
+                  <div className="relative shrink-0">
                     <button
                       disabled={isInfectoPanel}
                       onClick={() => !isInfectoPanel && setShowStatusMenu(showStatusMenu === atb.id ? null : atb.id)}
@@ -545,17 +545,17 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <h4 className="text-[13px] font-black text-slate-800 uppercase tracking-tight">{atb.name}</h4>
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-blue-100 text-blue-800 border border-blue-200">
+                  <div className="flex items-center gap-1.5 flex-wrap min-w-0 flex-1">
+                    <h4 className="text-[13px] font-black text-slate-800 uppercase tracking-tight break-words">{atb.name}</h4>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-blue-100 text-blue-800 border border-blue-200 shrink-0">
                       {atb.route || 'EV'}
                     </span>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Hor: <span className="text-slate-700 font-black">{atb.times.join('/')}</span></p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wide shrink-0">Hor: <span className="text-slate-700 font-black">{atb.times.join('/')}</span></p>
                   </div>
 
                   {/* Status do ATB na visão da Infecto */}
                   {isInfectoPanel && (
-                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ml-2 ${atbStatus === InfectoStatus.AUTORIZADO ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
+                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ml-2 shrink-0 ${atbStatus === InfectoStatus.AUTORIZADO ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
                       atbStatus === InfectoStatus.NAO_AUTORIZADO ? 'bg-red-100 text-red-700 border-red-200' : 'bg-slate-100 text-slate-500 border-slate-200'
                       }`}>
                       {atbStatus}
@@ -565,7 +565,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
 
                 {/* AÇÕES */}
                 {!isInfectoPanel && (
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-1.5 shrink-0">
                     <button onClick={() => {
                       setNewAtb({
                         name: '',
