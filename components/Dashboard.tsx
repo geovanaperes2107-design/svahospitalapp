@@ -22,7 +22,7 @@ import PatientRegistration from './PatientRegistration';
 import BulkImport from './BulkImport';
 import Reports from './Reports';
 import DeletePatientModal from './DeletePatientModal';
-import { getDaysRemaining, calculateEndDate, safeJsonParse } from '../utils';
+import { getDaysRemaining, calculateEndDate, getATBDay, isAtbVencido, safeJsonParse } from '../utils';
 import { getMenuItems, DEFAULT_SECTORS } from '../constants';
 
 interface DashboardProps {
@@ -390,7 +390,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     const totalActiveATBs = patients.reduce((acc, p) => isCC(p.sector) ? acc : acc + p.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO).length, 0);
 
     const expiredPatients = activeAtbPatients.filter(p =>
-      p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0)
+      p.antibiotics.some(a => isAtbVencido(a))
     );
 
     const finalizedAtbCount = patients.reduce((acc, p) =>
@@ -438,7 +438,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       stats.expiredList
         .filter(p => existingPatientIds.has(p.id)) // só pacientes que ainda existem
         .forEach(p => {
-          p.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0).forEach(a => {
+          p.antibiotics.filter(a => isAtbVencido(a)).forEach(a => {
             const notifyId = `expired-${p.id}-${a.id}`;
             if (!dismissedNotifications.includes(notifyId)) {
               list.push({ id: notifyId, patientName: p.name, text: `${a.name} venceu (D${a.durationDays}).`, type: 'expired', patientId: p.id, sector: p.sector });

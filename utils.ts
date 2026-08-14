@@ -108,6 +108,14 @@ export const getATBDay = (startDate: string, frequency?: string): number => {
   }
 };
 
+export const isAtbVencido = (a: { status: string; startDate: string; durationDays: number | string; frequency?: string }): boolean => {
+  if (a.status !== 'EM_USO' && a.status !== 'Em Uso') return false;
+  const daysRem = getDaysRemaining(calculateEndDate(a.startDate, a.durationDays));
+  const currentDay = getATBDay(a.startDate, a.frequency);
+  const dur = typeof a.durationDays === 'number' ? a.durationDays : parseInt(String(a.durationDays), 10);
+  return daysRem <= 0 || (dur > 0 && currentDay > dur);
+};
+
 export const getStatusColor = (daysRemaining: number) => {
   if (daysRemaining > 2) return 'bg-emerald-500';
   if (daysRemaining > 0 && daysRemaining <= 2) return 'bg-yellow-500';

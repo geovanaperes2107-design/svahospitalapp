@@ -222,6 +222,14 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
     });
   }, [patients, filterMonth, sectorFilter, atbFilter]);
 
+  const isAtbVencido = (a: Antibiotic): boolean => {
+    if (a.status !== AntibioticStatus.EM_USO) return false;
+    const daysRem = getDaysRemaining(calculateEndDate(a.startDate, a.durationDays));
+    const currentDay = getATBDay(a.startDate, a.frequency);
+    const dur = typeof a.durationDays === 'number' ? a.durationDays : parseInt(String(a.durationDays), 10);
+    return daysRem <= 0 || (dur > 0 && currentDay > dur);
+  };
+
   const isAtbProlonged = (p: Patient, a: Antibiotic): boolean => {
     // Apenas antibióticos em uso
     if (a.status !== AntibioticStatus.EM_USO) return false;
@@ -296,7 +304,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
     } else if (type === 'vencidos') {
       title = 'Pacientes com ATB Vencidos';
       color = 'red';
-      filterFn = p => nonCC(p) && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0);
+      filterFn = p => nonCC(p) && p.antibiotics.some(a => isAtbVencido(a));
     } else if (type === 'censo_authorized') {
       title = 'Pacientes Autorizados pela Infectologia';
       color = 'emerald';
@@ -323,7 +331,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
         type === 'active' ? a.status === AntibioticStatus.EM_USO :
         type === 'oral' ? isOral(a) :
         type === 'ev' ? !isOral(a) :
-        type === 'vencidos' ? (a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0) :
+        type === 'vencidos' ? isAtbVencido(a) :
         type === 'censo_pending' ? a.status === AntibioticStatus.EM_USO :
         true
       ));
@@ -408,7 +416,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
     const vencidosCount = filteredPatients.filter(p =>
       p.sector !== 'Centro Cirúrgico' &&
       !p.sector?.includes('Centro Cir') &&
-      p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 0)
+      p.antibiotics.some(a => isAtbVencido(a))
     ).length;
 
     const finalizedPatientsCount = filteredPatients.filter(p =>
@@ -890,7 +898,10 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                   <tr><th className="px-6 py-4">Paciente</th><th className="px-6 py-4">Nasc.</th><th className="px-6 py-4">Setor</th><th className="px-6 py-4">ATB</th><th className="px-6 py-4">Dose</th><th className="px-6 py-4">Freq/Hor</th><th className="px-6 py-4 text-center">Dias</th><th className="px-6 py-4 text-center">Ciclo</th><th className="px-6 py-4 text-center">Venc.</th></tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-[10px]">
-                  {filteredPatients.filter(p => p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)).map(p =>
+                  {filteredPatients
+                    .filter(p => p.sector !== 'Centro Cirúrgico' && !p.sector?.includes('Centro Cir'))
+                    .filter(p => p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO))
+                    .map(p =>
                     p.antibiotics.filter(a => a.status === AntibioticStatus.EM_USO).map(a => {
                       const remaining = getDaysRemaining(calculateEndDate(a.startDate, a.durationDays));
                       return (
@@ -1393,16 +1404,17 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-sm">
                   {filteredPatients
-                    .filter(p => !p.sector.includes('Centro Cir') && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 1))
+                    .filter(p => p.sector !== 'Centro Cirúrgico' && !p.sector?.includes('Centro Cir') && p.antibiotics.some(a => isAtbVencido(a) || (a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 1)))
                     .map(p => {
-                      const med = p.antibiotics.find(a => a.status === AntibioticStatus.EM_USO);
-                      const remaining = med ? getDaysRemaining(calculateEndDate(med.startDate, med.durationDays)) : 0;
+                      const med = p.antibiotics.find(a => isAtbVencido(a) || (a.status === AntibioticStatus.EM_USO && getDaysRemaining(calculateEndDate(a.startDate, a.durationDays)) <= 1)) || p.antibiotics[0];
+                      const daysRem = med ? getDaysRemaining(calculateEndDate(med.startDate, med.durationDays)) : 0;
+                      const isVenc = med ? isAtbVencido(med) : false;
                       return (
                         <tr key={p.id} className="hover:bg-red-50 border-b border-red-50">
                           <td className="px-4 py-3 leading-tight"><span className="font-black text-slate-900 text-sm">{p.name}</span><br /><span className="text-[10px] text-slate-600 uppercase font-black">Leito {p.bed}</span></td>
                           <td className="px-4 py-3 text-slate-800 uppercase font-black text-xs">{p.sector}</td>
                           <td className="px-4 py-3 font-black text-red-700 leading-tight text-sm">{med?.name}</td>
-                          <td className="px-4 py-3 text-center"><span className={`px-3 py-1 rounded-lg font-black text-xs ${remaining <= 0 ? 'bg-red-600 text-white' : 'bg-amber-100 text-amber-800'}`}>{remaining <= 0 ? 'VENCIDO' : 'VENCE HOJE'}</span></td>
+                          <td className="px-4 py-3 text-center"><span className={`px-3 py-1 rounded-lg font-black text-xs ${isVenc ? 'bg-red-600 text-white' : 'bg-amber-100 text-amber-800'}`}>{isVenc ? 'VENCIDO' : 'VENCE HOJE'}</span></td>
                         </tr>
                       );
                     })}
