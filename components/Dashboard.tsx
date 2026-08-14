@@ -23,7 +23,7 @@ import BulkImport from './BulkImport';
 import Reports from './Reports';
 import DeletePatientModal from './DeletePatientModal';
 import UserManagement from './UserManagement';
-import { getDaysRemaining, calculateEndDate, getATBDay, isAtbVencido, safeJsonParse } from '../utils';
+import { getDaysRemaining, calculateEndDate, getATBDay, isAtbVencido, safeJsonParse, getTodayISO, parseAnyDate } from '../utils';
 import { getMenuItems, DEFAULT_SECTORS } from '../constants';
 
 interface DashboardProps {
@@ -407,8 +407,13 @@ const Dashboard: React.FC<DashboardProps> = ({
       sectorCounts[sector] = activeAtbPatients.filter(p => p.sector === sector).length;
     });
 
-    const todayStr = new Date().toISOString().split('T')[0];
-    const newCycles = patients.reduce((acc, p) => isCC(p.sector) ? acc : acc + p.antibiotics.filter(a => a.startDate === todayStr).length, 0);
+    const todayStr = getTodayISO();
+    const newCycles = patients.reduce((acc, p) => isCC(p.sector) ? acc : acc + p.antibiotics.filter(a => {
+      if (!a.startDate) return false;
+      const d = parseAnyDate(a.startDate);
+      const isoStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return isoStr === todayStr;
+    }).length, 0);
 
     const evaluatedCount = activeAtbPatients.filter(p => p.isEvaluated || p.infectoStatus === InfectoStatus.AUTORIZADO).length;
     const adesaoCalc = activeAtbPatients.length > 0
