@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { UserPlus, Shield, Key, Trash2, Edit2, Search, X, CheckCircle2, Building2, Save, Image as ImageIcon, Upload, Monitor, Lock, Unlock, MailCheck, AlertCircle, Eye, EyeOff, Bell, Clock, Users, LayoutGrid, PlusCircle, Archive, ArchiveRestore, Info, ShieldCheck } from 'lucide-react';
+import { UserPlus, Shield, Key, Trash2, Edit2, Search, X, CheckCircle2, Building2, Save, Image as ImageIcon, Upload, Monitor, Lock, Unlock, MailCheck, AlertCircle, Eye, EyeOff, Bell, Clock, Users, LayoutGrid, PlusCircle, Archive, ArchiveRestore, Info, ShieldCheck, RefreshCw } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { User, UserRole, Patient, AntibioticStatus, normalizeRole } from '../types';
 import { DEFAULT_SECTORS } from '../constants';
@@ -402,6 +402,32 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                 </div>
                                 <input type="time" className="bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-black outline-none focus:border-emerald-500 text-slate-800 dark:text-white" value={configResetTimeUTI} onChange={e => setConfigResetTimeUTI(e.target.value)} />
                             </label>
+
+                            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 space-y-2">
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                    <div>
+                                        <p className="text-[10px] font-black text-amber-800 dark:text-amber-300 uppercase">Reset Manual de Avaliações</p>
+                                        <p className="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase">Força a limpeza do botão 'AVALIADO' de todos os pacientes agora</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            if (window.confirm('Deseja forçar o reset manual de avaliações em todos os pacientes agora? Todos os cartões voltarão a ficar "MARCAR COMO AVALIADO".')) {
+                                                try {
+                                                    await supabase.from('pacientes').update({ is_evaluated: false }).eq('is_evaluated', true);
+                                                    alert('Reset manual executado com sucesso! A página será atualizada.');
+                                                    window.location.reload();
+                                                } catch (e) {
+                                                    console.error('Erro no reset manual:', e);
+                                                }
+                                            }
+                                        }}
+                                        className="w-full sm:w-auto px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-black text-[9px] uppercase shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-1.5"
+                                    >
+                                        <RefreshCw size={14} /> Executar Reset Agora
+                                    </button>
+                                </div>
+                            </div>
 
                             <label className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 cursor-pointer group hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-colors">
                                 <div className="flex items-center gap-3">

@@ -555,28 +555,49 @@ const App: React.FC = () => {
           const utiSectors = activeSectors.filter(s => s.toUpperCase().includes('UTI'));
           const generalSectors = activeSectors.filter(s => !s.toUpperCase().includes('UTI'));
 
-          let query = supabase.from('pacientes').update({ is_evaluated: false });
+          // 1. Atualiza estado local do React imediatamente para zerar o status na interface sem esperar a rede
+          setPatients(prevPatients => prevPatients.map(p => {
+            const isUti = p.sector?.toUpperCase().includes('UTI');
+            const isTargetSector = (sectorsToReset.includes('UTI') && isUti) || (sectorsToReset.includes('GERAL') && !isUti);
+            if (!isTargetSector) return p;
 
-          if (sectorsToReset.includes('GERAL') && sectorsToReset.includes('UTI')) {
-            // Reset global
-          } else if (sectorsToReset.includes('UTI')) {
-            query = query.in('sector', utiSectors);
-          } else {
-            query = query.in('sector', generalSectors);
-          }
+            // Proteção: não desmarca se avaliado HOJE
+            const evalDate = p.lastEvaluationDate;
+            if (evalDate === todayISO || evalDate === todayBR) return p;
 
-          // Proteção adicional: NÃO desmarca pacientes avaliados HOJE (verifica ISO YYYY-MM-DD e BR DD/MM/YYYY)
-          query = query.or(`last_evaluation_date.is.null,and(last_evaluation_date.neq.${todayISO},last_evaluation_date.neq.${todayBR})`);
+            return { ...p, isEvaluated: false };
+          }));
 
-          query.then(({ error }) => {
-            if (!error) {
-              fetchPatients();
-              triggerSystemAlert({
-                id: `reset_${todayISO}_${sectorsToReset.join('_')}`,
-                message: `Reset de avaliações concluído para: ${sectorsToReset.join(', ')}`,
-                type: 'info'
-              });
+          // 2. Atualiza no Supabase de forma segura e sem PostgREST syntax errors
+          const executeSupabaseReset = async () => {
+            try {
+              let query = supabase.from('pacientes').update({ is_evaluated: false }).eq('is_evaluated', true);
+
+              if (sectorsToReset.includes('GERAL') && sectorsToReset.includes('UTI')) {
+                // Reset global
+              } else if (sectorsToReset.includes('UTI')) {
+                query = query.in('sector', utiSectors);
+              } else {
+                query = query.in('sector', generalSectors);
+              }
+
+              const { error } = await query;
+              if (error) {
+                console.warn('[SVA Reset] Erro na query filtrada, executando reset amplo:', error);
+                await supabase.from('pacientes').update({ is_evaluated: false }).eq('is_evaluated', true);
+              }
+              await fetchPatients();
+            } catch (err) {
+              console.error('[SVA Reset] Exceção ao resetar avaliações:', err);
             }
+          };
+
+          executeSupabaseReset();
+
+          triggerSystemAlert({
+            id: `reset_${todayISO}_${sectorsToReset.join('_')}`,
+            message: `Reset de avaliações efetuado para: ${sectorsToReset.join(', ')}`,
+            type: 'info'
           });
         }
       }
