@@ -50,8 +50,8 @@ const App: React.FC = () => {
   const [configNotifyReset, setConfigNotifyResetState] = useState(() => localStorage.getItem('sva_config_notify_reset') !== 'false');
   const [configNotifyPending, setConfigNotifyPendingState] = useState(() => localStorage.getItem('sva_config_notify_pending') !== 'false');
   const [configNotifyExpired, setConfigNotifyExpiredState] = useState(() => localStorage.getItem('sva_config_notify_expired') !== 'false');
-  const [configResetTime, setConfigResetTimeState] = useState(() => localStorage.getItem('sva_config_reset_time') || '07:30');
-  const [configResetTimeUTI, setConfigResetTimeUTIState] = useState(() => localStorage.getItem('sva_config_reset_time_uti') || '22:00');
+  const [configResetTime, setConfigResetTimeState] = useState(() => localStorage.getItem('sva_config_reset_time') || '07:00');
+  const [configResetTimeUTI, setConfigResetTimeUTIState] = useState(() => localStorage.getItem('sva_config_reset_time_uti') || '19:00');
   const [configPendingTimeClinicas, setConfigPendingTimeClinicasState] = useState(() => localStorage.getItem('sva_config_pending_time_clinicas') || '21:30');
   const [configPendingTimeUTI, setConfigPendingTimeUTIState] = useState(() => localStorage.getItem('sva_config_pending_time_uti_alert') || '13:00');
   const [configAtbDayLock, setConfigAtbDayLockState] = useState(() => localStorage.getItem('sva_config_atb_day_lock') !== 'false');

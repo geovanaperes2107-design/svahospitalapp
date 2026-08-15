@@ -524,7 +524,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                     <Clock size={13} /> Reset de Avaliação (Geral & UTI)
                                 </p>
                                 <p className="text-slate-300 text-[11px] leading-relaxed">
-                                    No horário definido (ex: <strong>07:30</strong> nas Clínicas e <strong>22:00</strong> na UTI), o sistema <strong>desmarca automaticamente o botão 'AVALIADO'</strong> de todos os pacientes ativos. Isso obriga a equipe médica e a CCIH a realizar uma nova checagem e reavaliação diária em cada ciclo de 24h.
+                                    No horário definido (ex: <strong>07:00</strong> nas Clínicas e <strong>19:00</strong> na UTI), o sistema <strong>desmarca automaticamente o botão 'AVALIADO'</strong> de todos os pacientes ativos. Isso obriga a equipe médica e a CCIH a realizar uma nova checagem e reavaliação diária em cada ciclo de 24h.
                                 </p>
                             </div>
 
