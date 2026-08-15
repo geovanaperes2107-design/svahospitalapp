@@ -610,7 +610,7 @@ const App: React.FC = () => {
         const lastAlertGen = localStorage.getItem('sva_last_night_alert_clinicas');
 
         if (lastAlertGen !== todayISO && isPastClinTime) {
-          const pendentesClinicas = patients.filter(p => !p.isEvaluated && !p.sector?.includes('UTI'));
+          const pendentesClinicas = patients.filter(p => !p.isEvaluated && p.sector !== 'Centro Cirúrgico' && !p.sector?.toUpperCase().includes('UTI') && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO));
           if (pendentesClinicas.length > 0) {
             const names = pendentesClinicas.map(p => p.name).slice(0, 3).join(', ');
             const remaining = pendentesClinicas.length - 3;
@@ -630,7 +630,7 @@ const App: React.FC = () => {
         const lastAlertUti = localStorage.getItem('sva_last_night_alert_uti');
 
         if (lastAlertUti !== todayISO && isPastUtiAlertTime) {
-          const pendentesUti = patients.filter(p => !p.isEvaluated && p.sector?.includes('UTI'));
+          const pendentesUti = patients.filter(p => !p.isEvaluated && p.sector !== 'Centro Cirúrgico' && p.sector?.toUpperCase().includes('UTI') && p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO));
           if (pendentesUti.length > 0) {
             const names = pendentesUti.map(p => p.name).slice(0, 3).join(', ');
             const remaining = pendentesUti.length - 3;

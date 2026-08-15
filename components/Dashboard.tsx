@@ -454,7 +454,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
 
     if (configNotifyReset) {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = getTodayISO();
       const savedResets = localStorage.getItem('sva_last_sector_resets');
       let lastResetDateMap: Record<string, string> = {};
       try {
