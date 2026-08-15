@@ -403,28 +403,66 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                 <input type="time" className="bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-black outline-none focus:border-emerald-500 text-slate-800 dark:text-white" value={configResetTimeUTI} onChange={e => setConfigResetTimeUTI(e.target.value)} />
                             </label>
 
-                            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 space-y-2">
-                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                                    <div>
-                                        <p className="text-[10px] font-black text-amber-800 dark:text-amber-300 uppercase">Reset Manual de Avaliações</p>
-                                        <p className="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase">Força a limpeza do botão 'AVALIADO' de todos os pacientes agora</p>
-                                    </div>
+                            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 space-y-3">
+                                <div>
+                                    <p className="text-[10px] font-black text-amber-800 dark:text-amber-300 uppercase">Reset Manual de Avaliações por Setor</p>
+                                    <p className="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase">Selecione o grupo para forçar a limpeza do botão 'AVALIADO' imediatamente</p>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                     <button
                                         type="button"
                                         onClick={async () => {
-                                            if (window.confirm('Deseja forçar o reset manual de avaliações em todos os pacientes agora? Todos os cartões voltarão a ficar "MARCAR COMO AVALIADO".')) {
+                                            if (window.confirm('Deseja forçar o reset manual de avaliações apenas para CLÍNICAS / GERAL?')) {
                                                 try {
-                                                    await supabase.from('pacientes').update({ is_evaluated: false }).eq('is_evaluated', true);
-                                                    alert('Reset manual executado com sucesso! A página será atualizada.');
+                                                    const generalSectors = (activeSectors && activeSectors.length > 0 ? activeSectors : DEFAULT_SECTORS).filter(s => !s.toUpperCase().includes('UTI'));
+                                                    await supabase.from('pacientes').update({ is_evaluated: false }).in('sector', generalSectors).eq('is_evaluated', true);
+                                                    alert('Reset manual de CLÍNICAS / GERAL executado com sucesso! A página será atualizada.');
                                                     window.location.reload();
                                                 } catch (e) {
-                                                    console.error('Erro no reset manual:', e);
+                                                    console.error('Erro no reset manual de Clínicas:', e);
                                                 }
                                             }
                                         }}
-                                        className="w-full sm:w-auto px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-black text-[9px] uppercase shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-1.5"
+                                        className="w-full px-3 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-black text-[9px] uppercase shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-1.5"
                                     >
-                                        <RefreshCw size={14} /> Executar Reset Agora
+                                        <RefreshCw size={13} /> Reset Clínicas/Geral
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            if (window.confirm('Deseja forçar o reset manual de avaliações apenas para a UTI?')) {
+                                                try {
+                                                    const utiSectors = (activeSectors && activeSectors.length > 0 ? activeSectors : DEFAULT_SECTORS).filter(s => s.toUpperCase().includes('UTI'));
+                                                    await supabase.from('pacientes').update({ is_evaluated: false }).in('sector', utiSectors).eq('is_evaluated', true);
+                                                    alert('Reset manual da UTI executado com sucesso! A página será atualizada.');
+                                                    window.location.reload();
+                                                } catch (e) {
+                                                    console.error('Erro no reset manual da UTI:', e);
+                                                }
+                                            }
+                                        }}
+                                        className="w-full px-3 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-[9px] uppercase shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-1.5"
+                                    >
+                                        <RefreshCw size={13} /> Reset Apenas UTI
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            if (window.confirm('Deseja forçar o reset manual de avaliações em TODOS os setores do hospital?')) {
+                                                try {
+                                                    await supabase.from('pacientes').update({ is_evaluated: false }).eq('is_evaluated', true);
+                                                    alert('Reset manual de TODOS OS SETORES executado com sucesso! A página será atualizada.');
+                                                    window.location.reload();
+                                                } catch (e) {
+                                                    console.error('Erro no reset manual total:', e);
+                                                }
+                                            }
+                                        }}
+                                        className="w-full px-3 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-black text-[9px] uppercase shadow-md transition-all flex items-center justify-center gap-1.5"
+                                    >
+                                        <RefreshCw size={13} /> Reset Todos Setores
                                     </button>
                                 </div>
                             </div>
