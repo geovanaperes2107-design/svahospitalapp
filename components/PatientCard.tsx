@@ -27,6 +27,7 @@ import { DEFAULT_SECTORS, ANTIBIOTICS_LIST, FREQUENCY_OPTIONS, MEDICATION_LISTS 
 import { format, differenceInDays, parseISO, startOfDay, addDays } from 'date-fns';
 
 const COMMON_MICROORGANISMS = [
+  'Não foi solicitado cultura',
   'Escherichia coli',
   'Klebsiella pneumoniae',
   'Staphylococcus aureus',
@@ -42,6 +43,7 @@ const COMMON_MICROORGANISMS = [
 ];
 
 const COMMON_RESISTANCE_PROFILES = [
+  'Sem cultura',
   'Sensível (Multissensível)',
   'ESBL (Beta-lactamase de Espectro Estendido)',
   'KPC / ERC (Carbapenemase)',
@@ -814,8 +816,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                 <Bug size={16} className="text-amber-600 dark:text-amber-400" /> Parecer SCIRAS (Microbiologia / Resistência)
               </label>
               {(patient.microorganism || patient.resistanceProfile) ? (
-                <span className="text-[9px] font-black uppercase bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                  ✓ Preenchido
+                <span className={`text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full border ${
+                  patient.microorganism?.includes('Não foi solicitado')
+                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300'
+                    : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200'
+                }`}>
+                  {patient.microorganism?.includes('Não foi solicitado') ? '✓ Sem Cultura Solicitada' : '✓ Preenchido'}
                 </span>
               ) : (
                 <span className="text-[9px] font-black uppercase bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 px-2.5 py-0.5 rounded-full border border-orange-200">
@@ -886,7 +892,24 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
               </div>
             </div>
 
-            <div className="flex justify-end pt-1">
+            <div className="flex flex-wrap justify-between items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setTempMicroorganism('Não foi solicitado cultura');
+                  setTempResistanceProfile('Sem cultura');
+                  onUpdate({
+                    ...patient,
+                    microorganism: 'Não foi solicitado cultura',
+                    resistanceProfile: 'Sem cultura',
+                    history: addHistory('Avaliação SCIRAS', 'Marcar: Não foi solicitado cultura')
+                  });
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white rounded-xl font-black uppercase text-[9px] transition-all cursor-pointer border border-slate-300 dark:border-slate-600 shadow-sm active:scale-95"
+              >
+                🚫 NÃO FOI SOLICITADO CULTURA
+              </button>
+
               <button
                 onClick={() => {
                   onUpdate({
