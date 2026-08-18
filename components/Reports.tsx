@@ -21,7 +21,7 @@ interface ReportsProps {
   patientDays: number;
   setPatientDays: (days: number) => void;
 }
-type ReportTab = 'monitoramento' | 'pendentes' | 'stewardship' | 'epidemiologia' | 'censo' | 'ddd' | 'vencimento' | 'finalizados' | 'cc' | 'financeiro';
+type ReportTab = 'monitoramento' | 'pendentes' | 'stewardship' | 'sciras' | 'epidemiologia' | 'censo' | 'ddd' | 'vencimento' | 'finalizados' | 'cc' | 'financeiro';
 
 // Tabela DDD OMS (editável por admin)
 const DDD_OMS_VALUES: Record<string, number> = {
@@ -176,6 +176,8 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
   const [ccSubTab, setCcSubTab] = useState<'todos' | 'pendentes' | 'pos_op' | 'antes' | 'depois'>(() => (localStorage.getItem('sva_report_cc_subtab') as any) || 'todos');
   const [searchPatient, setSearchPatient] = useState('');
   const [searchDiag, setSearchDiag] = useState('');
+  const [scirasReportSubFilter, setScirasReportSubFilter] = useState<'todos' | 'isolados' | 'multirresistentes' | 'pendentes'>('todos');
+  const [scirasSearch, setScirasSearch] = useState('');
 
   const [cardModalData, setCardModalData] = useState<{
     title: string;
@@ -246,6 +248,68 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
 
     return false;
   };
+
+  const scirasStats = useMemo(() => {
+    const scirasPatients = filteredPatients.filter(p => p.sector !== 'Centro Cirúrgico' && !p.sector?.includes('Centro Cir'));
+    const totalPatients = scirasPatients.length;
+
+    let withMicroorganism = 0;
+    let withResistance = 0;
+    let preenchidos = 0;
+    let pendentes = 0;
+    let highResistance = 0;
+
+    const microMap: Record<string, number> = {};
+    const resistanceMap: Record<string, number> = {};
+
+    scirasPatients.forEach(p => {
+      const hasMicro = !!p.microorganism;
+      const hasResist = !!p.resistanceProfile;
+
+      if (hasMicro) {
+        withMicroorganism += 1;
+        microMap[p.microorganism!] = (microMap[p.microorganism!] || 0) + 1;
+      }
+      if (hasResist) {
+        withResistance += 1;
+        resistanceMap[p.resistanceProfile!] = (resistanceMap[p.resistanceProfile!] || 0) + 1;
+
+        const resUpper = p.resistanceProfile!.toUpperCase();
+        if (resUpper.includes('MRSA') || resUpper.includes('KPC') || resUpper.includes('VRE') || resUpper.includes('ESBL') || resUpper.includes('MDR') || resUpper.includes('XDR') || resUpper.includes('AMPC')) {
+          highResistance += 1;
+        }
+      }
+
+      if (hasMicro || hasResist) {
+        preenchidos += 1;
+      } else {
+        pendentes += 1;
+      }
+    });
+
+    const sortedMicro = Object.entries(microMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const sortedResistance = Object.entries(resistanceMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const coverageRate = totalPatients > 0 ? Math.round((preenchidos / totalPatients) * 100) : 0;
+
+    return {
+      scirasPatients,
+      totalPatients,
+      withMicroorganism,
+      withResistance,
+      preenchidos,
+      pendentes,
+      highResistance,
+      coverageRate,
+      sortedMicro,
+      sortedResistance
+    };
+  }, [filteredPatients]);
 
   const openCardModal = (type: 'finalized' | 'suspended' | 'substituted' | 'obitos' | 'prolonged' | 'active' | 'total' | 'therapeutic' | 'prophylactic' | 'oral' | 'ev' | 'vencidos' | 'censo_authorized' | 'censo_not_authorized' | 'censo_pending') => {
     let title = '';
@@ -647,6 +711,12 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
           p.name, p.sector, a.name, a.durationDays, ((atbCosts[a.name.toUpperCase()] || 50) * Number(a.durationDays)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
         ])
       );
+    } else if (activeReportTab === 'sciras') {
+      headers = ["Paciente", "Leito", "Setor", "Diagnóstico", "Microrganismo Isolado", "Perfil de Resistência", "Status"];
+      const scirasPats = filteredPatients.filter(p => p.sector !== 'Centro Cirúrgico' && !p.sector?.includes('Centro Cir'));
+      rows = scirasPats.map(p => [
+        p.name, p.bed || 'S/L', p.sector, p.diagnosis || 'Não informado', p.microorganism || 'Sem germe isolado', p.resistanceProfile || 'Não informado', (p.microorganism || p.resistanceProfile) ? 'PREENCHIDO' : 'PENDENTE'
+      ]);
     } else {
       headers = ["Paciente", "Setor", "Antibiótico", "Diagnóstico", "Início", "Status"];
       rows = filteredPatients.flatMap(p =>
@@ -678,15 +748,26 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
   };
 
   const exportToExcel = () => {
-    const headers = ["Paciente", "Nascimento", "Leito", "Setor", "Medicamento", "Dose", "Frequência", "Início", "Duração", "Dia Ciclo", "Status", "Status Infecto", "Diagnóstico"];
-    const sourcePatients = activeReportTab === 'censo'
+    const headers = activeReportTab === 'sciras'
+      ? ["Paciente", "Nascimento", "Leito", "Setor", "Diagnóstico", "Microrganismo Isolado", "Perfil de Resistência", "Status SCIRAS", "Antibióticos em Uso/Finalizados"]
+      : ["Paciente", "Nascimento", "Leito", "Setor", "Medicamento", "Dose", "Frequência", "Início", "Duração", "Dia Ciclo", "Status", "Status Infecto", "Diagnóstico"];
+
+    const sourcePatients = activeReportTab === 'censo' || activeReportTab === 'sciras'
       ? filteredPatients.filter(p => p.sector !== 'Centro Cirúrgico' && !p.sector.includes('Centro Cir'))
       : activeReportTab === 'pendentes' ? pendingEvaluationPatients : filteredPatients;
-    const rows = sourcePatients.flatMap(p =>
-      p.antibiotics.filter(a => a.category === categoryFilter).map(a => [
-        p.name, p.birthDate, p.bed, p.sector, a.name, a.dose, a.frequency, a.startDate, a.durationDays, `D${getATBDay(a.startDate, a.frequency)}`, a.status, p.infectoStatus, p.diagnosis
-      ])
-    );
+
+    const rows = activeReportTab === 'sciras'
+      ? sourcePatients.map(p => {
+        const atbStr = p.antibiotics.map(a => `${a.name} (${a.status})`).join('; ');
+        return [
+          p.name, p.birthDate, p.bed, p.sector, p.diagnosis, p.microorganism || 'N/I', p.resistanceProfile || 'N/I', (p.microorganism || p.resistanceProfile) ? 'PREENCHIDO' : 'PENDENTE', atbStr
+        ];
+      })
+      : sourcePatients.flatMap(p =>
+        p.antibiotics.filter(a => a.category === categoryFilter).map(a => [
+          p.name, p.birthDate, p.bed, p.sector, a.name, a.dose, a.frequency, a.startDate, a.durationDays, `D${getATBDay(a.startDate, a.frequency)}`, a.status, p.infectoStatus, p.diagnosis
+        ])
+      );
 
     const csvContent = [headers, ...rows]
       .map(row => row.map(cell => {
@@ -837,6 +918,7 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
           { id: 'monitoramento', label: 'Monitoramento', icon: <Eye size={18} /> },
           { id: 'pendentes', label: 'Pendentes de Avaliação', icon: <AlertCircle size={18} /> },
           { id: 'stewardship', label: 'Stewardship', icon: <CheckSquare size={18} /> },
+          { id: 'sciras', label: 'SCIRAS / Microbiologia', icon: <Bug size={18} /> },
           { id: 'censo', label: 'Censo Infecto', icon: <ShieldCheck size={18} /> },
           { id: 'epidemiologia', label: 'Matriz Epid.', icon: <Dna size={18} /> },
           { id: 'ddd', label: 'DDD ANVISA', icon: <Scale size={18} /> },
@@ -971,6 +1053,168 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* ===== RELATÓRIO SCIRAS / MICROBIOLOGIA ===== */}
+        {activeReportTab === 'sciras' && (
+          <div className="space-y-4 animate-in fade-in">
+            {/* METRICS CARDS */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Card label="Culturas Positivas (Germes)" value={scirasStats.withMicroorganism} icon={<Bug size={18} />} color="amber" />
+              <Card label="Perfis de Resistência" value={scirasStats.withResistance} icon={<Dna size={18} />} color="purple" />
+              <Card label="Multirresistentes (Alto Risco)" value={scirasStats.highResistance} icon={<AlertTriangle size={18} />} color="red" />
+              <Card label="Cobertura SCIRAS" value={`${scirasStats.coverageRate}%`} icon={<ShieldCheck size={18} />} color="emerald" />
+            </div>
+
+            {/* GRÁFICOS / DISTRIBUIÇÃO */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* RANKING MICRORGANISMOS */}
+              <div className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm text-left">
+                <h4 className="text-sm font-black uppercase text-amber-700 dark:text-amber-400 mb-4 flex items-center gap-2">
+                  <Bug size={18} /> Top Microrganismos Isolados
+                </h4>
+                {scirasStats.sortedMicro.length === 0 ? (
+                  <p className="text-xs font-bold text-slate-400 italic py-6 text-center">Nenhum microrganismo cadastrado no período.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {scirasStats.sortedMicro.slice(0, 6).map((item, idx) => (
+                      <div key={idx} className="space-y-1">
+                        <div className="flex justify-between text-xs font-black">
+                          <span className="text-slate-800 dark:text-white uppercase">{item.name}</span>
+                          <span className="text-amber-600 dark:text-amber-400">{item.count} isolamento(s)</span>
+                        </div>
+                        <MiniChart value={item.count} total={scirasStats.withMicroorganism || 1} color="amber" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* RANKING PERFIS RESISTÊNCIA */}
+              <div className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm text-left">
+                <h4 className="text-sm font-black uppercase text-purple-700 dark:text-purple-400 mb-4 flex items-center gap-2">
+                  <Dna size={18} /> Perfil de Resistência Bacteriana
+                </h4>
+                {scirasStats.sortedResistance.length === 0 ? (
+                  <p className="text-xs font-bold text-slate-400 italic py-6 text-center">Nenhum perfil de resistência registrado no período.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {scirasStats.sortedResistance.slice(0, 6).map((item, idx) => (
+                      <div key={idx} className="space-y-1">
+                        <div className="flex justify-between text-xs font-black">
+                          <span className="text-slate-800 dark:text-white uppercase">{item.name}</span>
+                          <span className="text-purple-600 dark:text-purple-400">{item.count} caso(s)</span>
+                        </div>
+                        <MiniChart value={item.count} total={scirasStats.withResistance || 1} color="purple" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* TABELA SCIRAS DETALHADA */}
+            <div className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm text-left space-y-4">
+              <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3">
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={() => setScirasReportSubFilter('todos')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${scirasReportSubFilter === 'todos' ? 'bg-amber-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 hover:bg-slate-200'}`}>Todos ({scirasStats.totalPatients})</button>
+                  <button onClick={() => setScirasReportSubFilter('isolados')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${scirasReportSubFilter === 'isolados' ? 'bg-amber-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 hover:bg-slate-200'}`}>Culturas Positivas ({scirasStats.withMicroorganism})</button>
+                  <button onClick={() => setScirasReportSubFilter('multirresistentes')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${scirasReportSubFilter === 'multirresistentes' ? 'bg-red-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 hover:bg-slate-200'}`}>Multirresistentes ({scirasStats.highResistance})</button>
+                  <button onClick={() => setScirasReportSubFilter('pendentes')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${scirasReportSubFilter === 'pendentes' ? 'bg-orange-500 text-white shadow' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 hover:bg-slate-200'}`}>Pendentes ({scirasStats.pendentes})</button>
+                </div>
+                <div className="relative w-full md:w-72">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Filtrar paciente, leito, germe..."
+                    className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-none focus:border-amber-500"
+                    value={scirasSearch}
+                    onChange={e => setScirasSearch(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-700">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-[11px] font-black uppercase tracking-widest border-b border-slate-200 dark:border-slate-700">
+                    <tr>
+                      <th className="px-5 py-4">Paciente / Leito</th>
+                      <th className="px-5 py-4">Setor</th>
+                      <th className="px-5 py-4">Diagnóstico</th>
+                      <th className="px-5 py-4">🧫 Microrganismo Isolado</th>
+                      <th className="px-5 py-4">🧬 Perfil de Resistência</th>
+                      <th className="px-5 py-4 text-center">Status SCIRAS</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-xs font-bold">
+                    {scirasStats.scirasPatients
+                      .filter(p => {
+                        const hasMicro = !!p.microorganism;
+                        const resUpper = (p.resistanceProfile || '').toUpperCase();
+                        const isHighRes = resUpper.includes('MRSA') || resUpper.includes('KPC') || resUpper.includes('VRE') || resUpper.includes('ESBL') || resUpper.includes('MDR') || resUpper.includes('XDR');
+                        const isFilled = !!(p.microorganism || p.resistanceProfile);
+
+                        if (scirasReportSubFilter === 'isolados' && !hasMicro) return false;
+                        if (scirasReportSubFilter === 'multirresistentes' && !isHighRes) return false;
+                        if (scirasReportSubFilter === 'pendentes' && isFilled) return false;
+
+                        if (!scirasSearch) return true;
+                        const s = scirasSearch.toLowerCase();
+                        return (
+                          p.name.toLowerCase().includes(s) ||
+                          p.bed.toLowerCase().includes(s) ||
+                          p.sector.toLowerCase().includes(s) ||
+                          (p.microorganism || '').toLowerCase().includes(s) ||
+                          (p.resistanceProfile || '').toLowerCase().includes(s)
+                        );
+                      })
+                      .map(p => {
+                        const isFilled = !!(p.microorganism || p.resistanceProfile);
+                        return (
+                          <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
+                            <td className="px-5 py-4">
+                              <span className="font-black text-slate-900 dark:text-white block text-sm">{p.name}</span>
+                              <span className="text-slate-500 text-[10px] font-black uppercase">Leito: {p.bed}</span>
+                            </td>
+                            <td className="px-5 py-4 uppercase text-slate-700 dark:text-slate-300">{p.sector}</td>
+                            <td className="px-5 py-4 text-slate-600 dark:text-slate-400 max-w-xs truncate" title={p.diagnosis}>{p.diagnosis}</td>
+                            <td className="px-5 py-4">
+                              {p.microorganism ? (
+                                <span className="bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 px-2.5 py-1 rounded-xl text-[11px] font-black uppercase border border-amber-200">
+                                  🧫 {p.microorganism}
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 text-[10px] font-bold italic">Não isolado</span>
+                              )}
+                            </td>
+                            <td className="px-5 py-4">
+                              {p.resistanceProfile ? (
+                                <span className="bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 px-2.5 py-1 rounded-xl text-[11px] font-black uppercase border border-red-200">
+                                  🧬 {p.resistanceProfile}
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 text-[10px] font-bold italic">Não informado</span>
+                              )}
+                            </td>
+                            <td className="px-5 py-4 text-center">
+                              {isFilled ? (
+                                <span className="bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-3 py-1 rounded-xl text-[10px] font-black uppercase border border-emerald-200">
+                                  ✓ Preenchido
+                                </span>
+                              ) : (
+                                <span className="bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 px-3 py-1 rounded-xl text-[10px] font-black uppercase border border-amber-200">
+                                  ⏱ Pendente
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
