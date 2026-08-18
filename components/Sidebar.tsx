@@ -40,6 +40,12 @@ const Sidebar: React.FC<SidebarProps> = ({
     p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)
   ).length;
 
+  const scirasPendingCount = patients.filter(p => 
+    (!p.microorganism && !p.resistanceProfile) &&
+    p.sector !== 'Centro Cirúrgico' &&
+    p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO)
+  ).length;
+
   const menuItems = getMenuItems(activeSectors);
 
   return (
@@ -96,6 +102,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                   ${isCollapsed ? 'absolute -top-1 -right-1 border-2 border-[#0a1120]' : ''}
                 `}>
                   {infectoPendingCount}
+                </span>
+              )}
+
+              {item.id === 'sciras' && scirasPendingCount > 0 && !isActive && (
+                <span className={`
+                  bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full
+                  ${isCollapsed ? 'absolute -top-1 -right-1 border-2 border-[#0a1120]' : ''}
+                `}>
+                  {scirasPendingCount}
                 </span>
               )}
 

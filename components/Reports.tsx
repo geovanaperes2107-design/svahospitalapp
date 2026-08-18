@@ -7,7 +7,7 @@ import {
   FileText, Printer, ChevronRight, Bone, Stethoscope, DollarSign, Pill, ThumbsUp, ThumbsDown, Eye, Calendar,
   TrendingDown, BarChart3, PieChart, Users, Syringe, Hospital, BadgeCheck, AlertCircle, Search, HelpCircle
 } from 'lucide-react';
-import { Patient, AntibioticStatus, IncisionRelation, TreatmentType, InfectoStatus, MedicationCategory } from '../types';
+import { Patient, Antibiotic, AntibioticStatus, IncisionRelation, TreatmentType, InfectoStatus, MedicationCategory } from '../types';
 import { DDD_MAP, DEFAULT_SECTORS, ANTIBIOTICS_LIST } from '../constants';
 import { calculateEndDate, getDaysRemaining, getATBDay, parseAnyDate, formatDateBR } from '../utils';
 import { jsPDF } from 'jspdf';
@@ -706,33 +706,77 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
     document.body.removeChild(link);
   };
 
-  // CARD COMPONENT
-  const Card = ({ label, value, icon, color = 'blue', onClick }: { label: string; value: string | number; icon: React.ReactNode; color?: string; onClick?: () => void }) => (
-    <div
-      onClick={onClick}
-      className={`bg-white dark:bg-slate-800 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col justify-between h-36 transition-all ${onClick ? 'cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-500' : ''}`}
-    >
-      <div className="flex justify-between items-start">
-        <p className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">{label}</p>
-        <div className={`p-1.5 rounded-2xl bg-${color}-50 dark:bg-${color}-900/20 text-${color}-600 dark:text-${color}-400`}>{React.cloneElement(icon as React.ReactElement, { size: 24 })}</div>
+  // CARD COMPONENT & STYLES
+  const CARD_COLOR_MAP: Record<string, { bg: string; text: string }> = {
+    blue: { bg: 'bg-blue-50 dark:bg-blue-950/40', text: 'text-blue-600 dark:text-blue-400' },
+    emerald: { bg: 'bg-emerald-50 dark:bg-emerald-950/40', text: 'text-emerald-600 dark:text-emerald-400' },
+    red: { bg: 'bg-red-50 dark:bg-red-950/40', text: 'text-red-600 dark:text-red-400' },
+    amber: { bg: 'bg-amber-50 dark:bg-amber-950/40', text: 'text-amber-600 dark:text-amber-400' },
+    purple: { bg: 'bg-purple-50 dark:bg-purple-950/40', text: 'text-purple-600 dark:text-purple-400' },
+    slate: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-300' },
+    indigo: { bg: 'bg-indigo-50 dark:bg-indigo-950/40', text: 'text-indigo-600 dark:text-indigo-400' },
+  };
+
+  const MINI_CHART_COLOR_MAP: Record<string, string> = {
+    blue: 'bg-blue-500',
+    emerald: 'bg-emerald-500',
+    red: 'bg-red-500',
+    amber: 'bg-amber-500',
+    purple: 'bg-purple-500',
+    slate: 'bg-slate-500',
+    indigo: 'bg-indigo-500',
+  };
+
+  const Card = ({
+    label,
+    value,
+    icon,
+    color = 'blue',
+    isSelected = false,
+    onClick,
+  }: {
+    label: string;
+    value: string | number;
+    icon: React.ReactNode;
+    color?: string;
+    isSelected?: boolean;
+    onClick?: () => void;
+  }) => {
+    const style = CARD_COLOR_MAP[color] || CARD_COLOR_MAP.blue;
+    return (
+      <div
+        onClick={onClick}
+        className={`bg-white dark:bg-slate-800 p-5 md:p-6 rounded-[2rem] border transition-all flex flex-col justify-between h-36 group ${
+          isSelected
+            ? 'border-blue-400 dark:border-blue-500 ring-2 ring-blue-400/20 shadow-md'
+            : 'border-slate-100 dark:border-slate-700/80 shadow-sm'
+        } ${onClick ? 'cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-500' : ''}`}
+      >
+        <div className="flex justify-between items-start gap-2">
+          <p className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none pr-1">{label}</p>
+          <div className={`p-2.5 rounded-full ${style.bg} ${style.text} flex items-center justify-center shrink-0`}>
+            {React.cloneElement(icon as React.ReactElement, { size: 18 })}
+          </div>
+        </div>
+        <div className="flex justify-between items-end gap-2">
+          <h3 className="text-4xl font-black text-slate-900 dark:text-white leading-none tracking-tight">{value}</h3>
+          {onClick && (
+            <span className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400 flex items-center gap-1 hover:underline group-hover:translate-x-0.5 transition-transform shrink-0">
+              VER LISTA ➔
+            </span>
+          )}
+        </div>
       </div>
-      <div className="flex justify-between items-end">
-        <h3 className="text-4xl font-black text-slate-900 dark:text-white leading-none">{value}</h3>
-        {onClick && (
-          <span className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400 flex items-center gap-1 hover:underline">
-            Ver Lista ➔
-          </span>
-        )}
-      </div>
-    </div>
-  );
+    );
+  };
 
   const MiniChart = ({ value, total, color }: { value: number; total: number; color: string }) => {
     const percentage = total > 0 ? (value / total) * 100 : 0;
+    const barBg = MINI_CHART_COLOR_MAP[color] || 'bg-blue-500';
     return (
       <div className="w-full bg-slate-100 dark:bg-slate-700/50 h-1.5 rounded-full mt-3 overflow-hidden">
         <div
-          className={`h-full bg-${color}-500 transition-all duration-1000 ease-out`}
+          className={`h-full ${barBg} transition-all duration-1000 ease-out`}
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -935,16 +979,16 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
         {activeReportTab === 'stewardship' && (
           <div className="space-y-2 animate-in fade-in">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 mb-2">
-              <Card label="Atd. Geral de Pacientes" value={stats.totalPatients} icon={<Users size={12} />} color="blue" onClick={() => openCardModal('total')} />
-              <Card label="Pacientes com ATB Ativo" value={stats.activePatients} icon={<Pill size={12} />} color="emerald" onClick={() => openCardModal('active')} />
-              <Card label="Prolongados (>D7 / Prorrogados)" value={stats.prolonged} icon={<AlertTriangle size={12} />} color="red" onClick={() => openCardModal('prolonged')} />
-              <Card label="Média de Dias" value={stats.avgDuration} icon={<Timer size={12} />} color="slate" />
+              <Card label="Atd. Geral de Pacientes" value={stats.totalPatients} icon={<Users size={18} />} color="blue" onClick={() => openCardModal('total')} isSelected={cardModalData?.type === 'total'} />
+              <Card label="Pacientes com ATB Ativo" value={stats.activePatients} icon={<Pill size={18} />} color="emerald" onClick={() => openCardModal('active')} isSelected={cardModalData?.type === 'active'} />
+              <Card label="Prolongados (>D7 / Prorrogados)" value={stats.prolonged} icon={<AlertTriangle size={18} />} color="red" onClick={() => openCardModal('prolonged')} isSelected={cardModalData?.type === 'prolonged'} />
+              <Card label="Média de Dias" value={stats.avgDuration} icon={<Timer size={18} />} color="slate" />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
-              <Card label="Finalizados" value={stats.finalized} icon={<CheckCircle2 size={12} />} color="emerald" onClick={() => openCardModal('finalized')} />
-              <Card label="Suspensos" value={stats.suspended} icon={<XCircle size={12} />} color="amber" onClick={() => openCardModal('suspended')} />
-              <Card label="Trocas" value={stats.substituted} icon={<ArrowRightLeft size={12} />} color="purple" onClick={() => openCardModal('substituted')} />
-              <Card label="Óbitos" value={stats.obitos} icon={<Activity size={12} />} color="slate" onClick={() => openCardModal('obitos')} />
+              <Card label="Finalizados" value={stats.finalized} icon={<CheckCircle2 size={18} />} color="emerald" onClick={() => openCardModal('finalized')} isSelected={cardModalData?.type === 'finalized'} />
+              <Card label="Suspensos" value={stats.suspended} icon={<XCircle size={18} />} color="amber" onClick={() => openCardModal('suspended')} isSelected={cardModalData?.type === 'suspended'} />
+              <Card label="Trocas" value={stats.substituted} icon={<ArrowRightLeft size={18} />} color="purple" onClick={() => openCardModal('substituted')} isSelected={cardModalData?.type === 'substituted'} />
+              <Card label="Óbitos" value={stats.obitos} icon={<Activity size={18} />} color="slate" onClick={() => openCardModal('obitos')} isSelected={cardModalData?.type === 'obitos'} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1064,11 +1108,11 @@ const Reports: React.FC<ReportsProps> = ({ patients, initialReportTab, atbCosts,
         {activeReportTab === 'censo' && (
           <div className="space-y-2 animate-in fade-in">
             <div className="grid grid-cols-2 md:grid-cols-5 gap-1.5">
-              <Card label="Autorizados" value={censoStats.authorized} icon={<ThumbsUp size={12} />} color="emerald" onClick={() => openCardModal('censo_authorized')} />
-              <Card label="Não Autorizados" value={censoStats.notAuthorized} icon={<ThumbsDown size={12} />} color="red" onClick={() => openCardModal('censo_not_authorized')} />
-              <Card label="Pendentes" value={censoStats.pending} icon={<Clock size={12} />} color="amber" onClick={() => openCardModal('censo_pending')} />
-              <Card label="% Avaliados" value={`${censoStats.evaluationRate}%`} icon={<BadgeCheck size={12} />} color="blue" />
-              <Card label="% Pendentes" value={`${censoStats.pendingRate}%`} icon={<AlertCircle size={12} />} color="slate" />
+              <Card label="Autorizados" value={censoStats.authorized} icon={<ThumbsUp size={18} />} color="emerald" onClick={() => openCardModal('censo_authorized')} isSelected={cardModalData?.type === 'censo_authorized'} />
+              <Card label="Não Autorizados" value={censoStats.notAuthorized} icon={<ThumbsDown size={18} />} color="red" onClick={() => openCardModal('censo_not_authorized')} isSelected={cardModalData?.type === 'censo_not_authorized'} />
+              <Card label="Pendentes" value={censoStats.pending} icon={<Clock size={18} />} color="amber" onClick={() => openCardModal('censo_pending')} isSelected={cardModalData?.type === 'censo_pending'} />
+              <Card label="% Avaliados" value={`${censoStats.evaluationRate}%`} icon={<BadgeCheck size={18} />} color="blue" />
+              <Card label="% Pendentes" value={`${censoStats.pendingRate}%`} icon={<AlertCircle size={18} />} color="slate" />
             </div>
 
             <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 p-6 shadow-sm no-print-break transition-colors">

@@ -13,7 +13,8 @@ import {
   Heart,
   Syringe,
   AlertCircle,
-  CheckSquare
+  CheckSquare,
+  Bug
 } from 'lucide-react';
 import { MedicationCategory } from './types';
 
@@ -146,6 +147,7 @@ export const DEFAULT_MENU_ITEMS = [
   { id: 'inicio', label: 'Início', icon: <Home size={20} />, color: 'bg-[#14b8a6]' },
   { id: 'cadastro', label: 'Cadastrar Paciente', icon: <UserPlus size={20} />, color: 'bg-[#10b981]' },
   { id: 'infectologia', label: 'Infectologia', icon: <ShieldCheck size={20} />, color: 'bg-[#059669]' },
+  { id: 'sciras', label: 'Painel SCIRAS', icon: <Bug size={20} />, color: 'bg-[#d97706]' },
   { id: 'Clínica Médica', label: 'Clínica Médica', icon: <Hospital size={20} />, color: 'bg-[#2563eb]' },
   { id: 'Clínica Cirúrgica', label: 'Clínica Cirúrgica', icon: <Syringe size={20} />, color: 'bg-[#4f46e5]' },
   { id: 'Obstetrícia', label: 'Obstetrícia', icon: <Heart size={20} />, color: 'bg-[#db2777]' },
@@ -163,7 +165,8 @@ export const getMenuItems = (activeSectors: string[]) => {
   const baseItems = [
     { id: 'inicio', label: 'Início', icon: <Home size={20} />, color: 'bg-[#14b8a6]' },
     { id: 'cadastro', label: 'Cadastrar Paciente', icon: <UserPlus size={20} />, color: 'bg-[#10b981]' },
-    { id: 'infectologia', label: 'Infectologia', icon: <ShieldCheck size={20} />, color: 'bg-[#059669]' }
+    { id: 'infectologia', label: 'Infectologia', icon: <ShieldCheck size={20} />, color: 'bg-[#059669]' },
+    { id: 'sciras', label: 'Painel SCIRAS', icon: <Bug size={20} />, color: 'bg-[#d97706]' }
   ];
 
   const sectorItems = activeSectors.map(sector => {

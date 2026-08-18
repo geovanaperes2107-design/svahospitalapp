@@ -135,6 +135,12 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [ccHistoryMonth, setCcHistoryMonth] = useState(() =>
     localStorage.getItem('sva_cc_month') || new Date().toISOString().substring(0, 7)
   );
+  const [scirasSubTab, setScirasSubTab] = useState<'todos' | 'pendentes' | 'preenchidos' | 'finalizados'>(() =>
+    (localStorage.getItem('sva_sciras_subtab') as any) || 'todos'
+  );
+  const [scirasHistoryMonth, setScirasHistoryMonth] = useState(() =>
+    localStorage.getItem('sva_sciras_month') || new Date().toISOString().substring(0, 7)
+  );
 
   // Controle de notificações persistentes
   const [dismissedNotifications, setDismissedNotifications] = useState<string[]>(() => {
@@ -237,6 +243,14 @@ const Dashboard: React.FC<DashboardProps> = ({
   }, [ccHistoryMonth]);
 
   useEffect(() => {
+    localStorage.setItem('sva_sciras_subtab', scirasSubTab);
+  }, [scirasSubTab]);
+
+  useEffect(() => {
+    localStorage.setItem('sva_sciras_month', scirasHistoryMonth);
+  }, [scirasHistoryMonth]);
+
+  useEffect(() => {
     localStorage.setItem('sva_report_initial_tab', reportInitialTab);
   }, [reportInitialTab]);
 
@@ -278,7 +292,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       if (isCC) return false; // Exclui pacientes do Centro Cirúrgico do painel da Infectologia
 
       const hasActiveAtb = p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO);
-      const matchesMonth = p.antibiotics.some(a => a.startDate.startsWith(infectoHistoryMonth));
+      const matchesMonth = p.antibiotics.some(a => a.startDate?.startsWith(infectoHistoryMonth));
 
       const matchesStatus =
         infectoSubTab === 'todos' ? true :
@@ -288,6 +302,24 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       // Todos os subtabs exigem ao menos 1 ATB ativo; sem ATB ativo = paciente encerrado/deletado
       return hasActiveAtb && matchesStatus && matchesMonth && matchesSearch;
+    }
+
+    if (activeTab === 'sciras') {
+      const isCC = p.sector === 'Centro Cirúrgico' || p.sector?.includes('Centro Cir');
+      if (isCC) return false;
+
+      const hasAnyAtb = p.antibiotics.length > 0;
+      const matchesMonth = p.antibiotics.some(a => a.startDate?.startsWith(scirasHistoryMonth)) || true;
+      const hasScirasData = !!(p.microorganism || p.resistanceProfile);
+      const isFinalized = p.antibiotics.length > 0 && p.antibiotics.every(a => a.status !== AntibioticStatus.EM_USO);
+
+      const matchesStatus =
+        scirasSubTab === 'todos' ? true :
+          scirasSubTab === 'pendentes' ? !hasScirasData :
+            scirasSubTab === 'preenchidos' ? hasScirasData :
+              scirasSubTab === 'finalizados' ? isFinalized : true;
+
+      return hasAnyAtb && matchesStatus && matchesSearch;
     }
 
     const hasActiveAtb = p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO);
@@ -782,7 +814,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           {activeTab === 'relatorios' && <Reports patients={patients} initialReportTab={reportInitialTab} atbCosts={atbCosts} setAtbCosts={setAtbCosts} patientDays={patientDays} setPatientDays={setPatientDays} />}
 
 
-          {['finalizados', 'Centro Cirúrgico', 'infectologia', ...activeSectors].includes(activeTab) && (
+          {['finalizados', 'Centro Cirúrgico', 'infectologia', 'sciras', ...activeSectors].includes(activeTab) && (
             <div className="max-w-[1200px] mx-auto space-y-3 text-left animate-in fade-in pb-6">
               <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center no-print bg-white dark:bg-slate-800 p-5 md:p-6 lg:p-7 rounded-[2.5rem] shadow-md border border-slate-100 dark:border-slate-700 gap-4 lg:gap-6 transition-colors overflow-hidden">
                 <div className="flex flex-col gap-3 min-w-0">
@@ -820,6 +852,21 @@ const Dashboard: React.FC<DashboardProps> = ({
                       <div className="flex items-center gap-2 bg-slate-50 p-1.5 px-2.5 rounded-xl border border-slate-100 shadow-inner justify-between">
                         <span className="text-[10px] font-black uppercase text-slate-400">Mês:</span>
                         <input type="month" className="bg-transparent border-0 font-bold text-xs outline-none text-slate-600" value={infectoHistoryMonth} onChange={e => setInfectoHistoryMonth(e.target.value)} />
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'sciras' && (
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <div className="flex flex-wrap gap-1.5">
+                        <button onClick={() => setScirasSubTab('todos')} className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase transition-all ${scirasSubTab === 'todos' ? 'bg-amber-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Todos</button>
+                        <button onClick={() => setScirasSubTab('pendentes')} className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase transition-all ${scirasSubTab === 'pendentes' ? 'bg-orange-500 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Pendentes</button>
+                        <button onClick={() => setScirasSubTab('preenchidos')} className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase transition-all ${scirasSubTab === 'preenchidos' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Preenchidos</button>
+                        <button onClick={() => setScirasSubTab('finalizados')} className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase transition-all ${scirasSubTab === 'finalizados' ? 'bg-slate-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>Finalizados</button>
+                      </div>
+                      <div className="flex items-center gap-2 bg-slate-50 p-1.5 px-2.5 rounded-xl border border-slate-100 shadow-inner justify-between">
+                        <span className="text-[10px] font-black uppercase text-slate-400">Mês:</span>
+                        <input type="month" className="bg-transparent border-0 font-bold text-xs outline-none text-slate-600" value={scirasHistoryMonth} onChange={e => setScirasHistoryMonth(e.target.value)} />
                       </div>
                     </div>
                   )}

@@ -76,6 +76,8 @@ export interface Antibiotic {
   justification?: string;
   infectoStatus?: InfectoStatus;
   infectoComment?: string;
+  microorganism?: string;
+  resistanceProfile?: string;
 }
 
 export interface Patient {
@@ -97,6 +99,8 @@ export interface Patient {
   isEvaluated: boolean;
   lastEvaluationDate?: string;
   observation?: string;
+  microorganism?: string;
+  resistanceProfile?: string;
   history: HistoryEntry[];
   order?: number;
 }

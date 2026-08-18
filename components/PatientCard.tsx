@@ -19,11 +19,38 @@ import {
   XCircle,
   Trash2,
   Save,
-  GripVertical
+  GripVertical,
+  Bug
 } from 'lucide-react';
 import { Patient, UserRole, AntibioticStatus, InfectoStatus, Antibiotic, HistoryEntry, TreatmentType, IncisionRelation, MedicationCategory } from '../types';
 import { DEFAULT_SECTORS, ANTIBIOTICS_LIST, FREQUENCY_OPTIONS, MEDICATION_LISTS } from '../constants';
 import { format, differenceInDays, parseISO, startOfDay, addDays } from 'date-fns';
+
+const COMMON_MICROORGANISMS = [
+  'Escherichia coli',
+  'Klebsiella pneumoniae',
+  'Staphylococcus aureus',
+  'Pseudomonas aeruginosa',
+  'Acinetobacter baumannii',
+  'Enterococcus faecalis',
+  'Enterococcus faecium',
+  'Proteus mirabilis',
+  'Enterobacter cloacae',
+  'Streptococcus pneumoniae',
+  'Candida albicans',
+  'Sem Germe Isolado (Negativo)'
+];
+
+const COMMON_RESISTANCE_PROFILES = [
+  'Sensível (Multissensível)',
+  'ESBL (Beta-lactamase de Espectro Estendido)',
+  'KPC / ERC (Carbapenemase)',
+  'MRSA (Staph. aureus Resistente à Meticilina)',
+  'VRE (Enterococcus Resistente à Vancomicina)',
+  'MDR (Multidrogas Resistente)',
+  'XDR (Extremamente Resistente)',
+  'AmpC Indutível'
+];
 import { calculateEndDate, parseAnyDate, isD0Frequency, formatDateBR, formatDateISO, getTodayISO } from '../utils';
 import DeletePatientModal from './DeletePatientModal';
 
@@ -134,6 +161,15 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
   const isCC = patient.sector === 'Centro Cirúrgico';
   const isEvaluatedEffective = isCC || patient.isEvaluated;
   const isInfectoPanel = activeTab === 'infectologia';
+  const isScirasPanel = activeTab === 'sciras';
+
+  const [tempMicroorganism, setTempMicroorganism] = useState(patient.microorganism || '');
+  const [tempResistanceProfile, setTempResistanceProfile] = useState(patient.resistanceProfile || '');
+
+  useEffect(() => {
+    setTempMicroorganism(patient.microorganism || '');
+    setTempResistanceProfile(patient.resistanceProfile || '');
+  }, [patient.microorganism, patient.resistanceProfile]);
 
   // --- ROLE-BASED PERMISSIONS ---
   const isAdmin = role === UserRole.ADMINISTRADOR;
@@ -409,6 +445,20 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                   }`}>
                   Inf: {patient.infectoStatus}
                 </span>
+              )}
+              {(patient.microorganism || patient.resistanceProfile) && (
+                <div className="flex flex-wrap gap-1">
+                  {patient.microorganism && (
+                    <span className="px-1 py-0.5 rounded text-[7px] md:text-[8px] font-black uppercase bg-amber-100 text-amber-800 border border-amber-200" title={`Microrganismo: ${patient.microorganism}`}>
+                      🧫 {patient.microorganism}
+                    </span>
+                  )}
+                  {patient.resistanceProfile && (
+                    <span className="px-1 py-0.5 rounded text-[7px] md:text-[8px] font-black uppercase bg-red-100 text-red-700 border border-red-200" title={`Perfil de Resistência: ${patient.resistanceProfile}`}>
+                      🧬 {patient.resistanceProfile}
+                    </span>
+                  )}
+                </div>
               )}
             </div>
             {/* DIAGNÓSTICO */}
@@ -753,6 +803,100 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                 </div>
               )}
 
+              {/* === ÁREA DE PREENCHIMENTO DA SCIRAS (MICRORGANISMO E PERFIL) === */}
+              {isScirasPanel && (
+                <div className="mt-3 bg-amber-50/80 dark:bg-amber-950/20 p-3 rounded-2xl border border-amber-200 dark:border-amber-900/40 shadow-inner space-y-2 text-left">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black uppercase text-amber-800 dark:text-amber-400 flex items-center gap-1.5">
+                      <Bug size={14} className="text-amber-600" /> Parecer SCIRAS (Microbiologia / Resistência)
+                    </label>
+                    {(patient.microorganism || patient.resistanceProfile) && (
+                      <span className="text-[8px] font-black uppercase bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                        ✓ Preenchido
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-black uppercase text-slate-500 flex items-center gap-1">
+                        🧫 Microrganismo Isolado
+                      </label>
+                      <select
+                        className="w-full bg-white dark:bg-slate-800 p-2 rounded-xl text-[10px] font-bold text-slate-800 dark:text-white border border-amber-200 dark:border-amber-800 outline-none focus:ring-1 focus:ring-amber-400"
+                        value={COMMON_MICROORGANISMS.includes(tempMicroorganism) ? tempMicroorganism : (tempMicroorganism ? 'Outro' : '')}
+                        onChange={e => {
+                          const val = e.target.value;
+                          if (val !== 'Outro') setTempMicroorganism(val);
+                          else setTempMicroorganism('');
+                        }}
+                      >
+                        <option value="">Selecione o Microrganismo...</option>
+                        {COMMON_MICROORGANISMS.map(m => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                        <option value="Outro">Outro (Digitar livremente)</option>
+                      </select>
+                      {(!COMMON_MICROORGANISMS.includes(tempMicroorganism) || tempMicroorganism === '') && (
+                        <input
+                          type="text"
+                          className="w-full bg-white dark:bg-slate-800 p-1.5 rounded-xl text-[10px] font-bold text-slate-800 dark:text-white border border-amber-200 dark:border-amber-800 outline-none focus:ring-1 focus:ring-amber-400 mt-1"
+                          placeholder="Digite o microrganismo..."
+                          value={tempMicroorganism}
+                          onChange={e => setTempMicroorganism(e.target.value)}
+                        />
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-black uppercase text-slate-500 flex items-center gap-1">
+                        🧬 Perfil de Resistência
+                      </label>
+                      <select
+                        className="w-full bg-white dark:bg-slate-800 p-2 rounded-xl text-[10px] font-bold text-slate-800 dark:text-white border border-amber-200 dark:border-amber-800 outline-none focus:ring-1 focus:ring-amber-400"
+                        value={COMMON_RESISTANCE_PROFILES.includes(tempResistanceProfile) ? tempResistanceProfile : (tempResistanceProfile ? 'Outro' : '')}
+                        onChange={e => {
+                          const val = e.target.value;
+                          if (val !== 'Outro') setTempResistanceProfile(val);
+                          else setTempResistanceProfile('');
+                        }}
+                      >
+                        <option value="">Selecione o Perfil de Resistência...</option>
+                        {COMMON_RESISTANCE_PROFILES.map(r => (
+                          <option key={r} value={r}>{r}</option>
+                        ))}
+                        <option value="Outro">Outro (Digitar livremente)</option>
+                      </select>
+                      {(!COMMON_RESISTANCE_PROFILES.includes(tempResistanceProfile) || tempResistanceProfile === '') && (
+                        <input
+                          type="text"
+                          className="w-full bg-white dark:bg-slate-800 p-1.5 rounded-xl text-[10px] font-bold text-slate-800 dark:text-white border border-amber-200 dark:border-amber-800 outline-none focus:ring-1 focus:ring-amber-400 mt-1"
+                          placeholder="Digite o perfil de resistência..."
+                          value={tempResistanceProfile}
+                          onChange={e => setTempResistanceProfile(e.target.value)}
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <button
+                      onClick={() => {
+                        onUpdate({
+                          ...patient,
+                          microorganism: tempMicroorganism,
+                          resistanceProfile: tempResistanceProfile,
+                          history: addHistory('Avaliação SCIRAS', `Microrganismo: ${tempMicroorganism || 'N/I'} | Perfil: ${tempResistanceProfile || 'N/I'}`)
+                        });
+                      }}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-black uppercase text-[9px] shadow transition-all active:scale-95"
+                    >
+                      <Save size={12} /> Salvar Dados SCIRAS
+                    </button>
+                  </div>
+                </div>
+              )}
+
             </div>
           );
         })}
@@ -809,6 +953,44 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                   {/* Shows aggregate of comments if needed, or just keep as is for historical/general comments */}
                   {patient.infectoComment || 'Nenhum parecer geral registrado.'}
                   {patient.antibiotics.map(a => a.infectoComment ? <div key={a.id} className="mt-2 pt-2 border-t border-slate-200"><span className="text-slate-800 uppercase text-[10px]">{a.name}:</span> {a.infectoComment}</div> : null)}
+                </div>
+              </div>
+              <div className="bg-white/80 p-6 border border-black/5 shadow-sm rounded-2xl space-y-4">
+                <label className="text-sm font-black uppercase text-amber-600 flex items-center gap-2"><Bug size={18} /> Painel SCIRAS / CCIH</label>
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-slate-400">Microrganismo Isolado</label>
+                    <input
+                      type="text"
+                      className="w-full bg-slate-50 p-3 rounded-xl font-bold text-xs border-0 outline-none text-slate-800 focus:ring-2 focus:ring-amber-200"
+                      placeholder="Ex: Klebsiella pneumoniae, E. coli..."
+                      value={tempMicroorganism}
+                      onChange={e => setTempMicroorganism(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-slate-400">Perfil de Resistência</label>
+                    <input
+                      type="text"
+                      className="w-full bg-slate-50 p-3 rounded-xl font-bold text-xs border-0 outline-none text-slate-800 focus:ring-2 focus:ring-amber-200"
+                      placeholder="Ex: KPC, ESBL, MRSA, Sensível..."
+                      value={tempResistanceProfile}
+                      onChange={e => setTempResistanceProfile(e.target.value)}
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      onUpdate({
+                        ...patient,
+                        microorganism: tempMicroorganism,
+                        resistanceProfile: tempResistanceProfile,
+                        history: addHistory('Avaliação SCIRAS', `Microrganismo: ${tempMicroorganism || 'N/I'} | Perfil: ${tempResistanceProfile || 'N/I'}`)
+                      });
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-black uppercase text-xs shadow transition-all"
+                  >
+                    <Save size={14} /> Salvar SCIRAS
+                  </button>
                 </div>
               </div>
               {isCC && (

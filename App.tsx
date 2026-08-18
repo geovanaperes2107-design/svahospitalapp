@@ -245,6 +245,8 @@ const App: React.FC = () => {
     antibiotics: row.antibiotics || [],
     isEvaluated: row.is_evaluated,
     lastEvaluationDate: row.last_evaluation_date ? formatDateBR(row.last_evaluation_date) : undefined,
+    microorganism: row.microorganism || '',
+    resistanceProfile: row.resistance_profile || '',
     history: row.history || []
   });
 
@@ -274,6 +276,8 @@ const App: React.FC = () => {
       antibiotics: p.antibiotics,
       is_evaluated: p.isEvaluated,
       last_evaluation_date: p.lastEvaluationDate ? formatDateISO(p.lastEvaluationDate) : null,
+      microorganism: p.microorganism || null,
+      resistance_profile: p.resistanceProfile || null,
       history: p.history
     };
   };
