@@ -169,12 +169,14 @@ export const getMenuItems = (activeSectors: string[]) => {
     { id: 'sciras', label: 'Painel SCIRAS', icon: <Bug size={20} />, color: 'bg-[#d97706]' }
   ];
 
-  const sectorItems = activeSectors.map(sector => {
-    const existing = DEFAULT_MENU_ITEMS.find(item => item.id === sector);
-    if (existing) return existing;
-    // Default config for new sectors
-    return { id: sector, label: sector, icon: <Activity size={20} />, color: 'bg-[#3b82f6]' };
-  });
+  const sectorItems = activeSectors
+    .filter(sector => sector.toLowerCase() !== 'sciras' && sector.toLowerCase() !== 'scih')
+    .map(sector => {
+      const existing = DEFAULT_MENU_ITEMS.find(item => item.id === sector);
+      if (existing) return existing;
+      // Default config for new sectors
+      return { id: sector, label: sector, icon: <Activity size={20} />, color: 'bg-[#3b82f6]' };
+    });
 
   const footerItems = [
     { id: 'finalizados', label: 'Painel Finalizados', icon: <CheckSquare size={20} />, color: 'bg-[#475569]' },

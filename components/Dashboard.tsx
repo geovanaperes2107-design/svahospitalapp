@@ -309,17 +309,18 @@ const Dashboard: React.FC<DashboardProps> = ({
       if (isCC) return false;
 
       const hasAnyAtb = p.antibiotics.length > 0;
-      const matchesMonth = p.antibiotics.some(a => a.startDate?.startsWith(scirasHistoryMonth)) || true;
+      if (!hasAnyAtb) return false;
+
       const hasScirasData = !!(p.microorganism || p.resistanceProfile);
-      const isFinalized = p.antibiotics.length > 0 && p.antibiotics.every(a => a.status !== AntibioticStatus.EM_USO);
+      const isFinalized = p.antibiotics.every(a => a.status !== AntibioticStatus.EM_USO);
 
       const matchesStatus =
         scirasSubTab === 'todos' ? true :
-          scirasSubTab === 'pendentes' ? !hasScirasData :
+          scirasSubTab === 'pendentes' ? (!hasScirasData && !isFinalized) :
             scirasSubTab === 'preenchidos' ? hasScirasData :
               scirasSubTab === 'finalizados' ? isFinalized : true;
 
-      return hasAnyAtb && matchesStatus && matchesSearch;
+      return matchesStatus && matchesSearch;
     }
 
     const hasActiveAtb = p.antibiotics.some(a => a.status === AntibioticStatus.EM_USO);

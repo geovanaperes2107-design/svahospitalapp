@@ -406,7 +406,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
     setShowStatusMenu(null);
   };
 
-  const antibioticsToDisplay = (isCC || activeTab === 'Centro Cirúrgico')
+  const antibioticsToDisplay = (isCC || activeTab === 'Centro Cirúrgico' || isScirasPanel)
     ? patient.antibiotics
     : (activeTab === 'finalizados'
       ? patient.antibiotics.filter(a => [AntibioticStatus.FINALIZADO, AntibioticStatus.SUSPENSO, AntibioticStatus.TROCADO, AntibioticStatus.EVADIDO, AntibioticStatus.OBITO].includes(a.status))
@@ -802,104 +802,107 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                   </div>
                 </div>
               )}
-
-              {/* === ÁREA DE PREENCHIMENTO DA SCIRAS (MICRORGANISMO E PERFIL) === */}
-              {isScirasPanel && (
-                <div className="mt-3 bg-amber-50/80 dark:bg-amber-950/20 p-3 rounded-2xl border border-amber-200 dark:border-amber-900/40 shadow-inner space-y-2 text-left">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-black uppercase text-amber-800 dark:text-amber-400 flex items-center gap-1.5">
-                      <Bug size={14} className="text-amber-600" /> Parecer SCIRAS (Microbiologia / Resistência)
-                    </label>
-                    {(patient.microorganism || patient.resistanceProfile) && (
-                      <span className="text-[8px] font-black uppercase bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
-                        ✓ Preenchido
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <label className="text-[8px] font-black uppercase text-slate-500 flex items-center gap-1">
-                        🧫 Microrganismo Isolado
-                      </label>
-                      <select
-                        className="w-full bg-white dark:bg-slate-800 p-2 rounded-xl text-[10px] font-bold text-slate-800 dark:text-white border border-amber-200 dark:border-amber-800 outline-none focus:ring-1 focus:ring-amber-400"
-                        value={COMMON_MICROORGANISMS.includes(tempMicroorganism) ? tempMicroorganism : (tempMicroorganism ? 'Outro' : '')}
-                        onChange={e => {
-                          const val = e.target.value;
-                          if (val !== 'Outro') setTempMicroorganism(val);
-                          else setTempMicroorganism('');
-                        }}
-                      >
-                        <option value="">Selecione o Microrganismo...</option>
-                        {COMMON_MICROORGANISMS.map(m => (
-                          <option key={m} value={m}>{m}</option>
-                        ))}
-                        <option value="Outro">Outro (Digitar livremente)</option>
-                      </select>
-                      {(!COMMON_MICROORGANISMS.includes(tempMicroorganism) || tempMicroorganism === '') && (
-                        <input
-                          type="text"
-                          className="w-full bg-white dark:bg-slate-800 p-1.5 rounded-xl text-[10px] font-bold text-slate-800 dark:text-white border border-amber-200 dark:border-amber-800 outline-none focus:ring-1 focus:ring-amber-400 mt-1"
-                          placeholder="Digite o microrganismo..."
-                          value={tempMicroorganism}
-                          onChange={e => setTempMicroorganism(e.target.value)}
-                        />
-                      )}
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[8px] font-black uppercase text-slate-500 flex items-center gap-1">
-                        🧬 Perfil de Resistência
-                      </label>
-                      <select
-                        className="w-full bg-white dark:bg-slate-800 p-2 rounded-xl text-[10px] font-bold text-slate-800 dark:text-white border border-amber-200 dark:border-amber-800 outline-none focus:ring-1 focus:ring-amber-400"
-                        value={COMMON_RESISTANCE_PROFILES.includes(tempResistanceProfile) ? tempResistanceProfile : (tempResistanceProfile ? 'Outro' : '')}
-                        onChange={e => {
-                          const val = e.target.value;
-                          if (val !== 'Outro') setTempResistanceProfile(val);
-                          else setTempResistanceProfile('');
-                        }}
-                      >
-                        <option value="">Selecione o Perfil de Resistência...</option>
-                        {COMMON_RESISTANCE_PROFILES.map(r => (
-                          <option key={r} value={r}>{r}</option>
-                        ))}
-                        <option value="Outro">Outro (Digitar livremente)</option>
-                      </select>
-                      {(!COMMON_RESISTANCE_PROFILES.includes(tempResistanceProfile) || tempResistanceProfile === '') && (
-                        <input
-                          type="text"
-                          className="w-full bg-white dark:bg-slate-800 p-1.5 rounded-xl text-[10px] font-bold text-slate-800 dark:text-white border border-amber-200 dark:border-amber-800 outline-none focus:ring-1 focus:ring-amber-400 mt-1"
-                          placeholder="Digite o perfil de resistência..."
-                          value={tempResistanceProfile}
-                          onChange={e => setTempResistanceProfile(e.target.value)}
-                        />
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end pt-1">
-                    <button
-                      onClick={() => {
-                        onUpdate({
-                          ...patient,
-                          microorganism: tempMicroorganism,
-                          resistanceProfile: tempResistanceProfile,
-                          history: addHistory('Avaliação SCIRAS', `Microrganismo: ${tempMicroorganism || 'N/I'} | Perfil: ${tempResistanceProfile || 'N/I'}`)
-                        });
-                      }}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-black uppercase text-[9px] shadow transition-all active:scale-95"
-                    >
-                      <Save size={12} /> Salvar Dados SCIRAS
-                    </button>
-                  </div>
-                </div>
-              )}
-
             </div>
           );
         })}
+
+        {/* === ÁREA DE PREENCHIMENTO DA SCIRAS (MICRORGANISMO E PERFIL) - DIRETO NO CARD === */}
+        {isScirasPanel && (
+          <div className="mt-3 mx-3 mb-2 bg-amber-50/90 dark:bg-amber-950/30 p-3.5 rounded-2xl border border-amber-200 dark:border-amber-900/50 shadow-sm space-y-2.5 text-left">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-black uppercase text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
+                <Bug size={16} className="text-amber-600 dark:text-amber-400" /> Parecer SCIRAS (Microbiologia / Resistência)
+              </label>
+              {(patient.microorganism || patient.resistanceProfile) ? (
+                <span className="text-[9px] font-black uppercase bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  ✓ Preenchido
+                </span>
+              ) : (
+                <span className="text-[9px] font-black uppercase bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 px-2.5 py-0.5 rounded-full border border-orange-200">
+                  ⏱ Pendente
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[9px] font-black uppercase text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                  🧫 Microrganismo Isolado (Cultura)
+                </label>
+                <select
+                  className="w-full bg-white dark:bg-slate-800 p-2 rounded-xl text-[11px] font-bold text-slate-800 dark:text-white border border-amber-200 dark:border-amber-800 outline-none focus:ring-2 focus:ring-amber-400 shadow-sm"
+                  value={COMMON_MICROORGANISMS.includes(tempMicroorganism) ? tempMicroorganism : (tempMicroorganism ? 'Outro' : '')}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val !== 'Outro') setTempMicroorganism(val);
+                    else setTempMicroorganism('');
+                  }}
+                >
+                  <option value="">Selecione o Microrganismo...</option>
+                  {COMMON_MICROORGANISMS.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                  <option value="Outro">Outro (Digitar livremente)</option>
+                </select>
+                {(!COMMON_MICROORGANISMS.includes(tempMicroorganism) || tempMicroorganism === '') && (
+                  <input
+                    type="text"
+                    className="w-full bg-white dark:bg-slate-800 p-2 rounded-xl text-[11px] font-bold text-slate-800 dark:text-white border border-amber-200 dark:border-amber-800 outline-none focus:ring-2 focus:ring-amber-400 mt-1 shadow-sm"
+                    placeholder="Digite o microrganismo isolado..."
+                    value={tempMicroorganism}
+                    onChange={e => setTempMicroorganism(e.target.value)}
+                  />
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] font-black uppercase text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                  🧬 Perfil de Resistência
+                </label>
+                <select
+                  className="w-full bg-white dark:bg-slate-800 p-2 rounded-xl text-[11px] font-bold text-slate-800 dark:text-white border border-amber-200 dark:border-amber-800 outline-none focus:ring-2 focus:ring-amber-400 shadow-sm"
+                  value={COMMON_RESISTANCE_PROFILES.includes(tempResistanceProfile) ? tempResistanceProfile : (tempResistanceProfile ? 'Outro' : '')}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val !== 'Outro') setTempResistanceProfile(val);
+                    else setTempResistanceProfile('');
+                  }}
+                >
+                  <option value="">Selecione o Perfil de Resistência...</option>
+                  {COMMON_RESISTANCE_PROFILES.map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                  <option value="Outro">Outro (Digitar livremente)</option>
+                </select>
+                {(!COMMON_RESISTANCE_PROFILES.includes(tempResistanceProfile) || tempResistanceProfile === '') && (
+                  <input
+                    type="text"
+                    className="w-full bg-white dark:bg-slate-800 p-2 rounded-xl text-[11px] font-bold text-slate-800 dark:text-white border border-amber-200 dark:border-amber-800 outline-none focus:ring-2 focus:ring-amber-400 mt-1 shadow-sm"
+                    placeholder="Digite o perfil de resistência..."
+                    value={tempResistanceProfile}
+                    onChange={e => setTempResistanceProfile(e.target.value)}
+                  />
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <button
+                onClick={() => {
+                  onUpdate({
+                    ...patient,
+                    microorganism: tempMicroorganism,
+                    resistanceProfile: tempResistanceProfile,
+                    history: addHistory('Avaliação SCIRAS', `Microrganismo: ${tempMicroorganism || 'N/I'} | Perfil: ${tempResistanceProfile || 'N/I'}`)
+                  });
+                }}
+                className="flex items-center gap-2 px-5 py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white rounded-xl font-black uppercase text-[10px] shadow-md transition-all active:scale-95 cursor-pointer"
+              >
+                <Save size={14} /> Salvar Parecer SCIRAS
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="flex justify-end items-center gap-2 pt-1 uppercase text-[9px] font-black">
           <button 
