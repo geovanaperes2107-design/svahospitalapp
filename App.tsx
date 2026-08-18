@@ -227,28 +227,41 @@ const App: React.FC = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
 
   // --- DATA TRANSFORMATION HELPERS ---
-  const mapDbToPatient = (row: any): Patient => ({
-    id: row.id,
-    name: row.name,
-    birthDate: row.birth_date ? formatDateBR(row.birth_date) : '',
-    bed: row.bed,
-    sector: row.sector,
-    diagnosis: row.diagnosis || '',
-    treatmentType: row.treatment_type,
-    infectoStatus: row.infecto_status,
-    infectoComment: row.infecto_comment,
-    pharmacyNote: row.pharmacy_note,
-    prescriberNotes: row.prescriber_notes,
-    incisionRelation: row.incision_relation,
-    procedureDate: row.procedure_date ? formatDateBR(row.procedure_date) : undefined,
-    operativeTime: row.operative_time,
-    antibiotics: row.antibiotics || [],
-    isEvaluated: row.is_evaluated,
-    lastEvaluationDate: row.last_evaluation_date ? formatDateBR(row.last_evaluation_date) : undefined,
-    microorganism: row.microorganism || '',
-    resistanceProfile: row.resistance_profile || '',
-    history: row.history || []
-  });
+  const mapDbToPatient = (row: any): Patient => {
+    let micro = row.microorganism || row.microorganismo || '';
+    let resist = row.resistance_profile || row.perfil_resistencia || '';
+
+    if ((!micro || !resist) && Array.isArray(row.history)) {
+      const scirasHist = row.history.find((h: any) => h.scirasMicro || h.scirasResist || h.microorganism || h.resistanceProfile);
+      if (scirasHist) {
+        if (!micro) micro = scirasHist.scirasMicro || scirasHist.microorganism || '';
+        if (!resist) resist = scirasHist.scirasResist || scirasHist.resistanceProfile || '';
+      }
+    }
+
+    return {
+      id: row.id,
+      name: row.name,
+      birthDate: row.birth_date ? formatDateBR(row.birth_date) : '',
+      bed: row.bed,
+      sector: row.sector,
+      diagnosis: row.diagnosis || '',
+      treatmentType: row.treatment_type,
+      infectoStatus: row.infecto_status,
+      infectoComment: row.infecto_comment,
+      pharmacyNote: row.pharmacy_note,
+      prescriberNotes: row.prescriber_notes,
+      incisionRelation: row.incision_relation,
+      procedureDate: row.procedure_date ? formatDateBR(row.procedure_date) : undefined,
+      operativeTime: row.operative_time,
+      antibiotics: row.antibiotics || [],
+      isEvaluated: row.is_evaluated,
+      lastEvaluationDate: row.last_evaluation_date ? formatDateBR(row.last_evaluation_date) : undefined,
+      microorganism: micro,
+      resistanceProfile: resist,
+      history: row.history || []
+    };
+  };
 
   const mapPatientToDb = (p: Patient) => {
     // Helper to parse DD/MM/YYYY to YYYY-MM-DD
@@ -258,6 +271,31 @@ const App: React.FC = () => {
       if (parts.length !== 3) return dateStr;
       return `${parts[2]}-${parts[1]}-${parts[0]}`;
     };
+
+    let historyList = [...(p.history || [])];
+    if (p.microorganism || p.resistanceProfile) {
+      const hasScirasHist = historyList.some((h: any) => h.scirasMicro !== undefined || h.scirasResist !== undefined);
+      if (!hasScirasHist) {
+        historyList.unshift({
+          date: new Date().toISOString(),
+          user: 'SCIRAS',
+          action: 'Parecer SCIRAS Registrado',
+          scirasMicro: p.microorganism || '',
+          scirasResist: p.resistanceProfile || ''
+        });
+      } else {
+        historyList = historyList.map((h: any) => {
+          if (h.scirasMicro !== undefined || h.scirasResist !== undefined) {
+            return {
+              ...h,
+              scirasMicro: p.microorganism || '',
+              scirasResist: p.resistanceProfile || ''
+            };
+          }
+          return h;
+        });
+      }
+    }
 
     return {
       name: p.name,
@@ -278,7 +316,7 @@ const App: React.FC = () => {
       last_evaluation_date: p.lastEvaluationDate ? formatDateISO(p.lastEvaluationDate) : null,
       microorganism: p.microorganism || null,
       resistance_profile: p.resistanceProfile || null,
-      history: p.history
+      history: historyList
     };
   };
 
@@ -693,6 +731,50 @@ const App: React.FC = () => {
     setUser(null);
   };
 
+  const safeSupabasePatientSave = async (
+    operation: 'insert' | 'update',
+    payload: any,
+    targetId?: string
+  ) => {
+    let res: any;
+
+    if (operation === 'insert') {
+      res = await supabase.from('pacientes').insert(Array.isArray(payload) ? payload : [payload]);
+    } else {
+      res = await supabase.from('pacientes').update(payload).eq('id', targetId);
+    }
+
+    if (res.error && (
+      res.error.message?.includes('microorganism') ||
+      res.error.message?.includes('resistance_profile') ||
+      res.error.message?.includes('schema cache') ||
+      res.error.message?.includes('column')
+    )) {
+      console.warn('Retrying Supabase operation without missing columns:', res.error.message);
+
+      const sanitize = (item: any) => {
+        const copy = { ...item };
+        delete copy.microorganism;
+        delete copy.resistance_profile;
+        delete copy.microorganismo;
+        delete copy.perfil_resistencia;
+        return copy;
+      };
+
+      const fallbackPayload = Array.isArray(payload)
+        ? payload.map(sanitize)
+        : sanitize(payload);
+
+      if (operation === 'insert') {
+        res = await supabase.from('pacientes').insert(Array.isArray(fallbackPayload) ? fallbackPayload : [fallbackPayload]);
+      } else {
+        res = await supabase.from('pacientes').update(fallbackPayload).eq('id', targetId);
+      }
+    }
+
+    return res;
+  };
+
   const handleAddPatient = async (p: Patient) => {
     const validId = isValidUUID(p.id) ? p.id : generateUUID();
     const patientWithValidId = { ...p, id: validId };
@@ -705,7 +787,7 @@ const App: React.FC = () => {
       ...mapPatientToDb(patientWithValidId)
     };
 
-    const { error } = await supabase.from('pacientes').insert([dbPayload]);
+    const { error } = await safeSupabasePatientSave('insert', [dbPayload]);
 
     if (error) {
       console.error('Error adding patient:', error);
@@ -733,12 +815,12 @@ const App: React.FC = () => {
     let error: any = null;
 
     if (isNewGeneratedId) {
-      // If the patient previously had an invalid string ID (like "37uylqbhl"), insert/upsert with valid UUID!
-      const { error: insertErr } = await supabase.from('pacientes').insert([{ id: targetId, ...dbPayload }]);
+      // If the patient previously had an invalid string ID, insert/upsert with valid UUID!
+      const { error: insertErr } = await safeSupabasePatientSave('insert', [{ id: targetId, ...dbPayload }]);
       error = insertErr;
     } else {
       // Standard update by UUID
-      const { error: updateErr } = await supabase.from('pacientes').update(dbPayload).eq('id', targetId);
+      const { error: updateErr } = await safeSupabasePatientSave('update', dbPayload, targetId);
       error = updateErr;
     }
 
@@ -1077,7 +1159,7 @@ const App: React.FC = () => {
       setConfigAtbDayChangeTimeUTI={setConfigAtbDayChangeTimeUTI}
       onBulkAddPatients={async (newPatients: Patient[]) => {
         const dbPayloads = newPatients.map(mapPatientToDb);
-        const { error } = await supabase.from('pacientes').insert(dbPayloads);
+        const { error } = await safeSupabasePatientSave('insert', dbPayloads);
         if (error) {
           console.error('Error bulk adding patients:', error);
           alert(`Erro ao salvar pacientes em massa: ${error.message}`);
