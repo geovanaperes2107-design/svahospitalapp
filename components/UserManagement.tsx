@@ -988,7 +988,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                             <option value={UserRole.ADMINISTRADOR}>Administrador</option>
                                             <option value={UserRole.VISUALIZADOR}>Visualizador</option>
                                             <option value={UserRole.INFECTO}>Infecto</option>
-                                            <option value={UserRole.SCIH}>SCIH</option>
+                                            <option value={UserRole.SCIH}>SCIH / SCIRAS</option>
                                             <option value={UserRole.FARMACEUTICO}>Farmacêutico</option>
                                         </select>
                                     </div>

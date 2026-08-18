@@ -182,6 +182,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
 
   // Specific Permission Checks
   const canManageInfecto = isAdmin || isInfectoUser;
+  const canManageSciras = isAdmin || isSCIHUser || isInfectoUser || isFarmaceutico;
   const canManageCC = isAdmin || isSCIHUser || isFarmaceutico;
   const canManageFarmaciaIdx = isAdmin || isFarmaceutico;
   const canManageAssistencia = isAdmin || isVisualizer || isSCIHUser || isInfectoUser || isFarmaceutico;
@@ -895,6 +896,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
             <div className="flex flex-wrap justify-between items-center gap-2 pt-1">
               <button
                 type="button"
+                disabled={!canManageSciras}
                 onClick={() => {
                   setTempMicroorganism('Não foi solicitado cultura');
                   setTempResistanceProfile('Sem cultura');
@@ -905,12 +907,13 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                     history: addHistory('Avaliação SCIRAS', 'Marcar: Não foi solicitado cultura')
                   });
                 }}
-                className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white rounded-xl font-black uppercase text-[9px] transition-all cursor-pointer border border-slate-300 dark:border-slate-600 shadow-sm active:scale-95"
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white rounded-xl font-black uppercase text-[9px] transition-all cursor-pointer border border-slate-300 dark:border-slate-600 shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 🚫 NÃO FOI SOLICITADO CULTURA
               </button>
 
               <button
+                disabled={!canManageSciras}
                 onClick={() => {
                   onUpdate({
                     ...patient,
@@ -919,7 +922,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                     history: addHistory('Avaliação SCIRAS', `Microrganismo: ${tempMicroorganism || 'N/I'} | Perfil: ${tempResistanceProfile || 'N/I'}`)
                   });
                 }}
-                className="flex items-center gap-2 px-5 py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white rounded-xl font-black uppercase text-[10px] shadow-md transition-all active:scale-95 cursor-pointer"
+                className="flex items-center gap-2 px-5 py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white rounded-xl font-black uppercase text-[10px] shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Save size={14} /> Salvar Parecer SCIRAS
               </button>
@@ -1005,6 +1008,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                     />
                   </div>
                   <button
+                    disabled={!canManageSciras}
                     onClick={() => {
                       onUpdate({
                         ...patient,
@@ -1013,7 +1017,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
                         history: addHistory('Avaliação SCIRAS', `Microrganismo: ${tempMicroorganism || 'N/I'} | Perfil: ${tempResistanceProfile || 'N/I'}`)
                       });
                     }}
-                    className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-black uppercase text-xs shadow transition-all"
+                    className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-black uppercase text-xs shadow transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <Save size={14} /> Salvar SCIRAS
                   </button>
