@@ -167,6 +167,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
 
   const [tempMicroorganism, setTempMicroorganism] = useState(patient.microorganism || '');
   const [tempResistanceProfile, setTempResistanceProfile] = useState(patient.resistanceProfile || '');
+  const [showScirasEditInInfecto, setShowScirasEditInInfecto] = useState(false);
 
   useEffect(() => {
     setTempMicroorganism(patient.microorganism || '');
@@ -541,6 +542,63 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
       </div>
 
       <div className="p-2 space-y-2">
+        {/* 🧫 BANNER DE DESTAQUE MICROBIOLOGIA (SCIRAS) PARA A INFECTOLOGIA */}
+        {isInfectoPanel && (
+          <div className="p-3.5 rounded-2xl bg-amber-500/10 dark:bg-amber-950/40 border-2 border-amber-400/60 dark:border-amber-700/60 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-left">
+            <div className="flex items-start gap-3 min-w-0 flex-1">
+              <div className="p-2.5 rounded-2xl bg-amber-500 text-white shrink-0 shadow-md">
+                <Bug size={20} />
+              </div>
+              <div className="space-y-1 min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 dark:text-amber-300">
+                    Parecer Microbiologia / Resistência (SCIRAS)
+                  </span>
+                  {(patient.microorganism || patient.resistanceProfile) ? (
+                    <span className={`text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full border ${
+                      patient.microorganism?.includes('Não foi solicitado')
+                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300'
+                        : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200'
+                    }`}>
+                      {patient.microorganism?.includes('Não foi solicitado') ? '✓ Sem Cultura Solicitada' : '✓ Preenchido pela SCIRAS'}
+                    </span>
+                  ) : (
+                    <span className="text-[9px] font-black uppercase bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 px-2.5 py-0.5 rounded-full border border-orange-200 animate-pulse">
+                      ⏱ Parecer SCIRAS Pendente
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs pt-0.5">
+                  <div className="font-bold text-slate-800 dark:text-white flex items-center gap-1">
+                    <span className="text-[10px] font-black uppercase text-amber-800 dark:text-amber-400">🧫 Microrganismo:</span>
+                    <span className="font-extrabold bg-amber-100 dark:bg-amber-950/80 px-2.5 py-0.5 rounded-lg text-amber-900 dark:text-amber-200 border border-amber-300/80 shadow-xs">
+                      {patient.microorganism || 'Não informado / Sem germe isolado'}
+                    </span>
+                  </div>
+
+                  <div className="font-bold text-slate-800 dark:text-white flex items-center gap-1">
+                    <span className="text-[10px] font-black uppercase text-red-700 dark:text-red-400">🧬 Perfil:</span>
+                    <span className="font-extrabold bg-red-100 dark:bg-red-950/80 px-2.5 py-0.5 rounded-lg text-red-900 dark:text-red-200 border border-red-300/80 shadow-xs">
+                      {patient.resistanceProfile || 'Não informado'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {canManageSciras && (
+              <button
+                type="button"
+                onClick={() => setShowScirasEditInInfecto(!showScirasEditInInfecto)}
+                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white rounded-xl text-[10px] font-black uppercase transition-all shadow-xs shrink-0 cursor-pointer flex items-center gap-1 self-stretch md:self-auto justify-center"
+              >
+                <Edit3 size={12} /> {showScirasEditInInfecto ? 'Ocultar Edição' : 'Preencher / Ajustar SCIRAS'}
+              </button>
+            )}
+          </div>
+        )}
+
         {antibioticsToDisplay.map((atb) => {
           const isUTI = patient.sector?.includes('UTI');
           const changeTime = isUTI ? (configAtbDayChangeTimeUTI || '19:00') : (configAtbDayChangeTime || '07:00');
@@ -810,7 +868,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, role, activeTab, onU
         })}
 
         {/* === ÁREA DE PREENCHIMENTO DA SCIRAS (MICRORGANISMO E PERFIL) - DIRETO NO CARD === */}
-        {isScirasPanel && (
+        {(isScirasPanel || showScirasEditInInfecto) && (
           <div className="mt-3 mx-3 mb-2 bg-amber-50/90 dark:bg-amber-950/30 p-3.5 rounded-2xl border border-amber-200 dark:border-amber-900/50 shadow-sm space-y-2.5 text-left">
             <div className="flex items-center justify-between">
               <label className="text-[11px] font-black uppercase text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
